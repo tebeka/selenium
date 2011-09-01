@@ -6,24 +6,23 @@ import (
 	"template"
 )
 
-type Params struct {
-	Id, Name, Other, PropertyName, SessionId string
-}
+type Params *map[string]string
 
 type Command struct {
 	Method string
-	url *template.Template
+	urlTemplate *template.Template
 }
 
 func (cmd *Command) URL(params *Params) (string, os.Error) {
 	var buf bytes.Buffer
-	if err := cmd.url.Execute(&buf, params); err != nil {
+	if err := cmd.urlTemplate.Execute(&buf, params); err != nil {
 		return "", err
 	}
 
 	return string(buf.String()), nil
 }
 
+var CMD_STATUS = &Command{"GET", template.MustParse("/status", nil)}
 var CMD_NEW_SESSION = &Command{"POST", template.MustParse("/session", nil)}
 var CMD_QUIT = &Command{"DELETE", template.MustParse("/session/{SessionId}", nil)}
 var CMD_GET_CURRENT_WINDOW_HANDLE = &Command{"GET", template.MustParse("/session/{SessionId}/window_handle", nil)}
