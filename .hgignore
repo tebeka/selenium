@@ -1,0 +1,7 @@
+syntax: glob
+
+*.6
+*.out
+_testmain.go
+t.go
+selenium.log
