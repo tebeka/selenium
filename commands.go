@@ -6,7 +6,9 @@ import (
 	"template"
 )
 
-type Params *map[string]string
+type Params struct {
+	Id, Name, Other, PropertyName, SessionId string
+}
 
 type Command struct {
 	Method string
