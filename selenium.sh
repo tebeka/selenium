@@ -7,7 +7,7 @@ log=/tmp/selenium.log
 url=http://selenium.googlecode.com/files/selenium-server-standalone-2.5.0.jar
 
 start() {
-    java -jar selenium-server-standalone-2.5.0.jar 2>&1 > $log&
+    java -jar selenium-server-standalone-2.5.0.jar > $log 2>&1 &
     echo $! > $pidfile
 }
 
