@@ -14,5 +14,9 @@ func TestStatus(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+
+	if len(status.OS.Name) == 0 {
+		t.Error("No OS")
+	}
 }
 
