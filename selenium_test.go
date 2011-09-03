@@ -21,10 +21,25 @@ func TestStatus(t *testing.T) {
 }
 
 func TestNewSession(t *testing.T) {
-	caps, _ := NewCapabilities("browserName", "firefox")
+	caps := &Capabilities {
+		"browserName": "firefox",
+	}
 
-	wd, _ := New(caps, "", nil)
-	wd.NewSession()
+	wd := &WebDriver{Capabilities: caps, Executor: DEFAULT_EXECUTOR}
+	sid, err := wd.NewSession()
+	defer wd.Quit()
+
+	if err != nil {
+		t.Errorf("error in new session - %s", err)
+	}
+
+	if len(sid) == 0 {
+		t.Error("Empty session id")
+	}
+
+	if wd.SessionId != sid {
+		t.Error("Session id mismatch")
+	}
 }
 
 

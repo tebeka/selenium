@@ -7,7 +7,7 @@ import (
 	"http"
 	"io/ioutil"
 	"json"
-	"log"
+//	"log"
 	"os"
 	"strings"
 )
@@ -45,7 +45,7 @@ type BrowserProfile *map[string]string
 
 type WebDriver struct {
 	SessionId, Executor string
-	Capabilities *Capabilities
+	Capabilities        *Capabilities
 	profile             BrowserProfile
 }
 
@@ -62,15 +62,17 @@ func isMimeType(response *http.Response, mtype string) bool {
 	return false
 }
 
-func (wd *WebDriver) makeRequest(cmd *Command, params *Params, data []byte) (*http.Request, os.Error) {
+func (wd *WebDriver) requestURL(cmd *Command, params *Params) (string, os.Error) {
 	path, err := cmd.URL(params)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	url := wd.Executor + path
-	log.Println(string(data))
-	request, err := http.NewRequest(cmd.Method, url, bytes.NewBuffer(data))
+	return wd.Executor + path, nil
+}
+
+func newRequest(method string, url string, data []byte) (*http.Request, os.Error) {
+	request, err := http.NewRequest(method, url, bytes.NewBuffer(data))
 	if err != nil {
 		return nil, err
 	}
@@ -87,8 +89,21 @@ func cleanNils(buf []byte) {
 	}
 }
 
+func isRedirect(response *http.Response) bool {
+	switch response.StatusCode {
+	case 301, 302, 303, 307:
+		return true
+	}
+	return false
+}
+
 func (wd *WebDriver) execute(cmd *Command, params *Params, data []byte) ([]byte, os.Error) {
-	request, err := wd.makeRequest(cmd, params, data)
+	url, err := wd.requestURL(cmd, params)
+	if err != nil {
+		return nil, err
+	}
+
+	request, err := newRequest(cmd.Method, url, data)
 	if err != nil {
 		return nil, err
 	}
@@ -96,6 +111,16 @@ func (wd *WebDriver) execute(cmd *Command, params *Params, data []byte) ([]byte,
 	response, err := http.DefaultClient.Do(request)
 	if err != nil {
 		return nil, err
+	}
+
+	// http.Client don't follow POST redirects ....
+	if (cmd.Method == "POST") && isRedirect(response) {
+		url := response.Header["Location"][0]
+		request, _ = newRequest("GET", url, nil)
+		response, err = http.DefaultClient.Do(request)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	buf, err := ioutil.ReadAll(response.Body)
@@ -126,7 +151,7 @@ func (wd *WebDriver) execute(cmd *Command, params *Params, data []byte) ([]byte,
 		}
 		return buf, err
 	} else if isMimeType(response, "image/png") {
-		// FIXME
+		// FIXME: Handle images
 	}
 
 	message := "no content type in reply"
@@ -171,37 +196,37 @@ func (wd *WebDriver) Status() (*Status, os.Error) {
 }
 
 func (wd *WebDriver) NewSession() (string, os.Error) {
-	log.Printf("CAPS: %v", *wd.Capabilities)
-	data, err := json.Marshal(wd.Capabilities)
+	message := map[string]interface{}{
+		"sessionId":           nil,
+		"desiredCapabilities": wd.Capabilities,
+	}
+	data, err := json.Marshal(message)
 	if err != nil {
 		return "", nil
 	}
-	reply, err := wd.execute(CMD_NEW_SESSION, nil, data)
-	log.Println(string(reply))
+
+	response, err := wd.execute(CMD_NEW_SESSION, nil, data)
 	if err != nil {
 		return "", err
 	}
 
-	return "", nil
+	reply := new(serverReply)
+	json.Unmarshal(response, reply)
+
+	wd.SessionId = *reply.SessionId
+
+	return *reply.SessionId, nil
 }
 
-func NewCapabilities(args ...interface{}) (*Capabilities, os.Error) {
-	if len(args) % 2 != 0 {
-		return nil, os.NewError("number of arguments must be even")
+func (wd *WebDriver) Quit() os.Error {
+	params := &Params{SessionId: wd.SessionId}
+	_, err := wd.execute(CMD_QUIT, params, nil)
+	if err == nil {
+		wd.SessionId = ""
 	}
 
-	caps := make(Capabilities)
-	for i := 0; i < len(args); i += 2 {
-		key, ok := args[i].(string)
-		if !ok {
-			return nil, os.NewError(fmt.Sprintf("arg %d is not a string", i))
-		}
-		caps[key] = args[i+1]
-	}
-
-	return &caps, nil
+	return err
 }
-
 
 func New(capabilities *Capabilities, executor string,
 		 profile BrowserProfile) (*WebDriver, os.Error) {
@@ -213,6 +238,8 @@ func New(capabilities *Capabilities, executor string,
 	wd := &WebDriver{Executor: executor,
 		Capabilities: capabilities,
 		profile:      profile}
+
+	wd.NewSession()
 
 	// FIXME: Handle profile
 
