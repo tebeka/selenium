@@ -52,6 +52,7 @@ type WebDriver struct {
 type serverReply struct {
 	SessionId *string
 	Status    int
+	//Value string
 }
 
 func isMimeType(response *http.Response, mtype string) bool {
@@ -226,6 +227,22 @@ func (wd *WebDriver) Quit() os.Error {
 	}
 
 	return err
+}
+
+type stringReply struct {
+	Value string
+}
+func (wd *WebDriver) CurrentWindowHandle() (string, os.Error) {
+	params := &Params{SessionId: wd.SessionId}
+	response, err := wd.execute(CMD_GET_CURRENT_WINDOW_HANDLE, params, nil)
+	if err != nil {
+		return "", err
+	}
+
+	reply := new(stringReply)
+	json.Unmarshal(response, reply)
+
+	return reply.Value, nil
 }
 
 func New(capabilities *Capabilities, executor string,
