@@ -57,3 +57,16 @@ func TestCurrentWindowHandle(t *testing.T) {
 	}
 }
 
+func TestWindowHandles(t *testing.T) {
+	wd, _ := NewRemote(caps, "", nil)
+	defer wd.Quit()
+
+	handles, err := wd.CurrentWindowHandle()
+	if err != nil {
+		t.Error(err)
+	}
+
+	if len(handles) == 0 {
+		t.Error("No handles")
+	}
+}

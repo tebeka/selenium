@@ -26,5 +26,6 @@ type WebDriver interface {
 	NewSession() (string, os.Error)
 	Quit() os.Error
 	CurrentWindowHandle() (string, os.Error)
+	WindowHandles() ([]string, os.Error)
 }
 

@@ -59,6 +59,9 @@ type statusReply struct {
 type stringReply struct {
 	Value string
 }
+type stringsReply struct {
+	Value []string
+}
 
 func isMimeType(response *http.Response, mtype string) bool {
 	if ctype, ok := response.Header["Content-Type"]; ok {
@@ -219,6 +222,18 @@ func (wd *remoteWD) CurrentWindowHandle() (string, os.Error) {
 	}
 
 	reply := new(stringReply)
+	json.Unmarshal(response, reply)
+
+	return reply.Value, nil
+}
+
+func (wd *remoteWD) WindowHandles() ([]string, os.Error) {
+	url := wd.requestURL("/session/{SessionId}/window_handles", nil)
+	response, err := wd.execute("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	reply := new(stringsReply)
 	json.Unmarshal(response, reply)
 
 	return reply.Value, nil
