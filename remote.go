@@ -155,12 +155,14 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, os.Error) 
 		// FIXME: Handle images
 	}
 
-	message := "no content type in reply"
 	ctype, ok := response.Header["Content-Type"]
 	if ok {
-		message = fmt.Sprintf("unknown reply content type: %v", ctype)
+		err := os.NewError(fmt.Sprintf("unknown reply content type: %v", ctype))
+		return nil, err
 	}
-	return nil, os.NewError(message)
+
+	// Nothing was returned, this is OK for some commands
+	return nil, nil
 
 }
 
@@ -214,21 +216,28 @@ func (wd *remoteWD) Quit() os.Error {
 	return err
 }
 
-func (wd *remoteWD) CurrentWindowHandle() (string, os.Error) {
-	url := wd.requestURL("/session/%s/window_handle", wd.SessionId)
+func (wd *remoteWD) stringCommand(urlTemplate string) (string, os.Error) {
+	url := wd.requestURL(urlTemplate, wd.SessionId)
 	response, err := wd.execute("GET", url, nil)
 	if err != nil {
 		return "", err
 	}
 
 	reply := new(stringReply)
-	json.Unmarshal(response, reply)
+	err = json.Unmarshal(response, reply)
+	if err != nil {
+		return "", err
+	}
 
 	return reply.Value, nil
 }
 
+func (wd *remoteWD) CurrentWindowHandle() (string, os.Error) {
+	return wd.stringCommand("/session/%s/window_handle")
+}
+
 func (wd *remoteWD) WindowHandles() ([]string, os.Error) {
-	url := wd.requestURL("/session/{SessionId}/window_handles", nil)
+	url := wd.requestURL("/session/%s/window_handles", wd.SessionId)
 	response, err := wd.execute("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -237,6 +246,52 @@ func (wd *remoteWD) WindowHandles() ([]string, os.Error) {
 	json.Unmarshal(response, reply)
 
 	return reply.Value, nil
+}
+
+func (wd *remoteWD) CurrentURL() (string, os.Error) {
+	url := wd.requestURL("/session/%s/url", wd.SessionId)
+	response, err := wd.execute("GET", url, nil)
+	if err != nil {
+		return "", err
+	}
+	reply := new(stringReply)
+	json.Unmarshal(response, reply)
+
+	return reply.Value, nil
+
+}
+
+func (wd *remoteWD) Get(url string) os.Error {
+	requestURL := wd.requestURL("/session/%s/url", wd.SessionId)
+	params := map[string]string {
+		"url" : url,
+	}
+	data, err := json.Marshal(params)
+	if err != nil {
+		return err
+	}
+	_, err = wd.execute("POST", requestURL, data)
+
+	return err
+}
+
+func (wd *remoteWD) voidCommand(urlTemplate string) os.Error {
+	url := wd.requestURL(urlTemplate, wd.SessionId)
+	_, err := wd.execute("POST", url, nil)
+	return err
+
+}
+
+func (wd *remoteWD) Forward() os.Error {
+	return wd.voidCommand("/session/%s/forward")
+}
+
+func (wd *remoteWD) Back() os.Error {
+	return wd.voidCommand("/session/%s/back")
+}
+
+func (wd *remoteWD) Refresh() os.Error {
+	return wd.voidCommand("/session/%s/refresh")
 }
 
 func NewRemote(capabilities *Capabilities, executor string,

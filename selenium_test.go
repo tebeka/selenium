@@ -70,3 +70,66 @@ func TestWindowHandles(t *testing.T) {
 		t.Error("No handles")
 	}
 }
+
+func TestGet(t *testing.T) {
+	wd, _ := NewRemote(caps, "", nil)
+	defer wd.Quit()
+
+	url := "http://www.google.com/"
+	err := wd.Get(url)
+	if err != nil {
+		t.Error(err)
+	}
+
+	newUrl, err := wd.CurrentURL()
+	if err != nil {
+		t.Error(err)
+	}
+
+	if newUrl != url {
+		t.Error("%s != %s", newUrl, url)
+	}
+}
+
+func TestNavigation(t *testing.T) {
+	wd, _ := NewRemote(caps, "", nil)
+	defer wd.Quit()
+
+	url1 := "http://www.google.com/"
+	err := wd.Get(url1)
+	if err != nil {
+		t.Error(err)
+	}
+
+	url2 := "http://golang.org/"
+	err = wd.Get(url2)
+	if err != nil {
+		t.Error(err)
+	}
+
+	err = wd.Back()
+	if err != nil {
+		t.Error(err)
+	}
+	url, _ := wd.CurrentURL()
+	if url != url1 {
+		t.Error("back go me to %s (expected %s)", url, url1)
+	}
+	err = wd.Forward()
+	if err != nil {
+		t.Error(err)
+	}
+	url, _ = wd.CurrentURL()
+	if url != url2 {
+		t.Error("back go me to %s (expected %s)", url, url2)
+	}
+
+	err = wd.Refresh()
+	if err != nil {
+		t.Error(err)
+	}
+	url, _ = wd.CurrentURL()
+	if url != url2 {
+		t.Error("back go me to %s (expected %s)", url, url2)
+	}
+}
