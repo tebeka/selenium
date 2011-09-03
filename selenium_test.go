@@ -9,7 +9,7 @@ var caps = &Capabilities {
 }
 
 func TestStatus(t *testing.T) {
-	wd, err := New(nil, "", nil)
+	wd, err := NewRemote(nil, "", nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -25,7 +25,7 @@ func TestStatus(t *testing.T) {
 }
 
 func TestNewSession(t *testing.T) {
-	wd := &WebDriver{Capabilities: caps, Executor: DEFAULT_EXECUTOR}
+	wd := &remoteWD{Capabilities: caps, Executor: DEFAULT_EXECUTOR}
 	sid, err := wd.NewSession()
 	defer wd.Quit()
 
@@ -43,7 +43,7 @@ func TestNewSession(t *testing.T) {
 }
 
 func TestCurrentWindowHandle(t *testing.T) {
-	wd, _ := New(caps, "", nil)
+	wd, _ := NewRemote(caps, "", nil)
 	defer wd.Quit()
 
 	handle, err := wd.CurrentWindowHandle()
@@ -57,16 +57,3 @@ func TestCurrentWindowHandle(t *testing.T) {
 	}
 }
 
-
-func TestURL(t *testing.T) {
-	params := Params{SessionId: "17"}
-	url, err := CMD_QUIT.URL(&params)
-
-	if err != nil {
-		t.Error(err)
-	}
-
-	if url != "/session/17" {
-		t.Errorf("Bad url: %s", url)
-	}
-}

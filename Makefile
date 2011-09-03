@@ -4,6 +4,6 @@ TARG=selenium
 
 GOFILES= \
 	selenium.go \
-	commands.go
+	remote.go
 
 include $(GOROOT)/src/Make.pkg
