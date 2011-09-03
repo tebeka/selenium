@@ -294,6 +294,14 @@ func (wd *remoteWD) Refresh() os.Error {
 	return wd.voidCommand("/session/%s/refresh")
 }
 
+func (wd *remoteWD) Title() (string, os.Error) {
+	return wd.stringCommand("/session/%s/title")
+}
+
+func (wd *remoteWD) PageSource() (string, os.Error) {
+	return wd.stringCommand("/session/%s/source")
+}
+
 func NewRemote(capabilities *Capabilities, executor string,
 		 profile BrowserProfile) (WebDriver, os.Error) {
 

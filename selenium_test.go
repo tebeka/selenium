@@ -11,12 +11,12 @@ var caps = &Capabilities {
 func TestStatus(t *testing.T) {
 	wd, err := NewRemote(nil, "", nil)
 	if err != nil {
-		t.Error(err)
+		t.Error(err.String())
 	}
 
 	status, err := wd.Status()
 	if err != nil {
-		t.Error(err)
+		t.Error(err.String())
 	}
 
 	if len(status.OS.Name) == 0 {
@@ -49,7 +49,7 @@ func TestCurrentWindowHandle(t *testing.T) {
 	handle, err := wd.CurrentWindowHandle()
 
 	if err != nil {
-		t.Error(err)
+		t.Error(err.String())
 	}
 
 	if len(handle) == 0 {
@@ -63,7 +63,7 @@ func TestWindowHandles(t *testing.T) {
 
 	handles, err := wd.CurrentWindowHandle()
 	if err != nil {
-		t.Error(err)
+		t.Error(err.String())
 	}
 
 	if len(handles) == 0 {
@@ -78,12 +78,12 @@ func TestGet(t *testing.T) {
 	url := "http://www.google.com/"
 	err := wd.Get(url)
 	if err != nil {
-		t.Error(err)
+		t.Error(err.String())
 	}
 
 	newUrl, err := wd.CurrentURL()
 	if err != nil {
-		t.Error(err)
+		t.Error(err.String())
 	}
 
 	if newUrl != url {
@@ -98,18 +98,18 @@ func TestNavigation(t *testing.T) {
 	url1 := "http://www.google.com/"
 	err := wd.Get(url1)
 	if err != nil {
-		t.Error(err)
+		t.Error(err.String())
 	}
 
 	url2 := "http://golang.org/"
 	err = wd.Get(url2)
 	if err != nil {
-		t.Error(err)
+		t.Error(err.String())
 	}
 
 	err = wd.Back()
 	if err != nil {
-		t.Error(err)
+		t.Error(err.String())
 	}
 	url, _ := wd.CurrentURL()
 	if url != url1 {
@@ -117,7 +117,7 @@ func TestNavigation(t *testing.T) {
 	}
 	err = wd.Forward()
 	if err != nil {
-		t.Error(err)
+		t.Error(err.String())
 	}
 	url, _ = wd.CurrentURL()
 	if url != url2 {
@@ -126,10 +126,30 @@ func TestNavigation(t *testing.T) {
 
 	err = wd.Refresh()
 	if err != nil {
-		t.Error(err)
+		t.Error(err.String())
 	}
 	url, _ = wd.CurrentURL()
 	if url != url2 {
 		t.Error("back go me to %s (expected %s)", url, url2)
+	}
+}
+
+func TestTitle(t *testing.T) {
+	wd, _ := NewRemote(caps, "", nil)
+	defer wd.Quit()
+
+	_, err := wd.Title()
+	if err != nil {
+		t.Error(err.String())
+	}
+}
+
+func TestPageSource(t *testing.T) {
+	wd, _ := NewRemote(caps, "", nil)
+	defer wd.Quit()
+
+	_, err := wd.PageSource()
+	if err != nil {
+		t.Error(err.String())
 	}
 }
