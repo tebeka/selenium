@@ -4,6 +4,10 @@ import (
 	"testing"
 )
 
+var caps = &Capabilities {
+	"browserName": "firefox",
+}
+
 func TestStatus(t *testing.T) {
 	wd, err := New(nil, "", nil)
 	if err != nil {
@@ -21,10 +25,6 @@ func TestStatus(t *testing.T) {
 }
 
 func TestNewSession(t *testing.T) {
-	caps := &Capabilities {
-		"browserName": "firefox",
-	}
-
 	wd := &WebDriver{Capabilities: caps, Executor: DEFAULT_EXECUTOR}
 	sid, err := wd.NewSession()
 	defer wd.Quit()
@@ -39,6 +39,21 @@ func TestNewSession(t *testing.T) {
 
 	if wd.SessionId != sid {
 		t.Error("Session id mismatch")
+	}
+}
+
+func TestCurrentWindowHandle(t *testing.T) {
+	wd, _ := New(caps, "", nil)
+	defer wd.Quit()
+
+	handle, err := wd.CurrentWindowHandle()
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	if len(handle) == 0 {
+		t.Error("Empty handle")
 	}
 }
 
