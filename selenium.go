@@ -27,5 +27,10 @@ type WebDriver interface {
 	Quit() os.Error
 	CurrentWindowHandle() (string, os.Error)
 	WindowHandles() ([]string, os.Error)
+	Get(url string) os.Error
+	CurrentURL() (string, os.Error)
+	Forward() os.Error
+	Back() os.Error
+	Refresh() os.Error
 }
 
