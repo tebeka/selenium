@@ -32,5 +32,7 @@ type WebDriver interface {
 	Forward() os.Error
 	Back() os.Error
 	Refresh() os.Error
+	Title() (string, os.Error)
+	PageSource() (string, os.Error)
 }
 
