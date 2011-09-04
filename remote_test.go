@@ -285,7 +285,6 @@ func TestGetCookies(t *testing.T) {
 		t.Error("Empty cookie")
 	}
 }
-*/
 
 func TestAddCookie(t *testing.T) {
 	wd, _ := NewRemote(caps, "", nil)
@@ -309,4 +308,34 @@ func TestAddCookie(t *testing.T) {
 	}
 
 	t.Error("Can't find new cookie")
+}
+*/
+
+func TestDeleteCookie(t *testing.T) {
+	wd, _ := NewRemote(caps, "", nil)
+	defer wd.Quit()
+
+	wd.Get("http://www.google.com")
+	cookies, err := wd.GetCookies()
+	if err != nil {
+		t.Error(err.String())
+	}
+	err = wd.DeleteCookie(cookies[0].Name)
+	if err != nil {
+		t.Error(err.String())
+	}
+	newCookies, err := wd.GetCookies()
+	if err != nil {
+		t.Error(err.String())
+	}
+	if len(newCookies) != len(cookies) - 1 {
+		t.Error("Cookie not deleted")
+	}
+
+	for _, c := range(newCookies) {
+		if c.Name == cookies[0].Name {
+			t.Error("Deleted cookie found")
+		}
+	}
+
 }
