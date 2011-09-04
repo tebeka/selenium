@@ -24,6 +24,16 @@ const (
 	RightButton
 )
 
+/* FIXME: Add rest of 
+http://code.google.com/p/selenium/wiki/JsonWireProtocol#/session/:sessionId/element/:id/value
+*/
+const (
+	ShiftKey = string('\ue008')
+	ControlKey = string('\ue009')
+	AltKey = string('\ue00a')
+	MetaKey = string('\ue03d')
+)
+
 /* Browser capabilities, see
   http://code.google.com/p/selenium/wiki/JsonWireProtocol#Capabilities_JSON_Object
 */
@@ -120,6 +130,12 @@ type WebDriver interface {
 	ButtonDown() os.Error
 	/* Mouse button up */
 	ButtonUp() os.Error
+
+	// Misc
+	/* Send modifier key to active element.
+		modifier can be one of ShiftKey, ControlKey, AltKey, MetaKey.
+	*/
+	SendModifier(modifier string, isDown bool) os.Error
 }
 
 type WebElement interface {
@@ -148,4 +164,5 @@ type WebElement interface {
 	IsSelected() (bool, os.Error)
 	IsEnabled() (bool, os.Error)
 	IsDiaplayed() (bool, os.Error)
+	GetAttribute(name string) (string, os.Error)
 }

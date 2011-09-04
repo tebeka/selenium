@@ -62,7 +62,7 @@ type statusReply struct {
 	Value Status
 }
 type stringReply struct {
-	Value string
+	Value *string
 }
 type stringsReply struct {
 	Value []string
@@ -267,7 +267,7 @@ func (wd *remoteWD) stringCommand(urlTemplate string) (string, os.Error) {
 		return "", err
 	}
 
-	return reply.Value, nil
+	return *reply.Value, nil
 }
 
 func (wd *remoteWD) CurrentWindowHandle() (string, os.Error) {
@@ -295,7 +295,7 @@ func (wd *remoteWD) CurrentURL() (string, os.Error) {
 	reply := new(stringReply)
 	json.Unmarshal(response, reply)
 
-	return reply.Value, nil
+	return *reply.Value, nil
 
 }
 
@@ -516,6 +516,22 @@ func (wd *remoteWD) ButtonUp() os.Error {
 	return wd.voidCommand("/session/%s/buttonup")
 }
 
+func (wd *remoteWD) SendModifier(modifier string, isDown bool) os.Error {
+	params := map[string]interface{} {
+		"value" : modifier,
+		"isdown" : isDown,
+	}
+
+	data, err := json.Marshal(params)
+	if err != nil {
+		return err
+	}
+
+	url := wd.requestURL("/session/%s/modifier", wd.id)
+	_, err = wd.execute("POST", url, data)
+	return err
+}
+
 // Elements
 
 type remoteWE struct {
@@ -634,4 +650,20 @@ func (elem *remoteWE) IsEnabled() (bool, os.Error) {
 
 func (elem *remoteWE) IsDiaplayed() (bool, os.Error) {
 	return elem.boolQuery("/session/%s/element/%s/displayed")
+}
+
+func (elem *remoteWE) GetAttribute(name string) (string, os.Error) {
+	wd := elem.parent
+	url := wd.requestURL("/session/%s/element/%s/attribute/%s", wd.id, elem.id, name)
+	response, err := wd.execute("GET", url, nil)
+	if err != nil {
+		return "", err
+	}
+	reply := new(stringReply)
+	err = json.Unmarshal(response, reply)
+	if err != nil {
+		return "", err
+	}
+
+	return *reply.Value, nil
 }
