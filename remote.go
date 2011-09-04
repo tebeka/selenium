@@ -502,3 +502,23 @@ func (elem *remoteWE) SendKeys(keys string) os.Error {
 	_, err = elem.parent.execute("POST", url, data)
 	return err
 }
+
+func (elem *remoteWE) TagName() (string, os.Error) {
+	urlTemplate := fmt.Sprintf("/session/%%s/element/%s/name", elem.id)
+	return elem.parent.stringCommand(urlTemplate)
+}
+
+func (elem *remoteWE) Text() (string, os.Error) {
+	urlTemplate := fmt.Sprintf("/session/%%s/element/%s/text", elem.id)
+	return elem.parent.stringCommand(urlTemplate)
+}
+
+func (elem *remoteWE) Submit() os.Error {
+	urlTemplate := fmt.Sprintf("/session/%%s/element/%s/submit", elem.id)
+	return elem.parent.voidCommand(urlTemplate)
+}
+
+func (elem *remoteWE) Clear() os.Error{
+	urlTemplate := fmt.Sprintf("/session/%%s/element/%s/clear", elem.id)
+	return elem.parent.voidCommand(urlTemplate)
+}

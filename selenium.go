@@ -69,4 +69,10 @@ type WebDriver interface {
 type WebElement interface {
 	Click() os.Error
 	SendKeys(keys string) os.Error
+	TagName() (string, os.Error)
+	Text() (string, os.Error)
+	Submit() os.Error
+	Clear() os.Error
+//	GetAttribute() (interface{}, os.Error)
+
 }
