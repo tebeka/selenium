@@ -32,6 +32,12 @@ type Status struct {
 	OS
 }
 
+type Cookie struct {
+	Name, Value, Path, Domain string
+	Secure bool
+	Expiry uint
+}
+
 type WebDriver interface {
 	Status() (*Status, os.Error)
 	NewSession() (string, os.Error)
@@ -51,6 +57,7 @@ type WebDriver interface {
 	ActiveElement() (WebElement, os.Error)
 	SwitchWindow(name string) os.Error
 	SwitchFrame(frame string) os.Error
+	GetCookies() ([]Cookie, os.Error)
 }
 
 type WebElement interface {

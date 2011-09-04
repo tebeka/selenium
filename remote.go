@@ -70,6 +70,9 @@ type elementReply struct {
 type elementsReply struct {
 	Value []element
 }
+type cookiesReply struct {
+	Value []Cookie
+}
 
 func isMimeType(response *http.Response, mtype string) bool {
 	if ctype, ok := response.Header["Content-Type"]; ok {
@@ -424,6 +427,22 @@ func (wd *remoteWD) ActiveElement() (WebElement, os.Error) {
 
 	elem := &remoteWE{wd, reply.Value.ELEMENT}
 	return elem, nil
+}
+
+func (wd *remoteWD) GetCookies() ([]Cookie, os.Error) {
+	url := wd.requestURL("/session/%s/cookie", wd.SessionId)
+	data, err := wd.execute("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	reply := new(cookiesReply)
+	err = json.Unmarshal(data, reply)
+	if err != nil {
+		return nil, err
+	}
+
+	return reply.Value, nil
 }
 
 type remoteWE struct {

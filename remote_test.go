@@ -8,6 +8,7 @@ import (
 var caps = &Capabilities {
 	"browserName": "firefox",
 }
+
 func TestStatus(t *testing.T) {
 	wd, err := NewRemote(nil, "", nil)
 	if err != nil {
@@ -262,5 +263,24 @@ func TestClick(t *testing.T) {
 
 	if !strings.Contains(source, "The Go Programming Language") {
 		t.Error("Google can't find Go")
+	}
+}
+
+func TestGetCookies(t *testing.T) {
+	wd, _ := NewRemote(caps, "", nil)
+	defer wd.Quit()
+
+	wd.Get("http://www.google.com")
+	cookies, err := wd.GetCookies()
+	if err != nil {
+		t.Error(err.String())
+	}
+
+	if len(cookies) == 0 {
+		t.Error("No cookies")
+	}
+
+	if len(cookies[0].Name) == 0 {
+		t.Error("Empty cookie")
 	}
 }
