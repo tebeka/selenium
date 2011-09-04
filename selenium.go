@@ -5,6 +5,17 @@ import (
 	"os"
 )
 
+const (
+    ById = "id"
+    ByXPATH = "xpath"
+    ByLinkText = "link text"
+    ByPartialLinkText = "partial link text"
+    ByName = "name"
+    ByTagName = "tag name"
+    ByClassName = "class name"
+    ByCSSSelector = "css selector"
+)
+
 type Capabilities map[string]interface{}
 type BrowserProfile *map[string]string
 
@@ -34,5 +45,9 @@ type WebDriver interface {
 	Refresh() os.Error
 	Title() (string, os.Error)
 	PageSource() (string, os.Error)
+	FindElement(by, value string) (WebElement, os.Error)
 }
 
+type WebElement interface {
+	Click() os.Error
+}

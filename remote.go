@@ -62,6 +62,12 @@ type stringReply struct {
 type stringsReply struct {
 	Value []string
 }
+type element struct {
+	ELEMENT string
+}
+type elementReply struct {
+	Value element
+}
 
 func isMimeType(response *http.Response, mtype string) bool {
 	if ctype, ok := response.Header["Content-Type"]; ok {
@@ -302,6 +308,32 @@ func (wd *remoteWD) PageSource() (string, os.Error) {
 	return wd.stringCommand("/session/%s/source")
 }
 
+func (wd *remoteWD) FindElement(by, value string) (WebElement, os.Error) {
+	params := map[string]string {
+		"using" : by,
+		"value" : value,
+	}
+	data, err := json.Marshal(params)
+	if err != nil {
+		return nil, err
+	}
+
+	url := wd.requestURL("/session/%s/element", wd.SessionId)
+	response, err := wd.execute("POST", url, data)
+	if err != nil {
+		return nil, err
+	}
+
+	reply := new(elementReply)
+	err = json.Unmarshal(response, reply)
+	if err != nil {
+		return nil, err
+	}
+
+	elem := &remoteWE{wd, reply.Value.ELEMENT}
+	return elem, nil
+}
+
 func NewRemote(capabilities *Capabilities, executor string,
 		 profile BrowserProfile) (WebDriver, os.Error) {
 
@@ -318,4 +350,14 @@ func NewRemote(capabilities *Capabilities, executor string,
 
 
 	return wd, nil
+}
+
+type remoteWE struct {
+	parent *remoteWD
+	id string
+}
+
+func (elem *remoteWE) Click() os.Error {
+	urlTemplate := fmt.Sprintf("/session/%%s/element/%s/click", elem.id)
+	return elem.parent.voidCommand(urlTemplate)
 }
