@@ -50,7 +50,6 @@ type remoteWD struct {
 type serverReply struct {
 	SessionId *string
 	Status    int
-	//Value string
 }
 
 type statusReply struct {
@@ -67,6 +66,9 @@ type element struct {
 }
 type elementReply struct {
 	Value element
+}
+type elementsReply struct {
+	Value []element
 }
 
 func isMimeType(response *http.Response, mtype string) bool {
@@ -308,7 +310,7 @@ func (wd *remoteWD) PageSource() (string, os.Error) {
 	return wd.stringCommand("/session/%s/source")
 }
 
-func (wd *remoteWD) FindElement(by, value string) (WebElement, os.Error) {
+func (wd *remoteWD) find(by, value, suffix string) ([]byte, os.Error) {
 	params := map[string]string {
 		"using" : by,
 		"value" : value,
@@ -318,8 +320,13 @@ func (wd *remoteWD) FindElement(by, value string) (WebElement, os.Error) {
 		return nil, err
 	}
 
-	url := wd.requestURL("/session/%s/element", wd.SessionId)
-	response, err := wd.execute("POST", url, data)
+	urlTemplate := "/session/%s/element" + suffix
+	url := wd.requestURL(urlTemplate, wd.SessionId)
+	return wd.execute("POST", url, data)
+}
+
+func (wd *remoteWD) FindElement(by, value string) (WebElement, os.Error) {
+	response, err := wd.find(by, value, "")
 	if err != nil {
 		return nil, err
 	}
@@ -332,6 +339,27 @@ func (wd *remoteWD) FindElement(by, value string) (WebElement, os.Error) {
 
 	elem := &remoteWE{wd, reply.Value.ELEMENT}
 	return elem, nil
+}
+
+func (wd *remoteWD) FindElements(by, value string) ([]WebElement, os.Error) {
+	response, err := wd.find(by, value, "s")
+	if err != nil {
+		return nil, err
+	}
+
+	reply := new(elementsReply)
+	err = json.Unmarshal(response, reply)
+	if err != nil {
+		return nil, err
+	}
+
+	elems := make([]WebElement, len(reply.Value))
+	for i, elem := range(reply.Value) {
+		elems[i] = &remoteWE{wd, elem.ELEMENT}
+
+	}
+
+	return elems, nil
 }
 
 func NewRemote(capabilities *Capabilities, executor string,

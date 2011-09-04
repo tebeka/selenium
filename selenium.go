@@ -46,6 +46,7 @@ type WebDriver interface {
 	Title() (string, os.Error)
 	PageSource() (string, os.Error)
 	FindElement(by, value string) (WebElement, os.Error)
+	FindElements(by, value string) ([]WebElement, os.Error)
 }
 
 type WebElement interface {
