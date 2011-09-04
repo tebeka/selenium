@@ -139,4 +139,8 @@ type WebElement interface {
 	MoveTo(xOffset, yOffset int) os.Error
 //	GetAttribute(name string) (interface{}, os.Error)
 
+	/* Find children, return one element. */
+	FindElement(by, value string) (WebElement, os.Error)
+	/* Find children, return list of elements. */
+	FindElements(by, value string) ([]WebElement, os.Error)
 }

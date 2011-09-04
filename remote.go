@@ -337,7 +337,7 @@ func (wd *remoteWD) PageSource() (string, os.Error) {
 	return wd.stringCommand("/session/%s/source")
 }
 
-func (wd *remoteWD) find(by, value, suffix string) ([]byte, os.Error) {
+func (wd *remoteWD) find(by, value, suffix, url string) ([]byte, os.Error) {
 	params := map[string]string {
 		"using" : by,
 		"value" : value,
@@ -347,19 +347,18 @@ func (wd *remoteWD) find(by, value, suffix string) ([]byte, os.Error) {
 		return nil, err
 	}
 
-	urlTemplate := "/session/%s/element" + suffix
-	url := wd.requestURL(urlTemplate, wd.SessionId)
+	if len(url) == 0 {
+		url = "/session/%s/element"
+	}
+
+	urlTemplate := url + suffix
+	url = wd.requestURL(urlTemplate, wd.SessionId)
 	return wd.execute("POST", url, data)
 }
 
-func (wd *remoteWD) FindElement(by, value string) (WebElement, os.Error) {
-	response, err := wd.find(by, value, "")
-	if err != nil {
-		return nil, err
-	}
-
+func decodeElement(wd *remoteWD, data []byte) (WebElement, os.Error) {
 	reply := new(elementReply)
-	err = json.Unmarshal(response, reply)
+	err := json.Unmarshal(data, reply)
 	if err != nil {
 		return nil, err
 	}
@@ -368,14 +367,18 @@ func (wd *remoteWD) FindElement(by, value string) (WebElement, os.Error) {
 	return elem, nil
 }
 
-func (wd *remoteWD) FindElements(by, value string) ([]WebElement, os.Error) {
-	response, err := wd.find(by, value, "s")
+func (wd *remoteWD) FindElement(by, value string) (WebElement, os.Error) {
+	response, err := wd.find(by, value, "", "")
 	if err != nil {
 		return nil, err
 	}
 
+	return decodeElement(wd, response)
+}
+
+func decodeElements(wd *remoteWD, data []byte) ([]WebElement, os.Error) {
 	reply := new(elementsReply)
-	err = json.Unmarshal(response, reply)
+	err := json.Unmarshal(data, reply)
 	if err != nil {
 		return nil, err
 	}
@@ -383,10 +386,18 @@ func (wd *remoteWD) FindElements(by, value string) ([]WebElement, os.Error) {
 	elems := make([]WebElement, len(reply.Value))
 	for i, elem := range(reply.Value) {
 		elems[i] = &remoteWE{wd, elem.ELEMENT}
-
 	}
 
 	return elems, nil
+}
+
+func (wd *remoteWD) FindElements(by, value string) ([]WebElement, os.Error) {
+	response, err := wd.find(by, value, "s", "")
+	if err != nil {
+		return nil, err
+	}
+
+	return decodeElements(wd, response)
 }
 
 func (wd *remoteWD) Close() os.Error {
@@ -571,3 +582,24 @@ func (elem *remoteWE) MoveTo(xOffset, yOffset int) os.Error {
 	_, err = elem.parent.execute("POST", url, data)
 	return err
 }
+
+func (elem *remoteWE) FindElement(by, value string) (WebElement, os.Error) {
+	url := fmt.Sprintf("/session/%%s/element/%s/element", elem.id)
+	response, err := elem.parent.find(by, value, "", url)
+	if err != nil {
+		return nil, err
+	}
+
+	return decodeElement(elem.parent, response)
+}
+
+func (elem *remoteWE) FindElements(by, value string) ([]WebElement, os.Error) {
+	url := fmt.Sprintf("/session/%%s/element/%s/element", elem.id)
+	response, err := elem.parent.find(by, value, "s", url)
+	if err != nil {
+		return nil, err
+	}
+
+	return decodeElements(elem.parent, response)
+}
+
