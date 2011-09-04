@@ -45,8 +45,12 @@ type WebDriver interface {
 	Refresh() os.Error
 	Title() (string, os.Error)
 	PageSource() (string, os.Error)
+	Close() os.Error
 	FindElement(by, value string) (WebElement, os.Error)
 	FindElements(by, value string) ([]WebElement, os.Error)
+	ActiveElement() (WebElement, os.Error)
+	SwitchWindow(name string) os.Error
+	SwitchFrame(frame string) os.Error
 }
 
 type WebElement interface {

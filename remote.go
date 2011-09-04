@@ -174,6 +174,24 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, os.Error) 
 
 }
 
+func NewRemote(capabilities *Capabilities, executor string,
+		 profile BrowserProfile) (WebDriver, os.Error) {
+
+	if len(executor) == 0 {
+		executor = DEFAULT_EXECUTOR
+	}
+
+	// FIXME: Handle profile
+	wd := &remoteWD{Executor: executor,
+		Capabilities: capabilities,
+		profile:      profile}
+
+	wd.NewSession()
+
+
+	return wd, nil
+}
+
 func (wd *remoteWD) Status() (*Status, os.Error) {
 	url := wd.requestURL("/status")
 	reply, err := wd.execute("GET", url, nil)
@@ -362,22 +380,50 @@ func (wd *remoteWD) FindElements(by, value string) ([]WebElement, os.Error) {
 	return elems, nil
 }
 
-func NewRemote(capabilities *Capabilities, executor string,
-		 profile BrowserProfile) (WebDriver, os.Error) {
+func (wd *remoteWD) Close() os.Error {
+	url := wd.requestURL("/session/%s/window", wd.SessionId)
+	_, err := wd.execute("DELETE", url, nil)
+	return err
+}
 
-	if len(executor) == 0 {
-		executor = DEFAULT_EXECUTOR
+func (wd *remoteWD) SwitchWindow(name string) os.Error {
+	params := map[string]string {
+		"name" : name,
+	}
+	data, err := json.Marshal(params)
+	if err != nil {
+		return err
+	}
+	url := wd.requestURL("/session/%s/window", wd.SessionId)
+	_, err = wd.execute("POST", url, data)
+	return err
+}
+
+func (wd *remoteWD) SwitchFrame(frame string) os.Error {
+	params := map[string]string {
+		"id" : frame,
+	}
+	data, err := json.Marshal(params)
+	if err != nil {
+		return err
+	}
+	url := wd.requestURL("/session/%s/frame", wd.SessionId)
+	_, err = wd.execute("POST", url, data)
+	return err
+}
+
+func (wd *remoteWD) ActiveElement() (WebElement, os.Error) {
+	url := wd.requestURL("/session/%s/element/active", wd.SessionId)
+	response, err := wd.execute("GET", url, nil)
+
+	reply := new(elementReply)
+	err = json.Unmarshal(response, reply)
+	if err != nil {
+		return nil, err
 	}
 
-	// FIXME: Handle profile
-	wd := &remoteWD{Executor: executor,
-		Capabilities: capabilities,
-		profile:      profile}
-
-	wd.NewSession()
-
-
-	return wd, nil
+	elem := &remoteWE{wd, reply.Value.ELEMENT}
+	return elem, nil
 }
 
 type remoteWE struct {
