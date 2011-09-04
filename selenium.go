@@ -33,9 +33,12 @@ type Status struct {
 }
 
 type Cookie struct {
-	Name, Value, Path, Domain string
-	Secure bool
-	Expiry uint
+	Name string `json:"name"`
+	Value string `json:"value"`
+	Path string `json:"path"`
+	Domain string `json:"domain"`
+	Secure bool `json:"secure"`
+	Expiry uint `json:"expiry"`
 }
 
 type WebDriver interface {
@@ -58,6 +61,7 @@ type WebDriver interface {
 	SwitchWindow(name string) os.Error
 	SwitchFrame(frame string) os.Error
 	GetCookies() ([]Cookie, os.Error)
+	AddCookie(cookie *Cookie) os.Error
 }
 
 type WebElement interface {

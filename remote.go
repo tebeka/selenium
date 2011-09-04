@@ -445,6 +445,20 @@ func (wd *remoteWD) GetCookies() ([]Cookie, os.Error) {
 	return reply.Value, nil
 }
 
+func (wd *remoteWD) AddCookie(cookie *Cookie) os.Error {
+	params := map[string]*Cookie {
+		"cookie" : cookie,
+	}
+	data, err := json.Marshal(params)
+	if err != nil {
+		return err
+	}
+
+	url := wd.requestURL("/session/%s/cookie", wd.SessionId)
+	_, err = wd.execute("POST", url, data)
+	return err
+}
+
 type remoteWE struct {
 	parent *remoteWD
 	id string
