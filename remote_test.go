@@ -9,9 +9,14 @@ var caps = &Capabilities {
 	"browserName": "firefox",
 }
 
+
+func newRemote() WebDriver {
+	wd, _ := NewRemote(caps, "", "")
+	return wd
+}
 /*
 func TestStatus(t *testing.T) {
-	wd, err := NewRemote(nil, "", nil)
+	wd, err := NewRemote(nil, "", "")
 	if err != nil {
 		t.Error(err.String())
 	}
@@ -45,7 +50,7 @@ func TestNewSession(t *testing.T) {
 }
 
 func TestCurrentWindowHandle(t *testing.T) {
-	wd, _ := NewRemote(caps, "", nil)
+	wd := newRemote()
 	defer wd.Quit()
 
 	handle, err := wd.CurrentWindowHandle()
@@ -60,7 +65,7 @@ func TestCurrentWindowHandle(t *testing.T) {
 }
 
 func TestWindowHandles(t *testing.T) {
-	wd, _ := NewRemote(caps, "", nil)
+	wd := newRemote()
 	defer wd.Quit()
 
 	handles, err := wd.CurrentWindowHandle()
@@ -74,7 +79,7 @@ func TestWindowHandles(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	wd, _ := NewRemote(caps, "", nil)
+	wd := newRemote(caps)
 	defer wd.Quit()
 
 	url := "http://www.google.com/"
@@ -94,7 +99,7 @@ func TestGet(t *testing.T) {
 }
 
 func TestNavigation(t *testing.T) {
-	wd, _ := NewRemote(caps, "", nil)
+	wd := newRemote()
 	defer wd.Quit()
 
 	url1 := "http://www.google.com/"
@@ -137,7 +142,7 @@ func TestNavigation(t *testing.T) {
 }
 
 func TestTitle(t *testing.T) {
-	wd, _ := NewRemote(caps, "", nil)
+	wd := newRemote()
 	defer wd.Quit()
 
 	_, err := wd.Title()
@@ -147,7 +152,7 @@ func TestTitle(t *testing.T) {
 }
 
 func TestPageSource(t *testing.T) {
-	wd, _ := NewRemote(caps, "", nil)
+	wd := newRemote()
 	defer wd.Quit()
 
 	_, err := wd.PageSource()
@@ -157,7 +162,7 @@ func TestPageSource(t *testing.T) {
 }
 
 func TestFindElement(t *testing.T) {
-	wd, _ := NewRemote(caps, "", nil)
+	wd := newRemote()
 	defer wd.Quit()
 
 	wd.Get("http://www.google.com")
@@ -181,7 +186,7 @@ func TestFindElement(t *testing.T) {
 }
 
 func TestFindElements(t *testing.T) {
-	wd, _ := NewRemote(caps, "", nil)
+	wd := newRemote()
 	defer wd.Quit()
 
 	wd.Get("http://www.google.com")
@@ -210,7 +215,7 @@ func TestFindElements(t *testing.T) {
 }
 
 func TestSendKeys(t *testing.T) {
-	wd, _ := NewRemote(caps, "", nil)
+	wd := newRemote()
 	defer wd.Quit()
 
 	wd.Get("http://www.yahoo.com")
@@ -235,7 +240,7 @@ func TestSendKeys(t *testing.T) {
 }
 
 func TestClick(t *testing.T) {
-	wd, _ := NewRemote(caps, "", nil)
+	wd := newRemote()
 	defer wd.Quit()
 
 	wd.Get("http://www.yahoo.com")
@@ -268,7 +273,7 @@ func TestClick(t *testing.T) {
 }
 
 func TestGetCookies(t *testing.T) {
-	wd, _ := NewRemote(caps, "", nil)
+	wd := newRemote()
 	defer wd.Quit()
 
 	wd.Get("http://www.google.com")
@@ -287,7 +292,7 @@ func TestGetCookies(t *testing.T) {
 }
 
 func TestAddCookie(t *testing.T) {
-	wd, _ := NewRemote(caps, "", nil)
+	wd := newRemote()
 	defer wd.Quit()
 
 	wd.Get("http://www.google.com")
@@ -312,7 +317,7 @@ func TestAddCookie(t *testing.T) {
 */
 
 func TestDeleteCookie(t *testing.T) {
-	wd, _ := NewRemote(caps, "", nil)
+	wd := newRemote()
 	defer wd.Quit()
 
 	wd.Get("http://www.google.com")

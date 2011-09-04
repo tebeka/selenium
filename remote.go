@@ -1,4 +1,8 @@
-/* Remote Selenium client */
+/* Remote Selenium client implementation.
+
+See http://code.google.com/p/selenium/wiki/JsonWireProtocol for wire protocol.
+*/
+
 package selenium
 
 import (
@@ -11,6 +15,7 @@ import (
 	"json"
 )
 
+/* Errors returned by Selenium server. */
 var errors = map[int]string{
 	7:  "no such element",
 	8:  "no such frame",
@@ -44,7 +49,8 @@ const (
 type remoteWD struct {
 	SessionId, Executor string
 	Capabilities        *Capabilities
-	profile             BrowserProfile
+	// FIXME
+	// profile             BrowserProfile
 }
 
 type serverReply struct {
@@ -178,19 +184,19 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, os.Error) 
 }
 
 func NewRemote(capabilities *Capabilities, executor string,
-		 profile BrowserProfile) (WebDriver, os.Error) {
+		 profileDir string) (WebDriver, os.Error) {
 
 	if len(executor) == 0 {
 		executor = DEFAULT_EXECUTOR
 	}
 
+	wd := &remoteWD{Executor: executor, Capabilities: capabilities}
 	// FIXME: Handle profile
-	wd := &remoteWD{Executor: executor,
-		Capabilities: capabilities,
-		profile:      profile}
 
-	wd.NewSession()
-
+	_, err := wd.NewSession()
+	if err != nil {
+		return nil, err
+	}
 
 	return wd, nil
 }
@@ -471,6 +477,33 @@ func (wd *remoteWD) DeleteCookie(name string) os.Error {
 	return err
 }
 
+func (wd *remoteWD) Click(button int) os.Error {
+	params := map[string]int {
+		"button": button,
+	}
+	data, err := json.Marshal(params)
+	if err != nil {
+		return err
+	}
+	url := wd.requestURL("/session/%s/click", wd.SessionId)
+	_, err = wd.execute("POST", url, data)
+	return err
+}
+
+func (wd *remoteWD) DoubleClick() os.Error {
+	return wd.voidCommand("/session/%s/doubleclick")
+}
+
+func (wd *remoteWD) ButtonDown() os.Error {
+	return wd.voidCommand("/session/%s/buttondown")
+}
+
+func (wd *remoteWD) ButtonUp() os.Error {
+	return wd.voidCommand("/session/%s/buttonup")
+}
+
+// Elements
+
 type remoteWE struct {
 	parent *remoteWD
 	id string
@@ -503,6 +536,7 @@ func (elem *remoteWE) SendKeys(keys string) os.Error {
 	return err
 }
 
+
 func (elem *remoteWE) TagName() (string, os.Error) {
 	urlTemplate := fmt.Sprintf("/session/%%s/element/%s/name", elem.id)
 	return elem.parent.stringCommand(urlTemplate)
@@ -521,4 +555,19 @@ func (elem *remoteWE) Submit() os.Error {
 func (elem *remoteWE) Clear() os.Error{
 	urlTemplate := fmt.Sprintf("/session/%%s/element/%s/clear", elem.id)
 	return elem.parent.voidCommand(urlTemplate)
+}
+
+func (elem *remoteWE) MoveTo(xOffset, yOffset int) os.Error {
+	params := map[string]interface{} {
+		"element" : elem.id,
+		"xoffset" : xOffset,
+		"yoffset" : yOffset,
+	}
+	data, err := json.Marshal(params)
+	if err != nil {
+		return err
+	}
+	url := elem.parent.requestURL("/session/%s/moveto", elem.parent.SessionId)
+	_, err = elem.parent.execute("POST", url, data)
+	return err
 }
