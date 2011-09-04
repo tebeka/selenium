@@ -1,7 +1,7 @@
 package selenium
 
 import (
-	"strings"
+//	"strings"
 	"testing"
 )
 
@@ -9,6 +9,7 @@ var caps = &Capabilities {
 	"browserName": "firefox",
 }
 
+/*
 func TestStatus(t *testing.T) {
 	wd, err := NewRemote(nil, "", nil)
 	if err != nil {
@@ -283,4 +284,29 @@ func TestGetCookies(t *testing.T) {
 	if len(cookies[0].Name) == 0 {
 		t.Error("Empty cookie")
 	}
+}
+*/
+
+func TestAddCookie(t *testing.T) {
+	wd, _ := NewRemote(caps, "", nil)
+	defer wd.Quit()
+
+	wd.Get("http://www.google.com")
+	cookie := &Cookie{Name: "the nameless cookie", Value: "I have nothing"}
+	err := wd.AddCookie(cookie)
+	if err != nil {
+		t.Error(err.String())
+	}
+
+	cookies, err := wd.GetCookies()
+	if err != nil {
+		t.Error(err.String())
+	}
+	for _, c := range(cookies) {
+		if (c.Name == cookie.Name) && (c.Value == cookie.Value) {
+			return
+		}
+	}
+
+	t.Error("Can't find new cookie")
 }
