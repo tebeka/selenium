@@ -7,7 +7,7 @@ import (
 var caps = &Capabilities {
 	"browserName": "firefox",
 }
-
+/*
 func TestStatus(t *testing.T) {
 	wd, err := NewRemote(nil, "", nil)
 	if err != nil {
@@ -151,5 +151,30 @@ func TestPageSource(t *testing.T) {
 	_, err := wd.PageSource()
 	if err != nil {
 		t.Error(err.String())
+	}
+}
+*/
+
+func TestFindElement(t *testing.T) {
+	wd, _ := NewRemote(caps, "", nil)
+	defer wd.Quit()
+
+	wd.Get("http://www.google.com")
+	elem, err := wd.FindElement(ByName, "btnK")
+	if err != nil {
+		t.Error(err.String())
+	}
+
+	we, ok := elem.(*remoteWE)
+	if !ok {
+		t.Error("Can't convert to *remoteWE")
+	}
+
+	if len(we.id) == 0 {
+		t.Error("Empty element")
+	}
+
+	if we.parent != wd {
+		t.Error("Bad parent")
 	}
 }
