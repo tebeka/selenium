@@ -1,13 +1,13 @@
 package selenium
 
 import (
+	"strings"
 	"testing"
 )
 
 var caps = &Capabilities {
 	"browserName": "firefox",
 }
-/*
 func TestStatus(t *testing.T) {
 	wd, err := NewRemote(nil, "", nil)
 	if err != nil {
@@ -177,7 +177,6 @@ func TestFindElement(t *testing.T) {
 		t.Error("Bad parent")
 	}
 }
-*/
 
 func TestFindElements(t *testing.T) {
 	wd, _ := NewRemote(caps, "", nil)
@@ -205,5 +204,63 @@ func TestFindElements(t *testing.T) {
 
 	if we.parent != wd {
 		t.Error("Bad parent")
+	}
+}
+
+func TestSendKeys(t *testing.T) {
+	wd, _ := NewRemote(caps, "", nil)
+	defer wd.Quit()
+
+	wd.Get("http://www.yahoo.com")
+	input, err := wd.FindElement(ByName, "p")
+	if err != nil {
+		t.Error(err.String())
+	}
+	err = input.SendKeys("golang\n")
+	if err != nil {
+		t.Error(err.String())
+	}
+
+	source, err := wd.PageSource()
+	if err != nil {
+		t.Error(err.String())
+	}
+
+	if !strings.Contains(source, "The Go Programming Language") {
+		t.Error("Google can't find Go")
+	}
+
+}
+
+func TestClick(t *testing.T) {
+	wd, _ := NewRemote(caps, "", nil)
+	defer wd.Quit()
+
+	wd.Get("http://www.yahoo.com")
+	input, err := wd.FindElement(ByName, "p")
+	if err != nil {
+		t.Error(err.String())
+	}
+	err = input.SendKeys("golang")
+	if err != nil {
+		t.Error(err.String())
+	}
+
+	button, err := wd.FindElement(ById, "search-submit")
+	if err != nil {
+		t.Error(err.String())
+	}
+	err = button.Click()
+	if err != nil {
+		t.Error(err.String())
+	}
+
+	source, err := wd.PageSource()
+	if err != nil {
+		t.Error(err.String())
+	}
+
+	if !strings.Contains(source, "The Go Programming Language") {
+		t.Error("Google can't find Go")
 	}
 }

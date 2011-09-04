@@ -51,4 +51,5 @@ type WebDriver interface {
 
 type WebElement interface {
 	Click() os.Error
+	SendKeys(keys string) os.Error
 }

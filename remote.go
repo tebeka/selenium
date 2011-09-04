@@ -389,3 +389,25 @@ func (elem *remoteWE) Click() os.Error {
 	urlTemplate := fmt.Sprintf("/session/%%s/element/%s/click", elem.id)
 	return elem.parent.voidCommand(urlTemplate)
 }
+
+func (elem *remoteWE) SendKeys(keys string) os.Error {
+	sid := elem.parent.SessionId
+	urlTemplate := fmt.Sprintf("/session/%s/element/%s/value", sid, elem.id)
+	url := elem.parent.requestURL(urlTemplate)
+
+	chars := make([]string, len(keys))
+	for i, c := range(keys) {
+		chars[i] = string(c)
+	}
+	params := map[string][]string {
+		"value" : chars,
+	}
+
+	data, err := json.Marshal(params)
+	if err != nil {
+		return err
+	}
+
+	_, err = elem.parent.execute("POST", url, data)
+	return err
+}
