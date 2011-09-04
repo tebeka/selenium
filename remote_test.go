@@ -161,6 +161,8 @@ func TestPageSource(t *testing.T) {
 	}
 }
 
+*/
+
 func TestFindElement(t *testing.T) {
 	wd := newRemote()
 	defer wd.Quit()
@@ -213,6 +215,8 @@ func TestFindElements(t *testing.T) {
 		t.Error("Bad parent")
 	}
 }
+
+/*
 
 func TestSendKeys(t *testing.T) {
 	wd := newRemote()
