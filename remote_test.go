@@ -161,8 +161,6 @@ func TestPageSource(t *testing.T) {
 	}
 }
 
-*/
-
 func TestFindElement(t *testing.T) {
 	wd := newRemote()
 	defer wd.Quit()
@@ -215,8 +213,6 @@ func TestFindElements(t *testing.T) {
 		t.Error("Bad parent")
 	}
 }
-
-/*
 
 func TestSendKeys(t *testing.T) {
 	wd := newRemote()
@@ -318,7 +314,6 @@ func TestAddCookie(t *testing.T) {
 
 	t.Error("Can't find new cookie")
 }
-*/
 
 func TestDeleteCookie(t *testing.T) {
 	wd := newRemote()
@@ -347,4 +342,24 @@ func TestDeleteCookie(t *testing.T) {
 		}
 	}
 
+}
+*/
+func TestLocation(t *testing.T) {
+	wd := newRemote()
+	defer wd.Quit()
+
+	wd.Get("http://www.yahoo.com")
+	button, err := wd.FindElement(ById, "search-submit")
+	if err != nil {
+		t.Error(err.String())
+	}
+
+	loc, err := button.Location()
+	if err != nil {
+		t.Error(err.String())
+	}
+
+	if (loc.X == 0) || (loc.Y == 0) {
+		t.Errorf("Bad location: %v\n", loc)
+	}
 }
