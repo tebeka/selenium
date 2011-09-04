@@ -62,6 +62,8 @@ type WebDriver interface {
 	SwitchFrame(frame string) os.Error
 	GetCookies() ([]Cookie, os.Error)
 	AddCookie(cookie *Cookie) os.Error
+	DeleteAllCookies() os.Error
+	DeleteCookie(name string) os.Error
 }
 
 type WebElement interface {

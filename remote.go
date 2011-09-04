@@ -459,6 +459,18 @@ func (wd *remoteWD) AddCookie(cookie *Cookie) os.Error {
 	return err
 }
 
+func (wd *remoteWD) DeleteAllCookies() os.Error {
+	url := wd.requestURL("/session/%s/cookie", wd.SessionId)
+	_, err := wd.execute("DELETE", url, nil)
+	return err
+}
+
+func (wd *remoteWD) DeleteCookie(name string) os.Error {
+	url := wd.requestURL("/session/%s/cookie/%s", wd.SessionId, name)
+	_, err := wd.execute("DELETE", url, nil)
+	return err
+}
+
 type remoteWE struct {
 	parent *remoteWD
 	id string
