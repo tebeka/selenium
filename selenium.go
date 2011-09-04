@@ -143,4 +143,9 @@ type WebElement interface {
 	FindElement(by, value string) (WebElement, os.Error)
 	/* Find children, return list of elements. */
 	FindElements(by, value string) ([]WebElement, os.Error)
+
+	// Porperties
+	IsSelected() (bool, os.Error)
+	IsEnabled() (bool, os.Error)
+	IsDiaplayed() (bool, os.Error)
 }

@@ -47,8 +47,8 @@ const (
 
 
 type remoteWD struct {
-	SessionId, Executor string
-	Capabilities        *Capabilities
+	id, executor string
+	capabilities        *Capabilities
 	// FIXME
 	// profile             BrowserProfile
 }
@@ -66,6 +66,9 @@ type stringReply struct {
 }
 type stringsReply struct {
 	Value []string
+}
+type boolReply struct {
+	Value bool
 }
 type element struct {
 	ELEMENT string
@@ -116,7 +119,7 @@ func isRedirect(response *http.Response) bool {
 
 func (wd *remoteWD) requestURL(template string, args ...interface{}) string {
 	path := fmt.Sprintf(template, args...)
-	return wd.Executor + path
+	return wd.executor + path
 }
 
 
@@ -190,7 +193,7 @@ func NewRemote(capabilities *Capabilities, executor string,
 		executor = DEFAULT_EXECUTOR
 	}
 
-	wd := &remoteWD{Executor: executor, Capabilities: capabilities}
+	wd := &remoteWD{executor: executor, capabilities: capabilities}
 	// FIXME: Handle profile
 
 	_, err := wd.NewSession()
@@ -220,7 +223,7 @@ func (wd *remoteWD) Status() (*Status, os.Error) {
 func (wd *remoteWD) NewSession() (string, os.Error) {
 	message := map[string]interface{}{
 		"sessionId":           nil,
-		"desiredCapabilities": wd.Capabilities,
+		"desiredCapabilities": wd.capabilities,
 	}
 	data, err := json.Marshal(message)
 	if err != nil {
@@ -236,23 +239,23 @@ func (wd *remoteWD) NewSession() (string, os.Error) {
 	reply := new(serverReply)
 	json.Unmarshal(response, reply)
 
-	wd.SessionId = *reply.SessionId
+	wd.id = *reply.SessionId
 
-	return wd.SessionId, nil
+	return wd.id, nil
 }
 
 func (wd *remoteWD) Quit() os.Error {
-	url := wd.requestURL("/session/%s", wd.SessionId)
+	url := wd.requestURL("/session/%s", wd.id)
 	_, err := wd.execute("DELETE", url, nil)
 	if err == nil {
-		wd.SessionId = ""
+		wd.id = ""
 	}
 
 	return err
 }
 
 func (wd *remoteWD) stringCommand(urlTemplate string) (string, os.Error) {
-	url := wd.requestURL(urlTemplate, wd.SessionId)
+	url := wd.requestURL(urlTemplate, wd.id)
 	response, err := wd.execute("GET", url, nil)
 	if err != nil {
 		return "", err
@@ -272,7 +275,7 @@ func (wd *remoteWD) CurrentWindowHandle() (string, os.Error) {
 }
 
 func (wd *remoteWD) WindowHandles() ([]string, os.Error) {
-	url := wd.requestURL("/session/%s/window_handles", wd.SessionId)
+	url := wd.requestURL("/session/%s/window_handles", wd.id)
 	response, err := wd.execute("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -284,7 +287,7 @@ func (wd *remoteWD) WindowHandles() ([]string, os.Error) {
 }
 
 func (wd *remoteWD) CurrentURL() (string, os.Error) {
-	url := wd.requestURL("/session/%s/url", wd.SessionId)
+	url := wd.requestURL("/session/%s/url", wd.id)
 	response, err := wd.execute("GET", url, nil)
 	if err != nil {
 		return "", err
@@ -297,7 +300,7 @@ func (wd *remoteWD) CurrentURL() (string, os.Error) {
 }
 
 func (wd *remoteWD) Get(url string) os.Error {
-	requestURL := wd.requestURL("/session/%s/url", wd.SessionId)
+	requestURL := wd.requestURL("/session/%s/url", wd.id)
 	params := map[string]string {
 		"url" : url,
 	}
@@ -311,7 +314,7 @@ func (wd *remoteWD) Get(url string) os.Error {
 }
 
 func (wd *remoteWD) voidCommand(urlTemplate string) os.Error {
-	url := wd.requestURL(urlTemplate, wd.SessionId)
+	url := wd.requestURL(urlTemplate, wd.id)
 	_, err := wd.execute("POST", url, nil)
 	return err
 
@@ -352,7 +355,7 @@ func (wd *remoteWD) find(by, value, suffix, url string) ([]byte, os.Error) {
 	}
 
 	urlTemplate := url + suffix
-	url = wd.requestURL(urlTemplate, wd.SessionId)
+	url = wd.requestURL(urlTemplate, wd.id)
 	return wd.execute("POST", url, data)
 }
 
@@ -401,7 +404,7 @@ func (wd *remoteWD) FindElements(by, value string) ([]WebElement, os.Error) {
 }
 
 func (wd *remoteWD) Close() os.Error {
-	url := wd.requestURL("/session/%s/window", wd.SessionId)
+	url := wd.requestURL("/session/%s/window", wd.id)
 	_, err := wd.execute("DELETE", url, nil)
 	return err
 }
@@ -414,7 +417,7 @@ func (wd *remoteWD) SwitchWindow(name string) os.Error {
 	if err != nil {
 		return err
 	}
-	url := wd.requestURL("/session/%s/window", wd.SessionId)
+	url := wd.requestURL("/session/%s/window", wd.id)
 	_, err = wd.execute("POST", url, data)
 	return err
 }
@@ -427,13 +430,13 @@ func (wd *remoteWD) SwitchFrame(frame string) os.Error {
 	if err != nil {
 		return err
 	}
-	url := wd.requestURL("/session/%s/frame", wd.SessionId)
+	url := wd.requestURL("/session/%s/frame", wd.id)
 	_, err = wd.execute("POST", url, data)
 	return err
 }
 
 func (wd *remoteWD) ActiveElement() (WebElement, os.Error) {
-	url := wd.requestURL("/session/%s/element/active", wd.SessionId)
+	url := wd.requestURL("/session/%s/element/active", wd.id)
 	response, err := wd.execute("GET", url, nil)
 
 	reply := new(elementReply)
@@ -447,7 +450,7 @@ func (wd *remoteWD) ActiveElement() (WebElement, os.Error) {
 }
 
 func (wd *remoteWD) GetCookies() ([]Cookie, os.Error) {
-	url := wd.requestURL("/session/%s/cookie", wd.SessionId)
+	url := wd.requestURL("/session/%s/cookie", wd.id)
 	data, err := wd.execute("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -471,19 +474,19 @@ func (wd *remoteWD) AddCookie(cookie *Cookie) os.Error {
 		return err
 	}
 
-	url := wd.requestURL("/session/%s/cookie", wd.SessionId)
+	url := wd.requestURL("/session/%s/cookie", wd.id)
 	_, err = wd.execute("POST", url, data)
 	return err
 }
 
 func (wd *remoteWD) DeleteAllCookies() os.Error {
-	url := wd.requestURL("/session/%s/cookie", wd.SessionId)
+	url := wd.requestURL("/session/%s/cookie", wd.id)
 	_, err := wd.execute("DELETE", url, nil)
 	return err
 }
 
 func (wd *remoteWD) DeleteCookie(name string) os.Error {
-	url := wd.requestURL("/session/%s/cookie/%s", wd.SessionId, name)
+	url := wd.requestURL("/session/%s/cookie/%s", wd.id, name)
 	_, err := wd.execute("DELETE", url, nil)
 	return err
 }
@@ -496,7 +499,7 @@ func (wd *remoteWD) Click(button int) os.Error {
 	if err != nil {
 		return err
 	}
-	url := wd.requestURL("/session/%s/click", wd.SessionId)
+	url := wd.requestURL("/session/%s/click", wd.id)
 	_, err = wd.execute("POST", url, data)
 	return err
 }
@@ -526,7 +529,7 @@ func (elem *remoteWE) Click() os.Error {
 }
 
 func (elem *remoteWE) SendKeys(keys string) os.Error {
-	sid := elem.parent.SessionId
+	sid := elem.parent.id
 	urlTemplate := fmt.Sprintf("/session/%s/element/%s/value", sid, elem.id)
 	url := elem.parent.requestURL(urlTemplate)
 
@@ -578,7 +581,7 @@ func (elem *remoteWE) MoveTo(xOffset, yOffset int) os.Error {
 	if err != nil {
 		return err
 	}
-	url := elem.parent.requestURL("/session/%s/moveto", elem.parent.SessionId)
+	url := elem.parent.requestURL("/session/%s/moveto", elem.parent.id)
 	_, err = elem.parent.execute("POST", url, data)
 	return err
 }
@@ -603,3 +606,32 @@ func (elem *remoteWE) FindElements(by, value string) ([]WebElement, os.Error) {
 	return decodeElements(elem.parent, response)
 }
 
+func (elem *remoteWE) boolQuery(urlTemplate string) (bool, os.Error) {
+	wd := elem.parent
+	url := wd.requestURL(urlTemplate, wd.id, elem.id)
+	response, err := wd.execute("GET", url, nil)
+	if err != nil {
+		return false, err
+	}
+
+	reply := new(boolReply)
+	err = json.Unmarshal(response, reply)
+	if err != nil {
+		return false, err
+	}
+
+	return reply.Value, nil
+}
+
+	// Porperties
+func (elem *remoteWE) IsSelected() (bool, os.Error) {
+	return elem.boolQuery("/session/%s/element/%s/selected")
+}
+
+func (elem *remoteWE) IsEnabled() (bool, os.Error) {
+	return elem.boolQuery("/session/%s/element/%s/enabled")
+}
+
+func (elem *remoteWE) IsDiaplayed() (bool, os.Error) {
+	return elem.boolQuery("/session/%s/element/%s/displayed")
+}

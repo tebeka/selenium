@@ -32,7 +32,7 @@ func TestStatus(t *testing.T) {
 }
 
 func TestNewSession(t *testing.T) {
-	wd := &remoteWD{Capabilities: caps, Executor: DEFAULT_EXECUTOR}
+	wd := &remoteWD{capabilities: caps, executor: DEFAULT_EXECUTOR}
 	sid, err := wd.NewSession()
 	defer wd.Quit()
 
@@ -44,7 +44,7 @@ func TestNewSession(t *testing.T) {
 		t.Error("Empty session id")
 	}
 
-	if wd.SessionId != sid {
+	if wd.id != sid {
 		t.Error("Session id mismatch")
 	}
 }
