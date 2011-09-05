@@ -183,7 +183,6 @@ type WebElement interface {
 	Clear() os.Error
 	/* Move mouse to relative coordinates */
 	MoveTo(xOffset, yOffset int) os.Error
-//	GetAttribute(name string) (interface{}, os.Error)
 
 	/* Find children, return one element. */
 	FindElement(by, value string) (WebElement, os.Error)
