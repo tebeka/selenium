@@ -148,9 +148,13 @@ type WebDriver interface {
 	SendModifier(modifier string, isDown bool) os.Error
 
 	// Alerts
+	/* Dismiss current alert. */
 	DismissAlert() os.Error
+	/* Accept current alert. */
 	AcceptAlert() os.Error
+	/* Current alert text. */
 	AlertText() (string, os.Error)
+	/* Set current alert text. */
 	SetAlertText(text string) os.Error
 }
 
@@ -177,11 +181,20 @@ type WebElement interface {
 	FindElements(by, value string) ([]WebElement, os.Error)
 
 	// Porperties
+	/* Check if element is selected. */
 	IsSelected() (bool, os.Error)
+	/* Check if element is enabled. */
 	IsEnabled() (bool, os.Error)
+	/* Check if element is displayed. */
 	IsDiaplayed() (bool, os.Error)
+	/* Get element attribute. */
 	GetAttribute(name string) (string, os.Error)
+	/* Element location. */
 	Location() (*Point, os.Error)
+	/* Element location once it has been scrolled into view. */
+	LocationInView() (*Point, os.Error)
+	/* Element size */
 	Size() (*Size, os.Error)
+	/* Get element CSS property value. */
 	CSSProperty(name string) (string, os.Error)
 }

@@ -703,9 +703,10 @@ func (elem *remoteWE) GetAttribute(name string) (string, os.Error) {
 	return *reply.Value, nil
 }
 
-func (elem *remoteWE) Location() (*Point, os.Error) {
+func (elem *remoteWE) location(suffix string) (*Point, os.Error) {
 	wd := elem.parent
-	url := wd.requestURL("/session/%s/element/%s/location", wd.id, elem.id)
+	path := "/session/%s/element/%s/location" + suffix
+	url := wd.requestURL(path, wd.id, elem.id)
 	response, err := wd.execute("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -717,6 +718,14 @@ func (elem *remoteWE) Location() (*Point, os.Error) {
 	}
 
 	return &reply.Value, nil
+}
+
+func (elem *remoteWE) Location() (*Point, os.Error) {
+	return elem.location("")
+}
+
+func (elem *remoteWE) LocationInView() (*Point, os.Error) {
+	return elem.location("_in_view")
 }
 
 func (elem *remoteWE) Size() (*Size, os.Error) {
