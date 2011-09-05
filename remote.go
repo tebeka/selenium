@@ -538,6 +538,35 @@ func (wd *remoteWD) SendModifier(modifier string, isDown bool) os.Error {
 	return err
 }
 
+func (wd *remoteWD)	DismissAlert() os.Error {
+	return wd.voidCommand("/session/%s/dismiss_alert")
+}
+
+
+func (wd *remoteWD)	AcceptAlert() os.Error {
+	return wd.voidCommand("/session/%s/accept_alert")
+}
+
+
+func (wd *remoteWD)	AlertText() (string, os.Error) {
+	return wd.stringCommand("/session/%s/alert_text")
+}
+
+func (wd *remoteWD) SetAlertText(text string) os.Error {
+	params := map[string]string {
+		"text": text,
+	}
+	data, err := json.Marshal(params)
+	if err != nil {
+		return err
+	}
+
+	url := wd.requestURL("/session/%s/alert_text", wd.id)
+	_, err = wd.execute("POST", url, data)
+	return err
+}
+
+
 // Elements
 
 type remoteWE struct {
@@ -645,7 +674,7 @@ func (elem *remoteWE) boolQuery(urlTemplate string) (bool, os.Error) {
 	return reply.Value, nil
 }
 
-	// Porperties
+// Porperties
 func (elem *remoteWE) IsSelected() (bool, os.Error) {
 	return elem.boolQuery("/session/%s/element/%s/selected")
 }
