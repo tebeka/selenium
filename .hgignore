@@ -4,4 +4,3 @@ syntax: glob
 *.out
 _testmain.go
 t.go
-selenium.log
