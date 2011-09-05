@@ -53,11 +53,13 @@ type remoteWD struct {
 	// profile             BrowserProfile
 }
 
+/* Server reply */
 type serverReply struct {
-	SessionId *string
+	SessionId *string // sessionId can be null
 	Status    int
 }
 
+/* Various reply types, we use them to json.Unmarshal replies */
 type statusReply struct {
 	Value Status
 }
@@ -162,8 +164,10 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, os.Error) 
 		return nil, os.NewError(string(buf))
 	}
 
+	/* Some bug(?) in Selenium gets us nil values in output, json.Unmarshal is
+	* not happy about that. 
+	*/
 	cleanNils(buf)
-
 	reply := new(serverReply)
 	if isMimeType(response, JSON_TYPE) {
 		err := json.Unmarshal(buf, reply)
@@ -213,6 +217,8 @@ func NewRemote(capabilities *Capabilities, executor string, profileDir string) (
 
 	return wd, nil
 }
+
+// WebDriver interface implementation
 
 func (wd *remoteWD) Status() (*Status, os.Error) {
 	url := wd.requestURL("/status")
@@ -601,7 +607,7 @@ func (wd *remoteWD) Screenshot() ([]byte, os.Error) {
 	return ioutil.ReadAll(decoder)
 }
 
-// Elements
+// WebElement interface implementation
 
 type remoteWE struct {
 	parent *remoteWD
