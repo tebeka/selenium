@@ -191,6 +191,7 @@ type WebElement interface {
 	FindElements(by, value string) ([]WebElement, os.Error)
 
 	// Porperties
+
 	/* Check if element is selected. */
 	IsSelected() (bool, os.Error)
 	/* Check if element is enabled. */
