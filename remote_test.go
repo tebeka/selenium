@@ -436,3 +436,36 @@ func TestScreenshot(t *testing.T) {
 		t.Error("Empty reply")
 	}
 }
+
+func TestIsSelected(t *testing.T) {
+	wd := newRemote()
+	defer wd.Quit()
+
+	wd.Get("http://www.google.com/advanced_image_search?hl=en")
+	elem, err := wd.FindElement(ById, "cc_com")
+	if err != nil {
+		t.Error("Can't find element")
+	}
+	selected, err := elem.IsSelected()
+	if err != nil {
+		t.Error("Can't get selection")
+	}
+
+	if selected {
+		t.Error("Already selected")
+	}
+
+	err = elem.Click()
+	if err != nil {
+		t.Errorf("Can't click")
+	}
+
+	selected, err = elem.IsSelected()
+	if err != nil {
+		t.Error("Can't get selection")
+	}
+
+	if !selected {
+		t.Error("Not selected")
+	}
+}
