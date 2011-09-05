@@ -421,3 +421,18 @@ func TestExecuteScript(t *testing.T) {
 		t.Error("Bad result %d (expected 3)", result)
 	}
 }
+
+func TestScreenshot(t *testing.T) {
+	wd := newRemote()
+	defer wd.Quit()
+
+	wd.Get("http://www.yahoo.com")
+	data, err := wd.Screenshot()
+	if err != nil {
+		t.Error(err.String())
+	}
+
+	if len(data) == 0 {
+		t.Error("Empty reply")
+	}
+}
