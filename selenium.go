@@ -177,4 +177,5 @@ type WebElement interface {
 	GetAttribute(name string) (string, os.Error)
 	Location() (*Point, os.Error)
 	Size() (*Size, os.Error)
+	CSSProperty(name string) (string, os.Error)
 }

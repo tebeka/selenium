@@ -705,3 +705,9 @@ func (elem *remoteWE) Size() (*Size, os.Error) {
 
 	return &reply.Value, nil
 }
+
+func (elem *remoteWE) CSSProperty(name string) (string, os.Error) {
+	wd := elem.parent
+	urlTemplate := fmt.Sprintf("/session/%s/element/%s/css/%s", wd.id, elem.id, name)
+	return elem.parent.stringCommand(urlTemplate)
+}
