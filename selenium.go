@@ -149,6 +149,7 @@ type WebDriver interface {
 		modifier can be one of ShiftKey, ControlKey, AltKey, MetaKey.
 	*/
 	SendModifier(modifier string, isDown bool) os.Error
+	Screenshot() ([]byte, os.Error)
 
 	// Alerts
 	/* Dismiss current alert. */
