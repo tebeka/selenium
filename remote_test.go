@@ -1,7 +1,7 @@
 package selenium
 
 import (
-//	"strings"
+	"strings"
 	"testing"
 )
 
@@ -14,12 +14,10 @@ func newRemote() WebDriver {
 	wd, _ := NewRemote(caps, "", "")
 	return wd
 }
-/*
+
 func TestStatus(t *testing.T) {
-	wd, err := NewRemote(nil, "", "")
-	if err != nil {
-		t.Error(err.String())
-	}
+	wd := newRemote()
+	defer wd.Quit()
 
 	status, err := wd.Status()
 	if err != nil {
@@ -79,7 +77,7 @@ func TestWindowHandles(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	wd := newRemote(caps)
+	wd := newRemote()
 	defer wd.Quit()
 
 	url := "http://www.google.com/"
@@ -343,7 +341,6 @@ func TestDeleteCookie(t *testing.T) {
 	}
 
 }
-*/
 func TestLocation(t *testing.T) {
 	wd := newRemote()
 	defer wd.Quit()
@@ -361,5 +358,25 @@ func TestLocation(t *testing.T) {
 
 	if (loc.X == 0) || (loc.Y == 0) {
 		t.Errorf("Bad location: %v\n", loc)
+	}
+}
+
+func TestSize(t *testing.T) {
+	wd := newRemote()
+	defer wd.Quit()
+
+	wd.Get("http://www.yahoo.com")
+	button, err := wd.FindElement(ById, "search-submit")
+	if err != nil {
+		t.Error(err.String())
+	}
+
+	size, err := button.Size()
+	if err != nil {
+		t.Error(err.String())
+	}
+
+	if (size.Width == 0) || (size.Height == 0) {
+		t.Errorf("Bad size: %v\n", size)
 	}
 }

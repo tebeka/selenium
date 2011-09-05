@@ -54,10 +54,14 @@ type Status struct {
 	OS
 }
 
-/* Point (for locations) */
+/* Point */
 type Point struct {
-	X int `json:"x"`
-	Y int `json:"y"`
+	X, Y int
+}
+
+/* Size */
+type Size struct {
+	Width, Height int
 }
 
 /* Cookie */
@@ -172,4 +176,5 @@ type WebElement interface {
 	IsDiaplayed() (bool, os.Error)
 	GetAttribute(name string) (string, os.Error)
 	Location() (*Point, os.Error)
+	Size() (*Size, os.Error)
 }
