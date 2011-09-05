@@ -192,6 +192,11 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, os.Error) 
 	return nil, nil
 }
 
+/* Create new remote client, this will also start a new session.
+   capabilities - the desired capabilities, see http://goo.gl/SNlAk
+   executor - the URL to the Selenim server
+   profileDir - Firefox profile directory (unsupported)
+*/
 func NewRemote(capabilities *Capabilities, executor string, profileDir string) (WebDriver, os.Error) {
 
 	if len(executor) == 0 {
