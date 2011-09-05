@@ -156,6 +156,12 @@ type WebDriver interface {
 	AlertText() (string, os.Error)
 	/* Set current alert text. */
 	SetAlertText(text string) os.Error
+
+	// Scripts
+	/* Execute a script. */
+	ExecuteScript(script string, args []interface{}) (interface{}, os.Error)
+	/* Execute a script async. */
+	ExecuteScriptAsync(script string, args []interface{}) (interface{}, os.Error)
 }
 
 type WebElement interface {

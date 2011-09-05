@@ -1,7 +1,7 @@
 package selenium
 
 import (
-	"strings"
+	//	"strings"
 	"testing"
 )
 
@@ -14,7 +14,7 @@ func newRemote() WebDriver {
 	wd, _ := NewRemote(caps, "", "")
 	return wd
 }
-
+/*
 func TestStatus(t *testing.T) {
 	wd := newRemote()
 	defer wd.Quit()
@@ -398,5 +398,27 @@ func TestSize(t *testing.T) {
 
 	if (size.Width == 0) || (size.Height == 0) {
 		t.Errorf("Bad size: %v\n", size)
+	}
+}
+*/
+
+func TestExecuteScript(t *testing.T) {
+	wd := newRemote()
+	defer wd.Quit()
+
+	script := "return arguments[0] + arguments[1]"
+	args := []interface{}{1, 2}
+	reply, err := wd.ExecuteScript(script, args)
+	if err != nil {
+		t.Error(err.String())
+	}
+
+	result, ok := reply.(float64)
+	if !ok {
+		t.Error("Not an int reply")
+	}
+
+	if result != 3 {
+		t.Error("Bad result %d (expected 3)", result)
 	}
 }
