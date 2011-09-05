@@ -85,6 +85,9 @@ type cookiesReply struct {
 type locationReply struct {
 	Value Point
 }
+type sizeReply struct {
+	Value Size
+}
 
 func isMimeType(response *http.Response, mtype string) bool {
 	if ctype, ok := response.Header["Content-Type"]; ok {
@@ -679,6 +682,22 @@ func (elem *remoteWE) Location() (*Point, os.Error) {
 		return nil, err
 	}
 	reply := new(locationReply)
+	err = json.Unmarshal(response, reply)
+	if err != nil {
+		return nil, err
+	}
+
+	return &reply.Value, nil
+}
+
+func (elem *remoteWE) Size() (*Size, os.Error) {
+	wd := elem.parent
+	url := wd.requestURL("/session/%s/element/%s/size", wd.id, elem.id)
+	response, err := wd.execute("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	reply := new(sizeReply)
 	err = json.Unmarshal(response, reply)
 	if err != nil {
 		return nil, err
