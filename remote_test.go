@@ -361,6 +361,26 @@ func TestLocation(t *testing.T) {
 	}
 }
 
+func TestLocationInView(t *testing.T) {
+	wd := newRemote()
+	defer wd.Quit()
+
+	wd.Get("http://www.yahoo.com")
+	button, err := wd.FindElement(ById, "search-submit")
+	if err != nil {
+		t.Error(err.String())
+	}
+
+	loc, err := button.LocationInView()
+	if err != nil {
+		t.Error(err.String())
+	}
+
+	if (loc.X == 0) || (loc.Y == 0) {
+		t.Errorf("Bad location: %v\n", loc)
+	}
+}
+
 func TestSize(t *testing.T) {
 	wd := newRemote()
 	defer wd.Quit()
