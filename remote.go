@@ -7,6 +7,7 @@ package selenium
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"http"
 	"strings"
@@ -44,7 +45,6 @@ const (
 	DEFAULT_EXECUTOR = "http://127.0.0.1:4444/wd/hub"
 	JSON_TYPE        = "application/json"
 )
-
 
 type remoteWD struct {
 	id, executor string
@@ -171,7 +171,7 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, os.Error) 
 			return nil, err
 		}
 
-		if reply.Status != 0 {
+		if reply.Status != SUCCESS {
 			message, ok := errors[reply.Status]
 			if !ok {
 				message = fmt.Sprintf("unknown error - %d", reply.Status)
@@ -180,8 +180,6 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, os.Error) 
 			return nil, os.NewError(message)
 		}
 		return buf, err
-	} else if isMimeType(response, "image/png") {
-		// FIXME: Handle images
 	}
 
 	ctype, ok := response.Header["Content-Type"]
@@ -192,7 +190,6 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, os.Error) 
 
 	// Nothing was returned, this is OK for some commands
 	return nil, nil
-
 }
 
 func NewRemote(capabilities *Capabilities, executor string, profileDir string) (WebDriver, os.Error) {
@@ -603,6 +600,17 @@ func (wd *remoteWD) ExecuteScriptAsync(script string, args []interface{}) (inter
 	return wd.execScript(script, args, "_async")
 }
 
+func (wd *remoteWD) Screenshot() ([]byte, os.Error) {
+	data, err := wd.stringCommand("/session/%s/screenshot")
+	if err != nil {
+		return nil, err
+	}
+
+	// Selenium returns base64 encoded image
+	buf := []byte(data)
+	decoder := base64.NewDecoder(base64.StdEncoding, bytes.NewBuffer(buf))
+	return ioutil.ReadAll(decoder)
+}
 
 // Elements
 
