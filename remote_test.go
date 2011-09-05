@@ -1,7 +1,7 @@
 package selenium
 
 import (
-	//	"strings"
+	"strings"
 	"testing"
 )
 
@@ -14,7 +14,7 @@ func newRemote() WebDriver {
 	wd, _ := NewRemote(caps, "", "")
 	return wd
 }
-/*
+
 func TestStatus(t *testing.T) {
 	wd := newRemote()
 	defer wd.Quit()
@@ -400,7 +400,6 @@ func TestSize(t *testing.T) {
 		t.Errorf("Bad size: %v\n", size)
 	}
 }
-*/
 
 func TestExecuteScript(t *testing.T) {
 	wd := newRemote()
