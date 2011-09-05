@@ -48,7 +48,7 @@ const (
 
 type remoteWD struct {
 	id, executor string
-	capabilities        *Capabilities
+	capabilities *Capabilities
 	// FIXME
 	// profile             BrowserProfile
 }
@@ -87,6 +87,9 @@ type locationReply struct {
 }
 type sizeReply struct {
 	Value Size
+}
+type anyReply struct {
+	Value interface{}
 }
 
 func isMimeType(response *http.Response, mtype string) bool {
@@ -192,8 +195,7 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, os.Error) 
 
 }
 
-func NewRemote(capabilities *Capabilities, executor string,
-		 profileDir string) (WebDriver, os.Error) {
+func NewRemote(capabilities *Capabilities, executor string, profileDir string) (WebDriver, os.Error) {
 
 	if len(executor) == 0 {
 		executor = DEFAULT_EXECUTOR
@@ -307,8 +309,8 @@ func (wd *remoteWD) CurrentURL() (string, os.Error) {
 
 func (wd *remoteWD) Get(url string) os.Error {
 	requestURL := wd.requestURL("/session/%s/url", wd.id)
-	params := map[string]string {
-		"url" : url,
+	params := map[string]string{
+		"url": url,
 	}
 	data, err := json.Marshal(params)
 	if err != nil {
@@ -347,9 +349,9 @@ func (wd *remoteWD) PageSource() (string, os.Error) {
 }
 
 func (wd *remoteWD) find(by, value, suffix, url string) ([]byte, os.Error) {
-	params := map[string]string {
-		"using" : by,
-		"value" : value,
+	params := map[string]string{
+		"using": by,
+		"value": value,
 	}
 	data, err := json.Marshal(params)
 	if err != nil {
@@ -393,7 +395,7 @@ func decodeElements(wd *remoteWD, data []byte) ([]WebElement, os.Error) {
 	}
 
 	elems := make([]WebElement, len(reply.Value))
-	for i, elem := range(reply.Value) {
+	for i, elem := range reply.Value {
 		elems[i] = &remoteWE{wd, elem.ELEMENT}
 	}
 
@@ -416,8 +418,8 @@ func (wd *remoteWD) Close() os.Error {
 }
 
 func (wd *remoteWD) SwitchWindow(name string) os.Error {
-	params := map[string]string {
-		"name" : name,
+	params := map[string]string{
+		"name": name,
 	}
 	data, err := json.Marshal(params)
 	if err != nil {
@@ -429,8 +431,8 @@ func (wd *remoteWD) SwitchWindow(name string) os.Error {
 }
 
 func (wd *remoteWD) SwitchFrame(frame string) os.Error {
-	params := map[string]string {
-		"id" : frame,
+	params := map[string]string{
+		"id": frame,
 	}
 	data, err := json.Marshal(params)
 	if err != nil {
@@ -472,8 +474,8 @@ func (wd *remoteWD) GetCookies() ([]Cookie, os.Error) {
 }
 
 func (wd *remoteWD) AddCookie(cookie *Cookie) os.Error {
-	params := map[string]*Cookie {
-		"cookie" : cookie,
+	params := map[string]*Cookie{
+		"cookie": cookie,
 	}
 	data, err := json.Marshal(params)
 	if err != nil {
@@ -498,7 +500,7 @@ func (wd *remoteWD) DeleteCookie(name string) os.Error {
 }
 
 func (wd *remoteWD) Click(button int) os.Error {
-	params := map[string]int {
+	params := map[string]int{
 		"button": button,
 	}
 	data, err := json.Marshal(params)
@@ -523,9 +525,9 @@ func (wd *remoteWD) ButtonUp() os.Error {
 }
 
 func (wd *remoteWD) SendModifier(modifier string, isDown bool) os.Error {
-	params := map[string]interface{} {
-		"value" : modifier,
-		"isdown" : isDown,
+	params := map[string]interface{}{
+		"value":  modifier,
+		"isdown": isDown,
 	}
 
 	data, err := json.Marshal(params)
@@ -538,22 +540,22 @@ func (wd *remoteWD) SendModifier(modifier string, isDown bool) os.Error {
 	return err
 }
 
-func (wd *remoteWD)	DismissAlert() os.Error {
+func (wd *remoteWD) DismissAlert() os.Error {
 	return wd.voidCommand("/session/%s/dismiss_alert")
 }
 
 
-func (wd *remoteWD)	AcceptAlert() os.Error {
+func (wd *remoteWD) AcceptAlert() os.Error {
 	return wd.voidCommand("/session/%s/accept_alert")
 }
 
 
-func (wd *remoteWD)	AlertText() (string, os.Error) {
+func (wd *remoteWD) AlertText() (string, os.Error) {
 	return wd.stringCommand("/session/%s/alert_text")
 }
 
 func (wd *remoteWD) SetAlertText(text string) os.Error {
-	params := map[string]string {
+	params := map[string]string{
 		"text": text,
 	}
 	data, err := json.Marshal(params)
@@ -566,12 +568,47 @@ func (wd *remoteWD) SetAlertText(text string) os.Error {
 	return err
 }
 
+func (wd *remoteWD) execScript(script string, args []interface{}, suffix string) (interface{}, os.Error) {
+	params := map[string]interface{} {
+		"script": script,
+		"args": args,
+	}
+
+	data, err := json.Marshal(params)
+	if err != nil {
+		return nil, err
+	}
+
+	template := "/session/%s/execute" + suffix
+	url := wd.requestURL(template, wd.id)
+	response, err := wd.execute("POST", url, data)
+	if err != nil {
+		return nil, err
+	}
+
+	reply := new(anyReply)
+	err = json.Unmarshal(response, reply)
+	if err != nil {
+		return nil, err
+	}
+
+	return reply.Value, nil
+}
+
+func (wd *remoteWD) ExecuteScript(script string, args []interface{}) (interface{}, os.Error) {
+	return wd.execScript(script, args, "")
+}
+
+func (wd *remoteWD) ExecuteScriptAsync(script string, args []interface{}) (interface{}, os.Error) {
+	return wd.execScript(script, args, "_async")
+}
+
 
 // Elements
 
 type remoteWE struct {
 	parent *remoteWD
-	id string
+	id     string
 }
 
 func (elem *remoteWE) Click() os.Error {
@@ -585,11 +622,11 @@ func (elem *remoteWE) SendKeys(keys string) os.Error {
 	url := elem.parent.requestURL(urlTemplate)
 
 	chars := make([]string, len(keys))
-	for i, c := range(keys) {
+	for i, c := range keys {
 		chars[i] = string(c)
 	}
-	params := map[string][]string {
-		"value" : chars,
+	params := map[string][]string{
+		"value": chars,
 	}
 
 	data, err := json.Marshal(params)
@@ -617,16 +654,16 @@ func (elem *remoteWE) Submit() os.Error {
 	return elem.parent.voidCommand(urlTemplate)
 }
 
-func (elem *remoteWE) Clear() os.Error{
+func (elem *remoteWE) Clear() os.Error {
 	urlTemplate := fmt.Sprintf("/session/%%s/element/%s/clear", elem.id)
 	return elem.parent.voidCommand(urlTemplate)
 }
 
 func (elem *remoteWE) MoveTo(xOffset, yOffset int) os.Error {
-	params := map[string]interface{} {
-		"element" : elem.id,
-		"xoffset" : xOffset,
-		"yoffset" : yOffset,
+	params := map[string]interface{}{
+		"element": elem.id,
+		"xoffset": xOffset,
+		"yoffset": yOffset,
 	}
 	data, err := json.Marshal(params)
 	if err != nil {
