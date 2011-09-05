@@ -169,20 +169,20 @@ type WebDriver interface {
 }
 
 type WebElement interface {
+	// Manipulation
+
 	/* Click on element */
 	Click() os.Error
 	/* Send keys (type) into element */
 	SendKeys(keys string) os.Error
-	/* Element name */
-	TagName() (string, os.Error)
-	/* Text of element */
-	Text() (string, os.Error)
 	/* Submit */
 	Submit() os.Error
 	/* Clear */
 	Clear() os.Error
 	/* Move mouse to relative coordinates */
 	MoveTo(xOffset, yOffset int) os.Error
+
+	// Finding
 
 	/* Find children, return one element. */
 	FindElement(by, value string) (WebElement, os.Error)
@@ -191,6 +191,10 @@ type WebElement interface {
 
 	// Porperties
 
+	/* Element name */
+	TagName() (string, os.Error)
+	/* Text of element */
+	Text() (string, os.Error)
 	/* Check if element is selected. */
 	IsSelected() (bool, os.Error)
 	/* Check if element is enabled. */
