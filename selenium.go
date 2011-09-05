@@ -1,4 +1,7 @@
-/* Selenium client. */
+/* Selenium client.
+
+Version: 0.1.0
+*/
 package selenium
 
 import (

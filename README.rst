@@ -23,6 +23,24 @@ See here_.
 
 .. _here: https://bitbucket.org/tebeka/go-selenium/src/tip/ChangeLog
 
+TODO
+====
+* Support screenshots
+* Support Firefox profiles
+* Finish full `Selenium API`_.
+* More testing
+* Our own server for testing (getting out takes too much time)
+* `SauceLabs`_ integration
+
+.. _`Selenium API`: http://code.google.com/p/selenium/wiki/JsonWireProtocol
+.. _`SauceLabs`: http://saucelabs.com/docs/quickstart
+
+Hacking
+=======
+You'll need a Selenium server to run the tests, run `selenium.sh download` to
+get it and `selenium.sh start` to run it.
+
+Test with `gotest -v`.
 
 License
 =======
