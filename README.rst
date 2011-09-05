@@ -25,7 +25,6 @@ See here_.
 
 TODO
 ====
-* Support screenshots
 * Support Firefox profiles
 * Finish full `Selenium API`_.
 * More testing
