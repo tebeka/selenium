@@ -28,6 +28,7 @@ TODO
 * Support Firefox profiles
 * Finish full `Selenium API`_.
 * More testing
+* Selenium 1 client
 * Our own server for testing (getting out takes too much time)
 * `SauceLabs`_ integration
 
