@@ -1,19 +1,63 @@
 package selenium
 
 import (
+	"flag"
+	"fmt"
+	"io/ioutil"
+	"json"
+	"os"
 	"strings"
 	"testing"
+
 )
 
-var caps = &Capabilities {
+var caps = Capabilities {
 	"browserName": "firefox",
 }
 
-var executor = ""
+type sauceCfg struct {
+	User string
+	Key string
+}
+
+var runOnSauce *bool = flag.Bool("saucelabs", false, "run on sauce")
+
+func readSauce() (*sauceCfg, os.Error) {
+	data, err := ioutil.ReadFile("sauce.json")
+	if err != nil {
+		message := fmt.Sprintf("can't open sauce.json - %s\n", err)
+		return nil, os.NewError(message)
+	}
+	cfg := &sauceCfg{}
+	if err = json.Unmarshal(data, cfg); err != nil {
+		return nil, os.NewError(fmt.Sprintf("bad JSON- %s\n", err))
+	}
+
+	return cfg, nil
+}
+
+func newRemote(testName string, t *testing.T) WebDriver {
+	executor := ""
+	if *runOnSauce {
+		cfg, err := readSauce()
+		if err != nil {
+			t.Fatalf("can't read sauce config - %s", err)
+		}
+		caps["name"] = testName // SauceLabs
+		urlTemplate := "http://%s:%s@ondemand.saucelabs.com:80/wd/hub"
+		executor = fmt.Sprintf(urlTemplate, cfg.User, cfg.Key)
+	}
+	wd, err := NewRemote(caps, executor, "")
+	if err != nil {
+		t.Fatalf("can't start session - %s", err)
+	}
+
+	return wd
+}
 
 
 func TestStatus(t *testing.T) {
-	wd, err := NewRemote(caps, executor, "")
+	wd, err := newRemote("TestStatus", t)
 	if err != nil {
 		t.Fatal("No session")
 	}
@@ -30,6 +74,9 @@ func TestStatus(t *testing.T) {
 }
 
 func TestNewSession(t *testing.T) {
+	if *runOnSauce {
+		return
+	}
 	wd := &remoteWD{capabilities: caps, executor: DEFAULT_EXECUTOR}
 	sid, err := wd.NewSession()
 	defer wd.Quit()
@@ -48,7 +95,7 @@ func TestNewSession(t *testing.T) {
 }
 
 func TestCurrentWindowHandle(t *testing.T) {
-	wd, err := NewRemote(caps, executor, "")
+	wd, err := newRemote("TestCurrentWindowHandle", t)
 	if err != nil {
 		t.Fatal("No session")
 	}
@@ -67,7 +114,7 @@ func TestCurrentWindowHandle(t *testing.T) {
 }
 
 func TestWindowHandles(t *testing.T) {
-	wd, err := NewRemote(caps, executor, "")
+	wd, err := newRemote("TestWindowHandles", t)
 	if err != nil {
 		t.Fatal("No session")
 	}
@@ -85,7 +132,7 @@ func TestWindowHandles(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	wd, err := NewRemote(caps, executor, "")
+	wd, err := newRemote("TestGet", t)
 	if err != nil {
 		t.Fatal("No session")
 	}
@@ -109,7 +156,7 @@ func TestGet(t *testing.T) {
 }
 
 func TestNavigation(t *testing.T) {
-	wd, err := NewRemote(caps, executor, "")
+	wd, err := newRemote("TestNavigation", t)
 	if err != nil {
 		t.Fatal("No session")
 	}
@@ -156,7 +203,7 @@ func TestNavigation(t *testing.T) {
 }
 
 func TestTitle(t *testing.T) {
-	wd, err := NewRemote(caps, executor, "")
+	wd, err := newRemote("TestTitle", t)
 	if err != nil {
 		t.Fatal("No session")
 	}
@@ -170,7 +217,7 @@ func TestTitle(t *testing.T) {
 }
 
 func TestPageSource(t *testing.T) {
-	wd, err := NewRemote(caps, executor, "")
+	wd, err := newRemote("TestPageSource", t)
 	if err != nil {
 		t.Fatal("No session")
 	}
@@ -184,7 +231,7 @@ func TestPageSource(t *testing.T) {
 }
 
 func TestFindElement(t *testing.T) {
-	wd, err := NewRemote(caps, executor, "")
+	wd, err := newRemote("TestFindElement", t)
 	if err != nil {
 		t.Fatal("No session")
 	}
@@ -212,7 +259,7 @@ func TestFindElement(t *testing.T) {
 }
 
 func TestFindElements(t *testing.T) {
-	wd, err := NewRemote(caps, executor, "")
+	wd, err := newRemote("TestFindElements", t)
 	if err != nil {
 		t.Fatal("No session")
 	}
@@ -245,7 +292,7 @@ func TestFindElements(t *testing.T) {
 }
 
 func TestSendKeys(t *testing.T) {
-	wd, err := NewRemote(caps, executor, "")
+	wd, err := newRemote("TestSendKeys", t)
 	if err != nil {
 		t.Fatal("No session")
 	}
@@ -274,7 +321,7 @@ func TestSendKeys(t *testing.T) {
 }
 
 func TestClick(t *testing.T) {
-	wd, err := NewRemote(caps, executor, "")
+	wd, err := newRemote("TestClick", t)
 	if err != nil {
 		t.Fatal("No session")
 	}
@@ -311,7 +358,7 @@ func TestClick(t *testing.T) {
 }
 
 func TestGetCookies(t *testing.T) {
-	wd, err := NewRemote(caps, executor, "")
+	wd, err := newRemote("TestGetCookies", t)
 	if err != nil {
 		t.Fatal("No session")
 	}
@@ -334,7 +381,7 @@ func TestGetCookies(t *testing.T) {
 }
 
 func TestAddCookie(t *testing.T) {
-	wd, err := NewRemote(caps, executor, "")
+	wd, err := newRemote("TestAddCookie", t)
 	if err != nil {
 		t.Fatal("No session")
 	}
@@ -362,7 +409,7 @@ func TestAddCookie(t *testing.T) {
 }
 
 func TestDeleteCookie(t *testing.T) {
-	wd, err := NewRemote(caps, executor, "")
+	wd, err := newRemote("TestDeleteCookie", t)
 	if err != nil {
 		t.Fatal("No session")
 	}
@@ -394,7 +441,7 @@ func TestDeleteCookie(t *testing.T) {
 
 }
 func TestLocation(t *testing.T) {
-	wd, err := NewRemote(caps, executor, "")
+	wd, err := newRemote("TestLocation", t)
 	if err != nil {
 		t.Fatal("No session")
 	}
@@ -418,7 +465,7 @@ func TestLocation(t *testing.T) {
 }
 
 func TestLocationInView(t *testing.T) {
-	wd, err := NewRemote(caps, executor, "")
+	wd, err := newRemote("TestLocationInView", t)
 	if err != nil {
 		t.Fatal("No session")
 	}
@@ -442,7 +489,7 @@ func TestLocationInView(t *testing.T) {
 }
 
 func TestSize(t *testing.T) {
-	wd, err := NewRemote(caps, executor, "")
+	wd, err := newRemote("TestSize", t)
 	if err != nil {
 		t.Fatal("No session")
 	}
@@ -466,7 +513,7 @@ func TestSize(t *testing.T) {
 }
 
 func TestExecuteScript(t *testing.T) {
-	wd, err := NewRemote(caps, executor, "")
+	wd, err := newRemote("TestExecuteScript", t)
 	if err != nil {
 		t.Fatal("No session")
 	}
@@ -491,7 +538,7 @@ func TestExecuteScript(t *testing.T) {
 }
 
 func TestScreenshot(t *testing.T) {
-	wd, err := NewRemote(caps, executor, "")
+	wd, err := newRemote("TestScreenshot", t)
 	if err != nil {
 		t.Fatal("No session")
 	}
@@ -510,11 +557,7 @@ func TestScreenshot(t *testing.T) {
 }
 
 func TestIsSelected(t *testing.T) {
-	wd, err := NewRemote(caps, executor, "")
-	if err != nil {
-		t.Fatal("No session")
-	}
-
+	wd := newRemote("TestIsSelected", t)
 	defer wd.Quit()
 
 	wd.Get("http://www.google.com/advanced_image_search?hl=en")
