@@ -10,10 +10,11 @@ import (
 	"encoding/base64"
 	"fmt"
 	"http"
-	"strings"
-	"os"
 	"io/ioutil"
 	"json"
+	"log"
+	"os"
+	"strings"
 )
 
 /* Errors returned by Selenium server. */
@@ -94,6 +95,18 @@ type anyReply struct {
 	Value interface{}
 }
 
+var debugFlag = false
+func setDebug(debug bool) {
+	debugFlag = debug
+}
+
+func debugLog(format string, args ...interface{}) {
+	if !debugFlag {
+		return
+	}
+	log.Printf(format + "\n", args...)
+}
+
 func isMimeType(response *http.Response, mtype string) bool {
 	if ctype, ok := response.Header["Content-Type"]; ok {
 		return strings.HasPrefix(ctype[0], mtype)
@@ -135,6 +148,7 @@ func (wd *remoteWD) requestURL(template string, args ...interface{}) string {
 
 
 func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, os.Error) {
+	debugLog("-> %s %s\n%s", method, url, data)
 	request, err := newRequest(method, url, data)
 	if err != nil {
 		return nil, err
@@ -156,6 +170,8 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, os.Error) 
 	}
 
 	buf, err := ioutil.ReadAll(response.Body)
+	debugLog("<- %s [%s]\n%s",
+		     response.Status, response.Header["Content-Type"], buf)
 	if err != nil {
 		buf = []byte(response.Status)
 	}
@@ -168,8 +184,8 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, os.Error) 
 	* not happy about that. 
 	*/
 	cleanNils(buf)
-	reply := new(serverReply)
 	if isMimeType(response, JSON_TYPE) {
+		reply := new(serverReply)
 		err := json.Unmarshal(buf, reply)
 		if err != nil {
 			return nil, err
@@ -186,14 +202,8 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, os.Error) 
 		return buf, err
 	}
 
-	ctype, ok := response.Header["Content-Type"]
-	if ok {
-		err := os.NewError(fmt.Sprintf("unknown reply content type: %v", ctype))
-		return nil, err
-	}
-
 	// Nothing was returned, this is OK for some commands
-	return nil, nil
+	return buf, nil
 }
 
 /* Create new remote client, this will also start a new session.
