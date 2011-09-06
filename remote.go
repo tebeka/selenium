@@ -49,7 +49,7 @@ const (
 
 type remoteWD struct {
 	id, executor string
-	capabilities *Capabilities
+	capabilities Capabilities
 	// FIXME
 	// profile             BrowserProfile
 }
@@ -211,7 +211,7 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, os.Error) 
    executor - the URL to the Selenim server
    profileDir - Firefox profile directory (unsupported)
 */
-func NewRemote(capabilities *Capabilities, executor string, profileDir string) (WebDriver, os.Error) {
+func NewRemote(capabilities Capabilities, executor string, profileDir string) (WebDriver, os.Error) {
 
 	if len(executor) == 0 {
 		executor = DEFAULT_EXECUTOR
