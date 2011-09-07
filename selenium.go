@@ -1,6 +1,6 @@
 /* Selenium client.
 
-Version: 0.1.1
+Version: 0.1.2
 */
 package selenium
 

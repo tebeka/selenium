@@ -42,6 +42,8 @@ get it and `selenium.sh start` to run it.
 
 Test with `gotest -v`.
 
+I (Miki) work on `dev` branch since `goinstall` pull from default.
+
 License
 =======
 Copyright (C) 2010 Miki Tebeka <miki.tebeka@gmail.com>
