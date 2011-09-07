@@ -3,4 +3,5 @@ syntax: glob
 *.6
 *.out
 _testmain.go
+sauce.json
 t.go
