@@ -162,7 +162,7 @@ func TestNavigation(t *testing.T) {
 	}
 	url, _ := wd.CurrentURL()
 	if url != url1 {
-		t.Fatal("back go me to %s (expected %s)", url, url1)
+		t.Fatalf("back got me to %s (expected %s)", url, url1)
 	}
 	err = wd.Forward()
 	if err != nil {
