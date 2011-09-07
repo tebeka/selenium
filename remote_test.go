@@ -3,12 +3,12 @@ package selenium
 import (
 	"flag"
 	"fmt"
+	"http"
 	"io/ioutil"
 	"json"
 	"os"
 	"strings"
 	"testing"
-
 )
 
 var caps = Capabilities {
@@ -19,6 +19,9 @@ type sauceCfg struct {
 	User string
 	Key string
 }
+
+var serverPort = ":4793"
+var serverURL = "http://localhost" + serverPort + "/"
 
 var runOnSauce *bool = flag.Bool("saucelabs", false, "run on sauce")
 
@@ -38,7 +41,9 @@ func readSauce() (*sauceCfg, os.Error) {
 
 func newRemote(testName string, t *testing.T) WebDriver {
 	executor := ""
-	if *runOnSauce {
+	// FIXME: Since we use internal http server, we can use SauceLabs ...
+	//if *runOnSauce {
+	if false {
 		cfg, err := readSauce()
 		if err != nil {
 			t.Fatalf("can't read sauce config - %s", err)
@@ -54,7 +59,6 @@ func newRemote(testName string, t *testing.T) WebDriver {
 
 	return wd
 }
-
 
 func TestStatus(t *testing.T) {
 	wd := newRemote("TestStatus", t)
@@ -124,19 +128,18 @@ func TestGet(t *testing.T) {
 	wd := newRemote("TestGet", t)
 	defer wd.Quit()
 
-	url := "http://www.google.com/"
-	err := wd.Get(url)
+	err := wd.Get(serverURL)
 	if err != nil {
 		t.Fatal(err.String())
 	}
 
-	newUrl, err := wd.CurrentURL()
+	newURL, err := wd.CurrentURL()
 	if err != nil {
 		t.Fatal(err.String())
 	}
 
-	if newUrl != url {
-		t.Fatal("%s != %s", newUrl, url)
+	if newURL != serverURL {
+		t.Fatalf("%s != %s", newURL, serverURL)
 	}
 }
 
@@ -144,13 +147,13 @@ func TestNavigation(t *testing.T) {
 	wd := newRemote("TestNavigation", t)
 	defer wd.Quit()
 
-	url1 := "http://www.google.com/"
+	url1 := serverURL
 	err := wd.Get(url1)
 	if err != nil {
 		t.Fatal(err.String())
 	}
 
-	url2 := "http://golang.org/"
+	url2 := serverURL + "other"
 	err = wd.Get(url2)
 	if err != nil {
 		t.Fatal(err.String())
@@ -170,7 +173,7 @@ func TestNavigation(t *testing.T) {
 	}
 	url, _ = wd.CurrentURL()
 	if url != url2 {
-		t.Fatal("back go me to %s (expected %s)", url, url2)
+		t.Fatalf("forward got me to %s (expected %s)", url, url2)
 	}
 
 	err = wd.Refresh()
@@ -179,7 +182,7 @@ func TestNavigation(t *testing.T) {
 	}
 	url, _ = wd.CurrentURL()
 	if url != url2 {
-		t.Fatal("back go me to %s (expected %s)", url, url2)
+		t.Fatalf("refresh got me to %s (expected %s)", url, url2)
 	}
 }
 
@@ -187,9 +190,16 @@ func TestTitle(t *testing.T) {
 	wd := newRemote("TestTitle", t)
 	defer wd.Quit()
 
-	_, err := wd.Title()
+	wd.Get(serverURL)
+
+	title, err := wd.Title()
 	if err != nil {
 		t.Fatal(err.String())
+	}
+
+	expectedTitle := "Go Selenium Test Suite"
+	if title != expectedTitle {
+		t.Fatal("Bad title %s, should be %s", title, expectedTitle)
 	}
 }
 
@@ -197,9 +207,18 @@ func TestPageSource(t *testing.T) {
 	wd := newRemote("TestPageSource", t)
 	defer wd.Quit()
 
-	_, err := wd.PageSource()
+	err := wd.Get(serverURL)
 	if err != nil {
 		t.Fatal(err.String())
+	}
+
+	source, err := wd.PageSource()
+	if err != nil {
+		t.Fatal(err.String())
+	}
+
+	if !strings.Contains(source, "The home page.") {
+		t.Fatalf("Bad source\n%s", source)
 	}
 }
 
@@ -207,8 +226,8 @@ func TestFindElement(t *testing.T) {
 	wd := newRemote("TestFindElement", t)
 	defer wd.Quit()
 
-	wd.Get("http://www.google.com")
-	elem, err := wd.FindElement(ByName, "btnK")
+	wd.Get(serverURL)
+	elem, err := wd.FindElement(ByName, "q")
 	if err != nil {
 		t.Fatal(err.String())
 	}
@@ -231,8 +250,8 @@ func TestFindElements(t *testing.T) {
 	wd := newRemote("TestFindElements", t)
 	defer wd.Quit()
 
-	wd.Get("http://www.google.com")
-	elems, err := wd.FindElements(ByName, "btnK")
+	wd.Get(serverURL)
+	elems, err := wd.FindElements(ByName, "q")
 	if err != nil {
 		t.Fatal(err.String())
 	}
@@ -260,8 +279,8 @@ func TestSendKeys(t *testing.T) {
 	wd := newRemote("TestSendKeys", t)
 	defer wd.Quit()
 
-	wd.Get("http://www.yahoo.com")
-	input, err := wd.FindElement(ByName, "p")
+	wd.Get(serverURL)
+	input, err := wd.FindElement(ByName, "q")
 	if err != nil {
 		t.Fatal(err.String())
 	}
@@ -276,7 +295,11 @@ func TestSendKeys(t *testing.T) {
 	}
 
 	if !strings.Contains(source, "The Go Programming Language") {
-		t.Fatal("Google can't find Go")
+		t.Fatal("Can't find Go")
+	}
+
+	if !strings.Contains(source, "golang") {
+		t.Fatal("Can't find search query in source")
 	}
 
 }
@@ -285,8 +308,8 @@ func TestClick(t *testing.T) {
 	wd := newRemote("TestClick", t)
 	defer wd.Quit()
 
-	wd.Get("http://www.yahoo.com")
-	input, err := wd.FindElement(ByName, "p")
+	wd.Get(serverURL)
+	input, err := wd.FindElement(ByName, "q")
 	if err != nil {
 		t.Fatal(err.String())
 	}
@@ -295,7 +318,7 @@ func TestClick(t *testing.T) {
 		t.Fatal(err.String())
 	}
 
-	button, err := wd.FindElement(ById, "search-submit")
+	button, err := wd.FindElement(ById, "submit")
 	if err != nil {
 		t.Fatal(err.String())
 	}
@@ -310,7 +333,7 @@ func TestClick(t *testing.T) {
 	}
 
 	if !strings.Contains(source, "The Go Programming Language") {
-		t.Fatal("Google can't find Go")
+		t.Fatal("Can't find Go")
 	}
 }
 
@@ -318,7 +341,7 @@ func TestGetCookies(t *testing.T) {
 	wd := newRemote("TestGetCookies", t)
 	defer wd.Quit()
 
-	wd.Get("http://www.google.com")
+	wd.Get(serverURL)
 	cookies, err := wd.GetCookies()
 	if err != nil {
 		t.Fatal(err.String())
@@ -337,7 +360,7 @@ func TestAddCookie(t *testing.T) {
 	wd := newRemote("TestAddCookie", t)
 	defer wd.Quit()
 
-	wd.Get("http://www.google.com")
+	wd.Get(serverURL)
 	cookie := &Cookie{Name: "the nameless cookie", Value: "I have nothing"}
 	err := wd.AddCookie(cookie)
 	if err != nil {
@@ -361,10 +384,13 @@ func TestDeleteCookie(t *testing.T) {
 	wd := newRemote("TestDeleteCookie", t)
 	defer wd.Quit()
 
-	wd.Get("http://www.google.com")
+	wd.Get(serverURL)
 	cookies, err := wd.GetCookies()
 	if err != nil {
 		t.Fatal(err.String())
+	}
+	if len(cookies) == 0 {
+		t.Fatal("No cookies")
 	}
 	err = wd.DeleteCookie(cookies[0].Name)
 	if err != nil {
@@ -383,14 +409,14 @@ func TestDeleteCookie(t *testing.T) {
 			t.Fatal("Deleted cookie found")
 		}
 	}
-
 }
+
 func TestLocation(t *testing.T) {
 	wd := newRemote("TestLocation", t)
 	defer wd.Quit()
 
-	wd.Get("http://www.yahoo.com")
-	button, err := wd.FindElement(ById, "search-submit")
+	wd.Get(serverURL)
+	button, err := wd.FindElement(ById, "submit")
 	if err != nil {
 		t.Fatal(err.String())
 	}
@@ -409,8 +435,8 @@ func TestLocationInView(t *testing.T) {
 	wd := newRemote("TestLocationInView", t)
 	defer wd.Quit()
 
-	wd.Get("http://www.yahoo.com")
-	button, err := wd.FindElement(ById, "search-submit")
+	wd.Get(serverURL)
+	button, err := wd.FindElement(ById, "submit")
 	if err != nil {
 		t.Fatal(err.String())
 	}
@@ -429,8 +455,8 @@ func TestSize(t *testing.T) {
 	wd := newRemote("TestSize", t)
 	defer wd.Quit()
 
-	wd.Get("http://www.yahoo.com")
-	button, err := wd.FindElement(ById, "search-submit")
+	wd.Get(serverURL)
+	button, err := wd.FindElement(ById, "submit")
 	if err != nil {
 		t.Fatal(err.String())
 	}
@@ -470,7 +496,7 @@ func TestScreenshot(t *testing.T) {
 	wd := newRemote("TestScreenshot", t)
 	defer wd.Quit()
 
-	wd.Get("http://www.yahoo.com")
+	wd.Get(serverURL)
 	data, err := wd.Screenshot()
 	if err != nil {
 		t.Fatal(err.String())
@@ -485,8 +511,8 @@ func TestIsSelected(t *testing.T) {
 	wd := newRemote("TestIsSelected", t)
 	defer wd.Quit()
 
-	wd.Get("http://www.google.com/advanced_image_search?hl=en")
-	elem, err := wd.FindElement(ById, "cc_com")
+	wd.Get(serverURL)
+	elem, err := wd.FindElement(ById, "chuk")
 	if err != nil {
 		t.Fatal("Can't find element")
 	}
@@ -512,4 +538,80 @@ func TestIsSelected(t *testing.T) {
 	if !selected {
 		t.Fatal("Not selected")
 	}
+}
+
+// Test server
+
+var homePage = `
+<html>
+<head>
+	<title>Go Selenium Test Suite</title>
+</head>
+<body>
+	The home page. <br />
+	<form action="/search">
+		<input name="q" /> <input type="submit" id="submit"/> <br />
+		<input id="chuk" type="checkbox" /> A checkbox.
+	</form>
+</body>
+</html>
+`
+
+var otherPage = `
+<html>
+<head>
+	<title>Go Selenium Test Suite - Other Page</title>
+</head>
+<body>
+	The other page.
+</body>
+</html>
+`
+
+var searchPage = `
+<html>
+<head>
+	<title>Go Selenium Test Suite - Search Page</title>
+</head>
+<body>
+	You searched for "%s". I'll pretend I've found:
+	<p>
+	"The Go Programming Language"
+	</p>
+</body>
+</html>
+`
+
+var pages = map[string]string {
+	"/" : homePage,
+	"/other" : otherPage,
+	"/search" : searchPage,
+}
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	path := r.URL.Path
+	page, ok := pages[path]
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+
+	if path == "/search" {
+		r.ParseForm()
+		page = fmt.Sprintf(page, r.Form["q"][0])
+	}
+	// Some cookies for the tests
+	for i := 0; i < 3; i++ {
+		name := fmt.Sprintf("cookie-%d", i)
+		value := fmt.Sprintf("value-%d", i)
+		http.SetCookie(w, &http.Cookie{Name: name, Value: value})
+	}
+	fmt.Fprintf(w, page)
+}
+
+func init() {
+	go func() {
+		http.HandleFunc("/", handler)
+		http.ListenAndServe(serverPort, nil)
+	}()
 }
