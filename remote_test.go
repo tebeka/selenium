@@ -11,13 +11,13 @@ import (
 	"testing"
 )
 
-var caps = Capabilities {
+var caps = Capabilities{
 	"browserName": "firefox",
 }
 
 type sauceCfg struct {
 	User string
-	Key string
+	Key  string
 }
 
 var serverPort = ":4793"
@@ -260,7 +260,6 @@ func TestFindElements(t *testing.T) {
 		t.Fatal("Wrong number of elements %d (should be 1)", len(elems))
 	}
 
-
 	we, ok := elems[0].(*remoteWE)
 	if !ok {
 		t.Fatal("Can't convert to *remoteWE")
@@ -371,7 +370,7 @@ func TestAddCookie(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.String())
 	}
-	for _, c := range(cookies) {
+	for _, c := range cookies {
 		if (c.Name == cookie.Name) && (c.Value == cookie.Value) {
 			return
 		}
@@ -400,11 +399,11 @@ func TestDeleteCookie(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.String())
 	}
-	if len(newCookies) != len(cookies) - 1 {
+	if len(newCookies) != len(cookies)-1 {
 		t.Fatal("Cookie not deleted")
 	}
 
-	for _, c := range(newCookies) {
+	for _, c := range newCookies {
 		if c.Name == cookies[0].Name {
 			t.Fatal("Deleted cookie found")
 		}
@@ -582,10 +581,10 @@ var searchPage = `
 </html>
 `
 
-var pages = map[string]string {
-	"/" : homePage,
-	"/other" : otherPage,
-	"/search" : searchPage,
+var pages = map[string]string{
+	"/":       homePage,
+	"/other":  otherPage,
+	"/search": searchPage,
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
