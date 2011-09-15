@@ -4,10 +4,11 @@
 
 pidfile=/tmp/selenium.pid
 log=/tmp/selenium.log
-url=http://selenium.googlecode.com/files/selenium-server-standalone-2.5.0.jar
+jar=selenium-server-standalone-2.6.0.jar
+url=http://selenium.googlecode.com/files/$jar
 
 start() {
-    java -jar selenium-server-standalone-2.5.0.jar > $log 2>&1 &
+    java -jar $jar > $log 2>&1 &
     echo $! > $pidfile
 }
 
