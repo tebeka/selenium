@@ -5,11 +5,12 @@ selenium - Selenium Client For Go
 About
 =====
 This is a `Selenium`_ client for `Go`_.
-Currently it supports on the remote client, so you'll need a selenium server
-running.
+Currently it supports only the remote WebDriver client, so you'll need a
+`selenium server`_ running.
 
 .. _`Selenium`: http://seleniumhq.org/
 .. _`Go`: http://golang.org/
+.. _`selenium server`: http://seleniumhq.org/download/
 
 
 Changes
