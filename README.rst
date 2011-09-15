@@ -12,28 +12,24 @@ running.
 .. _`Go`: http://golang.org/
 
 
-Authors
-=======
-
-* Miki Tebeka <miki.tebeka@gmail.com>
-
 Changes
 =======
 See here_.
 
-.. _here: https://bitbucket.org/tebeka/go-selenium/src/tip/ChangeLog
+.. _here: ChangeLog
 
 TODO
 ====
 * Support Firefox profiles
 * Finish full `Selenium API`_.
 * More testing
-* Selenium 1 client
+* `Selenium 1`_ client
 * Our own server for testing (getting out takes too much time)
 * `SauceLabs`_ integration
 
 .. _`Selenium API`: http://code.google.com/p/selenium/wiki/JsonWireProtocol
 .. _`SauceLabs`: http://saucelabs.com/docs/quickstart
+.. _`Selenium 1`: http://wiki.openqa.org/display/SRC/Specifications+for+Selenium+Remote+Control+Client+Driver+Protocol
 
 Hacking
 =======
@@ -43,6 +39,12 @@ get it and `selenium.sh start` to run it.
 Test with `gotest -v`.
 
 I (Miki) work on `dev` branch since `goinstall` pull from default.
+
+Authors
+=======
+
+* Miki Tebeka <miki.tebeka@gmail.com>
+
 
 License
 =======
