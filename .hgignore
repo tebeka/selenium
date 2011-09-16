@@ -2,5 +2,7 @@ syntax: glob
 
 *.6
 *.out
+README.html
 _testmain.go
+sauce.json
 t.go

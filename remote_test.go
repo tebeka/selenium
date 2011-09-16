@@ -11,13 +11,13 @@ import (
 	"testing"
 )
 
-var caps = Capabilities {
+var caps = Capabilities{
 	"browserName": "firefox",
 }
 
 type sauceCfg struct {
 	User string
-	Key string
+	Key  string
 }
 
 var serverPort = ":4793"
@@ -66,7 +66,7 @@ func TestStatus(t *testing.T) {
 
 	status, err := wd.Status()
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 
 	if len(status.OS.Name) == 0 {
@@ -102,7 +102,7 @@ func TestCurrentWindowHandle(t *testing.T) {
 	handle, err := wd.CurrentWindowHandle()
 
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 
 	if len(handle) == 0 {
@@ -116,7 +116,7 @@ func TestWindowHandles(t *testing.T) {
 
 	handles, err := wd.CurrentWindowHandle()
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 
 	if len(handles) == 0 {
@@ -130,12 +130,12 @@ func TestGet(t *testing.T) {
 
 	err := wd.Get(serverURL)
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 
 	newURL, err := wd.CurrentURL()
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 
 	if newURL != serverURL {
@@ -150,18 +150,18 @@ func TestNavigation(t *testing.T) {
 	url1 := serverURL
 	err := wd.Get(url1)
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 
 	url2 := serverURL + "other"
 	err = wd.Get(url2)
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 
 	err = wd.Back()
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 	url, _ := wd.CurrentURL()
 	if url != url1 {
@@ -169,7 +169,7 @@ func TestNavigation(t *testing.T) {
 	}
 	err = wd.Forward()
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 	url, _ = wd.CurrentURL()
 	if url != url2 {
@@ -178,7 +178,7 @@ func TestNavigation(t *testing.T) {
 
 	err = wd.Refresh()
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 	url, _ = wd.CurrentURL()
 	if url != url2 {
@@ -194,7 +194,7 @@ func TestTitle(t *testing.T) {
 
 	title, err := wd.Title()
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 
 	expectedTitle := "Go Selenium Test Suite"
@@ -209,12 +209,12 @@ func TestPageSource(t *testing.T) {
 
 	err := wd.Get(serverURL)
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 
 	source, err := wd.PageSource()
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 
 	if !strings.Contains(source, "The home page.") {
@@ -229,7 +229,7 @@ func TestFindElement(t *testing.T) {
 	wd.Get(serverURL)
 	elem, err := wd.FindElement(ByName, "q")
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 
 	we, ok := elem.(*remoteWE)
@@ -253,13 +253,12 @@ func TestFindElements(t *testing.T) {
 	wd.Get(serverURL)
 	elems, err := wd.FindElements(ByName, "q")
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 
 	if len(elems) != 1 {
 		t.Fatal("Wrong number of elements %d (should be 1)", len(elems))
 	}
-
 
 	we, ok := elems[0].(*remoteWE)
 	if !ok {
@@ -282,16 +281,16 @@ func TestSendKeys(t *testing.T) {
 	wd.Get(serverURL)
 	input, err := wd.FindElement(ByName, "q")
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 	err = input.SendKeys("golang\n")
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 
 	source, err := wd.PageSource()
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 
 	if !strings.Contains(source, "The Go Programming Language") {
@@ -311,25 +310,25 @@ func TestClick(t *testing.T) {
 	wd.Get(serverURL)
 	input, err := wd.FindElement(ByName, "q")
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 	err = input.SendKeys("golang")
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 
 	button, err := wd.FindElement(ById, "submit")
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 	err = button.Click()
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 
 	source, err := wd.PageSource()
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 
 	if !strings.Contains(source, "The Go Programming Language") {
@@ -344,7 +343,7 @@ func TestGetCookies(t *testing.T) {
 	wd.Get(serverURL)
 	cookies, err := wd.GetCookies()
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 
 	if len(cookies) == 0 {
@@ -364,14 +363,14 @@ func TestAddCookie(t *testing.T) {
 	cookie := &Cookie{Name: "the nameless cookie", Value: "I have nothing"}
 	err := wd.AddCookie(cookie)
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 
 	cookies, err := wd.GetCookies()
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
-	for _, c := range(cookies) {
+	for _, c := range cookies {
 		if (c.Name == cookie.Name) && (c.Value == cookie.Value) {
 			return
 		}
@@ -387,24 +386,24 @@ func TestDeleteCookie(t *testing.T) {
 	wd.Get(serverURL)
 	cookies, err := wd.GetCookies()
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 	if len(cookies) == 0 {
 		t.Fatal("No cookies")
 	}
 	err = wd.DeleteCookie(cookies[0].Name)
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 	newCookies, err := wd.GetCookies()
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
-	if len(newCookies) != len(cookies) - 1 {
+	if len(newCookies) != len(cookies)-1 {
 		t.Fatal("Cookie not deleted")
 	}
 
-	for _, c := range(newCookies) {
+	for _, c := range newCookies {
 		if c.Name == cookies[0].Name {
 			t.Fatal("Deleted cookie found")
 		}
@@ -418,12 +417,12 @@ func TestLocation(t *testing.T) {
 	wd.Get(serverURL)
 	button, err := wd.FindElement(ById, "submit")
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 
 	loc, err := button.Location()
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 
 	if (loc.X == 0) || (loc.Y == 0) {
@@ -438,12 +437,12 @@ func TestLocationInView(t *testing.T) {
 	wd.Get(serverURL)
 	button, err := wd.FindElement(ById, "submit")
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 
 	loc, err := button.LocationInView()
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 
 	if (loc.X == 0) || (loc.Y == 0) {
@@ -458,12 +457,12 @@ func TestSize(t *testing.T) {
 	wd.Get(serverURL)
 	button, err := wd.FindElement(ById, "submit")
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 
 	size, err := button.Size()
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 
 	if (size.Width == 0) || (size.Height == 0) {
@@ -479,7 +478,7 @@ func TestExecuteScript(t *testing.T) {
 	args := []interface{}{1, 2}
 	reply, err := wd.ExecuteScript(script, args)
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 
 	result, ok := reply.(float64)
@@ -499,7 +498,7 @@ func TestScreenshot(t *testing.T) {
 	wd.Get(serverURL)
 	data, err := wd.Screenshot()
 	if err != nil {
-		t.Fatal(err.String())
+		t.Fatal(err)
 	}
 
 	if len(data) == 0 {
@@ -582,10 +581,10 @@ var searchPage = `
 </html>
 `
 
-var pages = map[string]string {
-	"/" : homePage,
-	"/other" : otherPage,
-	"/search" : searchPage,
+var pages = map[string]string{
+	"/":       homePage,
+	"/other":  otherPage,
+	"/search": searchPage,
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {

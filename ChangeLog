@@ -1,7 +1,12 @@
+2011-09-07 version 0.1.3
+    * Local test server, SauceLabs disabled
+    * Added run-tests.sh
+    * Stop tests on first error (t.Error -> t.Fatal)
+
 2011-09-06 version 0.1.2
     * Tests running on SauceLabs
     * More lax content-type checking
-    * Pass Capabilties (not *Capabilties)
+    * Pass Capabilities (not *Capabilties)
 
 2011-09-04 version 0.1.1
     * Screenshot
