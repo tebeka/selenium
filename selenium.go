@@ -1,6 +1,6 @@
 /* Selenium client.
 
-Version: 0.1.2
+Version: 0.1.3
 */
 package selenium
 
@@ -10,14 +10,14 @@ import (
 
 /* Element finding options */
 const (
-    ById = "id"
-    ByXPATH = "xpath"
-    ByLinkText = "link text"
-    ByPartialLinkText = "partial link text"
-    ByName = "name"
-    ByTagName = "tag name"
-    ByClassName = "class name"
-    ByCSSSelector = "css selector"
+	ById              = "id"
+	ByXPATH           = "xpath"
+	ByLinkText        = "link text"
+	ByPartialLinkText = "partial link text"
+	ByName            = "name"
+	ByTagName         = "tag name"
+	ByClassName       = "class name"
+	ByCSSSelector     = "css selector"
 )
 
 /* Mouse buttons */
@@ -31,14 +31,14 @@ const (
 http://code.google.com/p/selenium/wiki/JsonWireProtocol#/session/:sessionId/element/:id/value
 */
 const (
-	ShiftKey = string('\ue008')
+	ShiftKey   = string('\ue008')
 	ControlKey = string('\ue009')
-	AltKey = string('\ue00a')
-	MetaKey = string('\ue03d')
+	AltKey     = string('\ue00a')
+	MetaKey    = string('\ue03d')
 )
 
 /* Browser capabilities, see
-  http://code.google.com/p/selenium/wiki/JsonWireProtocol#Capabilities_JSON_Object
+http://code.google.com/p/selenium/wiki/JsonWireProtocol#Capabilities_JSON_Object
 */
 type Capabilities map[string]interface{}
 
@@ -69,12 +69,12 @@ type Size struct {
 
 /* Cookie */
 type Cookie struct {
-	Name string `json:"name"`
-	Value string `json:"value"`
-	Path string `json:"path"`
+	Name   string `json:"name"`
+	Value  string `json:"value"`
+	Path   string `json:"path"`
 	Domain string `json:"domain"`
-	Secure bool `json:"secure"`
-	Expiry uint `json:"expiry"`
+	Secure bool   `json:"secure"`
+	Expiry uint   `json:"expiry"`
 }
 
 type WebDriver interface {
@@ -134,7 +134,7 @@ type WebDriver interface {
 
 	// Mouse
 	/* Click mouse button, button should be on of RightButton, MiddleButton or
-	  LeftButton.
+	LeftButton.
 	*/
 	Click(button int) os.Error
 	/* Dobule click */
@@ -146,7 +146,7 @@ type WebDriver interface {
 
 	// Misc
 	/* Send modifier key to active element.
-		modifier can be one of ShiftKey, ControlKey, AltKey, MetaKey.
+	modifier can be one of ShiftKey, ControlKey, AltKey, MetaKey.
 	*/
 	SendModifier(modifier string, isDown bool) os.Error
 	Screenshot() ([]byte, os.Error)

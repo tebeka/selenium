@@ -40,7 +40,6 @@ var errors = map[int]string{
 	32: "invalid selector",
 }
 
-
 const (
 	SUCCESS          = 0
 	DEFAULT_EXECUTOR = "http://127.0.0.1:4444/wd/hub"
@@ -96,6 +95,7 @@ type anyReply struct {
 }
 
 var debugFlag = false
+
 func setDebug(debug bool) {
 	debugFlag = debug
 }
@@ -104,7 +104,7 @@ func debugLog(format string, args ...interface{}) {
 	if !debugFlag {
 		return
 	}
-	log.Printf(format + "\n", args...)
+	log.Printf(format+"\n", args...)
 }
 
 func isMimeType(response *http.Response, mtype string) bool {
@@ -146,7 +146,6 @@ func (wd *remoteWD) requestURL(template string, args ...interface{}) string {
 	return wd.executor + path
 }
 
-
 func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, os.Error) {
 	debugLog("-> %s %s\n%s", method, url, data)
 	request, err := newRequest(method, url, data)
@@ -171,7 +170,7 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, os.Error) 
 
 	buf, err := ioutil.ReadAll(response.Body)
 	debugLog("<- %s [%s]\n%s",
-		     response.Status, response.Header["Content-Type"], buf)
+		response.Status, response.Header["Content-Type"], buf)
 	if err != nil {
 		buf = []byte(response.Status)
 	}
@@ -182,7 +181,7 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, os.Error) 
 
 	/* Some bug(?) in Selenium gets us nil values in output, json.Unmarshal is
 	* not happy about that. 
-	*/
+	 */
 	cleanNils(buf)
 	if isMimeType(response, JSON_TYPE) {
 		reply := new(serverReply)
@@ -548,11 +547,9 @@ func (wd *remoteWD) DismissAlert() os.Error {
 	return wd.voidCommand("/session/%s/dismiss_alert", nil)
 }
 
-
 func (wd *remoteWD) AcceptAlert() os.Error {
 	return wd.voidCommand("/session/%s/accept_alert", nil)
 }
-
 
 func (wd *remoteWD) AlertText() (string, os.Error) {
 	return wd.stringCommand("/session/%s/alert_text")
@@ -571,9 +568,9 @@ func (wd *remoteWD) SetAlertText(text string) os.Error {
 }
 
 func (wd *remoteWD) execScript(script string, args []interface{}, suffix string) (interface{}, os.Error) {
-	params := map[string]interface{} {
+	params := map[string]interface{}{
 		"script": script,
-		"args": args,
+		"args":   args,
 	}
 
 	data, err := json.Marshal(params)
@@ -646,7 +643,6 @@ func (elem *remoteWE) SendKeys(keys string) os.Error {
 	urlTemplate := fmt.Sprintf("/session/%%s/element/%s/value", elem.id)
 	return elem.parent.voidCommand(urlTemplate, data)
 }
-
 
 func (elem *remoteWE) TagName() (string, os.Error) {
 	urlTemplate := fmt.Sprintf("/session/%%s/element/%s/name", elem.id)
