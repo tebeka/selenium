@@ -52,7 +52,7 @@ func newRemote(testName string, t *testing.T) WebDriver {
 		urlTemplate := "http://%s:%s@ondemand.saucelabs.com:80/wd/hub"
 		executor = fmt.Sprintf(urlTemplate, cfg.User, cfg.Key)
 	}
-	wd, err := NewRemote(caps, executor, "")
+	wd, err := NewRemote(caps, executor)
 	if err != nil {
 		t.Fatalf("can't start session - %s", err)
 	}
