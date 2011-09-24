@@ -214,3 +214,84 @@ type WebElement interface {
 	/* Get element CSS property value. */
 	CSSProperty(name string) (string, os.Error)
 }
+
+type SeleniumRC interface {
+	// Start new session
+	Start() (string, os.Error)
+	// Stop (close) current session
+	Stop() os.Error
+	// Clicks on a link, button, checkbox or radio button
+	Click(locator string) os.Error
+	// Double clicks on a link, button, checkbox or radio button
+	DoubleClick(locator string) os.Error
+	// Simulates opening the context menu for the specified element
+	ContextMenu(locator string) os.Error
+	// Clicks on a link, button, checkbox or radio button at specific location
+	ClickAt(locator string, x, y int) os.Error
+	// Double clicks on a link, button, checkbox or radio button at specific location
+	DoubleClickAt(locator string, x, y int) os.Error
+	// Simulates opening the context menu for the specified element at specific location
+	ContextMenuAt(locator string, x, y int) os.Error
+	// Explicitly simulate an event, to trigger the corresponding "on\ *event*" handler
+	FireEvent(locator, event string) os.Error
+	// Move the focus to the specified element
+	Focus(locator string) os.Error
+	// Simulates a user pressing and releasing a key.
+	KeyPress(locator, keys string) os.Error
+	// Simulates a user pressing a key (without releasing it yet)
+	KeyDown(locator, keys string) os.Error
+	// Simulates a user releasing a key
+	KeyUp(locator, keys string) os.Error
+	// Simulates a user hovering a mouse over the specified element
+	MouseOver(locator string) os.Error
+    // Simulates a user moving the mouse pointer away from the specified element
+	MouseOut(locator string) os.Error
+    // Simulates a user pressing the left mouse button
+	MouseDown(locator string) os.Error
+    // Simulates a user pressing the right mouse button
+	MouseDownRight(locator string) os.Error
+	// Simulates the event that occurs when the user releases the mouse button
+	MouseUp(locator string) os.Error
+	// Sets the value of an input field, as though you typed it in
+	Type(locator, value string) os.Error
+	// Simulates keystroke events on the specified element, as typed key-by-key
+	TypeKeys(locator, value string) os.Error
+	// Check a toggle-button (checkbox/radio)
+	Check(locator string) os.Error
+	// Uncheck a toggle-button (checkbox/radio)
+	Uncheck(locator string) os.Error
+	// Select an option from a drop-down using an option locator
+	Select(location, option string) os.Error
+	// Submit the specified form
+	Submit(form string) os.Error
+	// Opens an URL in the test frame
+	Open(url string, ignoreResponse bool) os.Error
+	// Simulates the user clicking the "back" button on their browser
+	Back() os.Error
+	// Simulates the user clicking the "Refresh" button on their browser
+	Refresh() os.Error
+	// Simulates the user clicking the "close" button in the titlebar of a popup window or tab
+	Close() os.Error
+	// Gets the absolute URL of the current page
+	Location() (string, os.Error)
+    // Gets the title of the current page
+	Title() (string, os.Error)
+	// Gets the entire text of the page
+	Body() (string, os.Error)
+	// Gets the (whitespace-trimmed) value of an input field
+	Value(locator string) (string, os.Error)
+	// Gets the text of an element
+	Text(locator string) (string, os.Error)
+	// Briefly changes the backgroundColor of the specified element yellow (useful for debugging)
+	Highlight(locator string) os.Error
+    // Gets whether a toggle-button (checkbox/radio) is checked
+	IsChecked(location string) (bool, os.Error)
+    // Gets the value of an element attribute
+	Attribute(locator string) (string, os.Error)
+	// Verifies that the specified element is somewhere on the page
+	IsPresent(locator string) (bool, os.Error)
+	// Determines if the specified element is visible
+	IsVisible(locator string) (bool, os.Error)
+
+}
+
