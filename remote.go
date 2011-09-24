@@ -12,7 +12,6 @@ import (
 	"http"
 	"io/ioutil"
 	"json"
-	"log"
 	"os"
 	"strings"
 )
@@ -92,19 +91,6 @@ type sizeReply struct {
 }
 type anyReply struct {
 	Value interface{}
-}
-
-var debugFlag = false
-
-func setDebug(debug bool) {
-	debugFlag = debug
-}
-
-func debugLog(format string, args ...interface{}) {
-	if !debugFlag {
-		return
-	}
-	log.Printf(format+"\n", args...)
 }
 
 func isMimeType(response *http.Response, mtype string) bool {

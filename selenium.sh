@@ -20,6 +20,12 @@ download() {
     curl -LO $url
 }
 
+if [ $# -ne 1 ]; then
+    echo "error: wrong number of arguments"
+    $0 -h
+    exit 1
+fi
+
 case $1 in
     -h | --help ) echo "usage: $(basename $0) start|stop|download"; exit;;
     start ) start;;
