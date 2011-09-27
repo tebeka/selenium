@@ -2,7 +2,7 @@
 
 Currently provides on WebDriver remote client.
 
-Version: 0.2.0
+Version: 0.2.1
 */
 package selenium
 
