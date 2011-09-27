@@ -560,7 +560,7 @@ func TestIsSelected(t *testing.T) {
 
 	err = elem.Click()
 	if err != nil {
-		t.Fatalf("Can't click")
+		t.Fatal("Can't click")
 	}
 
 	selected, err = elem.IsSelected()
