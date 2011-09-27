@@ -164,7 +164,7 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, os.Error) 
 		buf = []byte(response.Status)
 	}
 
-	if (err != nil) {
+	if err != nil {
 		return nil, os.NewError(string(buf))
 	}
 
@@ -267,7 +267,6 @@ func (wd remoteWD) stringsCommand(urlTemplate string) ([]string, os.Error) {
 	return reply.Value, nil
 }
 
-
 func (wd *remoteWD) boolCommand(urlTemplate string) (bool, os.Error) {
 	url := wd.requestURL(urlTemplate, wd.id)
 	response, err := wd.execute("GET", url, nil)
@@ -342,9 +341,9 @@ func (wd *remoteWD) Capabilities() (Capabilities, os.Error) {
 	return c.Value, nil
 }
 
-func (wd *remoteWD)	SetAsyncScriptTimeout(ms uint) os.Error {
-	params := map[string]uint {
-		"ms" : ms,
+func (wd *remoteWD) SetAsyncScriptTimeout(ms uint) os.Error {
+	params := map[string]uint{
+		"ms": ms,
 	}
 
 	data, err := json.Marshal(params)
@@ -355,9 +354,9 @@ func (wd *remoteWD)	SetAsyncScriptTimeout(ms uint) os.Error {
 	return wd.voidCommand("/session/%s/timeouts/async_script", data)
 }
 
-func (wd *remoteWD)	SetImplicitWaitTimeout(ms uint) os.Error {
-	params := map[string]uint {
-		"ms" : ms,
+func (wd *remoteWD) SetImplicitWaitTimeout(ms uint) os.Error {
+	params := map[string]uint{
+		"ms": ms,
 	}
 
 	data, err := json.Marshal(params)
@@ -385,8 +384,8 @@ func (wd *remoteWD) DeactivateEngine() os.Error {
 }
 
 func (wd *remoteWD) ActivateEngine(engine string) os.Error {
-	params := map[string]string {
-		"engine" : engine,
+	params := map[string]string{
+		"engine": engine,
 	}
 
 	data, err := json.Marshal(params)
