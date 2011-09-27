@@ -121,10 +121,12 @@ type WebDriver interface {
 	PageSource() (string, os.Error)
 	/* Close current window. */
 	Close() os.Error
-	/* Swtich to window. */
-	SwitchWindow(name string) os.Error
 	/* Switch to frame, frame parameter can be name or id. */
 	SwitchFrame(frame string) os.Error
+	/* Swtich to window. */
+	SwitchWindow(name string) os.Error
+	/* Close window. */
+	CloseWindow(name string) os.Error
 
 	// Navigation
 	/* Open url. */
