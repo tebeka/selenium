@@ -273,6 +273,32 @@ func (wd *remoteWD) Capabilities() (Capabilities, os.Error) {
 	return c.Value, nil
 }
 
+func (wd *remoteWD)	SetAsyncScriptTimeout(ms uint) os.Error {
+	params := map[string]uint {
+		"ms" : ms,
+	}
+
+	data, err := json.Marshal(params)
+	if err != nil {
+		return err
+	}
+
+	return wd.voidCommand("/session/%s/timeouts/async_script", data)
+}
+
+func (wd *remoteWD)	SetImplicitWaitTimeout(ms uint) os.Error {
+	params := map[string]uint {
+		"ms" : ms,
+	}
+
+	data, err := json.Marshal(params)
+	if err != nil {
+		return err
+	}
+
+	return wd.voidCommand("/session/%s/timeouts/implicit_wait", data)
+}
+
 func (wd *remoteWD) Quit() os.Error {
 	url := wd.requestURL("/session/%s", wd.id)
 	_, err := wd.execute("DELETE", url, nil)

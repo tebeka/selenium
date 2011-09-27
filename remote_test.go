@@ -109,6 +109,26 @@ func TestCapabilities(t *testing.T) {
 	}
 }
 
+func TestSetAsyncScriptTimeout(t *testing.T) {
+	wd := newRemote("TestSetAsyncScriptTimeout", t)
+	defer wd.Quit()
+
+	err := wd.SetAsyncScriptTimeout(200)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestSetImplicitWaitTimeout(t *testing.T) {
+	wd := newRemote("TestSetImplicitWaitTimeout", t)
+	defer wd.Quit()
+
+	err := wd.SetImplicitWaitTimeout(200)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestCurrentWindowHandle(t *testing.T) {
 	wd := newRemote("TestCurrentWindowHandle", t)
 	defer wd.Quit()

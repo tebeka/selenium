@@ -87,6 +87,10 @@ type WebDriver interface {
 	NewSession() (string, os.Error)
 	/* Current session capabilities */
 	Capabilities() (Capabilities, os.Error)
+	/* Set the amount of time, in milliseconds, that asynchronous scripts are permitted to run before they are aborted. */
+	SetAsyncScriptTimeout(ms uint) os.Error
+	/* Set the amount of time, in milliseconds, the driver should wait when searching for elements. */
+	SetImplicitWaitTimeout(ms uint) os.Error
 
 	/* Quit (end) current session */
 	Quit() os.Error
