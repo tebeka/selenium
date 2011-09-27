@@ -71,12 +71,12 @@ type Size struct {
 
 /* Cookie */
 type Cookie struct {
-	Name   string `json:"name"`
-	Value  string `json:"value"`
-	Path   string `json:"path"`
-	Domain string `json:"domain"`
-	Secure bool   `json:"secure"`
-	Expiry uint   `json:"expiry"`
+	Name   string
+	Value  string
+	Path   string
+	Domain string
+	Secure bool
+	Expiry uint
 }
 
 type WebDriver interface {
@@ -85,6 +85,9 @@ type WebDriver interface {
 
 	/* Start a new session, return session id */
 	NewSession() (string, os.Error)
+	/* Current session capabilities */
+	Capabilities() (Capabilities, os.Error)
+
 	/* Quit (end) current session */
 	Quit() os.Error
 
