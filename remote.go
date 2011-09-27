@@ -12,7 +12,6 @@ import (
 	"http"
 	"io/ioutil"
 	"json"
-	"log"
 	"os"
 	"strings"
 )
@@ -93,18 +92,8 @@ type sizeReply struct {
 type anyReply struct {
 	Value interface{}
 }
-
-var debugFlag = false
-
-func setDebug(debug bool) {
-	debugFlag = debug
-}
-
-func debugLog(format string, args ...interface{}) {
-	if !debugFlag {
-		return
-	}
-	log.Printf(format+"\n", args...)
+type capabilitiesReply struct {
+	Value Capabilities
 }
 
 func isMimeType(response *http.Response, mtype string) bool {
@@ -175,14 +164,28 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, os.Error) 
 		buf = []byte(response.Status)
 	}
 
-	if (err != nil) || (response.StatusCode >= 400) {
+	if (err != nil) {
 		return nil, os.NewError(string(buf))
+	}
+
+	cleanNils(buf)
+	if response.StatusCode >= 400 {
+		reply := new(serverReply)
+		err := json.Unmarshal(buf, reply)
+		if err != nil {
+			return nil, os.NewError(fmt.Sprintf("Bad server reply status: %s", response.Status))
+		}
+		message, ok := errors[reply.Status]
+		if !ok {
+			message = fmt.Sprintf("unknown error - %d", reply.Status)
+		}
+
+		return nil, os.NewError(message)
 	}
 
 	/* Some bug(?) in Selenium gets us nil values in output, json.Unmarshal is
 	* not happy about that. 
 	 */
-	cleanNils(buf)
 	if isMimeType(response, JSON_TYPE) {
 		reply := new(serverReply)
 		err := json.Unmarshal(buf, reply)
@@ -224,6 +227,61 @@ func NewRemote(capabilities Capabilities, executor string) (WebDriver, os.Error)
 	}
 
 	return wd, nil
+}
+
+func (wd *remoteWD) stringCommand(urlTemplate string) (string, os.Error) {
+	url := wd.requestURL(urlTemplate, wd.id)
+	response, err := wd.execute("GET", url, nil)
+	if err != nil {
+		return "", err
+	}
+
+	reply := new(stringReply)
+	err = json.Unmarshal(response, reply)
+	if err != nil {
+		return "", err
+	}
+
+	return *reply.Value, nil
+}
+
+func (wd *remoteWD) voidCommand(urlTemplate string, data []byte) os.Error {
+	url := wd.requestURL(urlTemplate, wd.id)
+	_, err := wd.execute("POST", url, data)
+	return err
+
+}
+
+func (wd remoteWD) stringsCommand(urlTemplate string) ([]string, os.Error) {
+	url := wd.requestURL(urlTemplate, wd.id)
+	response, err := wd.execute("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	reply := new(stringsReply)
+	err = json.Unmarshal(response, reply)
+	if err != nil {
+		return nil, err
+	}
+
+	return reply.Value, nil
+}
+
+
+func (wd *remoteWD) boolCommand(urlTemplate string) (bool, os.Error) {
+	url := wd.requestURL(urlTemplate, wd.id)
+	response, err := wd.execute("GET", url, nil)
+	if err != nil {
+		return false, err
+	}
+
+	reply := new(boolReply)
+	err = json.Unmarshal(response, reply)
+	if err != nil {
+		return false, err
+	}
+
+	return reply.Value, nil
 }
 
 // WebDriver interface implementation
@@ -268,6 +326,77 @@ func (wd *remoteWD) NewSession() (string, os.Error) {
 	return wd.id, nil
 }
 
+func (wd *remoteWD) Capabilities() (Capabilities, os.Error) {
+	url := wd.requestURL("/session/%s", wd.id)
+	response, err := wd.execute("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	c := new(capabilitiesReply)
+	err = json.Unmarshal(response, c)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.Value, nil
+}
+
+func (wd *remoteWD)	SetAsyncScriptTimeout(ms uint) os.Error {
+	params := map[string]uint {
+		"ms" : ms,
+	}
+
+	data, err := json.Marshal(params)
+	if err != nil {
+		return err
+	}
+
+	return wd.voidCommand("/session/%s/timeouts/async_script", data)
+}
+
+func (wd *remoteWD)	SetImplicitWaitTimeout(ms uint) os.Error {
+	params := map[string]uint {
+		"ms" : ms,
+	}
+
+	data, err := json.Marshal(params)
+	if err != nil {
+		return err
+	}
+
+	return wd.voidCommand("/session/%s/timeouts/implicit_wait", data)
+}
+
+func (wd *remoteWD) AvailableEngines() ([]string, os.Error) {
+	return wd.stringsCommand("/session/%s/ime/available_engines")
+}
+
+func (wd *remoteWD) ActiveEngine() (string, os.Error) {
+	return wd.stringCommand("/session/%s/ime/active_engine")
+}
+
+func (wd *remoteWD) IsEngineActivated() (bool, os.Error) {
+	return wd.boolCommand("/session/%s/ime/activated")
+}
+
+func (wd *remoteWD) DeactivateEngine() os.Error {
+	return wd.voidCommand("session/%s/ime/deactivate", nil)
+}
+
+func (wd *remoteWD) ActivateEngine(engine string) os.Error {
+	params := map[string]string {
+		"engine" : engine,
+	}
+
+	data, err := json.Marshal(params)
+	if err != nil {
+		return err
+	}
+
+	return wd.voidCommand("/session/%s/ime/activate", data)
+}
+
 func (wd *remoteWD) Quit() os.Error {
 	url := wd.requestURL("/session/%s", wd.id)
 	_, err := wd.execute("DELETE", url, nil)
@@ -278,36 +407,12 @@ func (wd *remoteWD) Quit() os.Error {
 	return err
 }
 
-func (wd *remoteWD) stringCommand(urlTemplate string) (string, os.Error) {
-	url := wd.requestURL(urlTemplate, wd.id)
-	response, err := wd.execute("GET", url, nil)
-	if err != nil {
-		return "", err
-	}
-
-	reply := new(stringReply)
-	err = json.Unmarshal(response, reply)
-	if err != nil {
-		return "", err
-	}
-
-	return *reply.Value, nil
-}
-
 func (wd *remoteWD) CurrentWindowHandle() (string, os.Error) {
 	return wd.stringCommand("/session/%s/window_handle")
 }
 
 func (wd *remoteWD) WindowHandles() ([]string, os.Error) {
-	url := wd.requestURL("/session/%s/window_handles", wd.id)
-	response, err := wd.execute("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-	reply := new(stringsReply)
-	json.Unmarshal(response, reply)
-
-	return reply.Value, nil
+	return wd.stringsCommand("/session/%s/window_handles")
 }
 
 func (wd *remoteWD) CurrentURL() (string, os.Error) {
@@ -335,13 +440,6 @@ func (wd *remoteWD) Get(url string) os.Error {
 	_, err = wd.execute("POST", requestURL, data)
 
 	return err
-}
-
-func (wd *remoteWD) voidCommand(urlTemplate string, data []byte) os.Error {
-	url := wd.requestURL(urlTemplate, wd.id)
-	_, err := wd.execute("POST", url, data)
-	return err
-
 }
 
 func (wd *remoteWD) Forward() os.Error {
@@ -442,6 +540,11 @@ func (wd *remoteWD) SwitchWindow(name string) os.Error {
 		return err
 	}
 	return wd.voidCommand("/session/%s/window", data)
+}
+
+func (wd *remoteWD) CloseWindow(name string) os.Error {
+	_, err := wd.execute("DELETE", "/session/%s/window", nil)
+	return err
 }
 
 func (wd *remoteWD) SwitchFrame(frame string) os.Error {
@@ -697,33 +800,21 @@ func (elem *remoteWE) FindElements(by, value string) ([]WebElement, os.Error) {
 }
 
 func (elem *remoteWE) boolQuery(urlTemplate string) (bool, os.Error) {
-	wd := elem.parent
-	url := wd.requestURL(urlTemplate, wd.id, elem.id)
-	response, err := wd.execute("GET", url, nil)
-	if err != nil {
-		return false, err
-	}
-
-	reply := new(boolReply)
-	err = json.Unmarshal(response, reply)
-	if err != nil {
-		return false, err
-	}
-
-	return reply.Value, nil
+	url := fmt.Sprintf(urlTemplate, elem.id)
+	return elem.parent.boolCommand(url)
 }
 
 // Porperties
 func (elem *remoteWE) IsSelected() (bool, os.Error) {
-	return elem.boolQuery("/session/%s/element/%s/selected")
+	return elem.boolQuery("/session/%%s/element/%s/selected")
 }
 
 func (elem *remoteWE) IsEnabled() (bool, os.Error) {
-	return elem.boolQuery("/session/%s/element/%s/enabled")
+	return elem.boolQuery("/session/%%s/element/%s/enabled")
 }
 
 func (elem *remoteWE) IsDiaplayed() (bool, os.Error) {
-	return elem.boolQuery("/session/%s/element/%s/displayed")
+	return elem.boolQuery("/session/%%s/element/%s/displayed")
 }
 
 func (elem *remoteWE) GetAttribute(name string) (string, os.Error) {

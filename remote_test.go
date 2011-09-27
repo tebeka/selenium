@@ -95,6 +95,40 @@ func TestNewSession(t *testing.T) {
 	}
 }
 
+func TestCapabilities(t *testing.T) {
+	wd := newRemote("TestCapabilities", t)
+	defer wd.Quit()
+
+	c, err := wd.Capabilities()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if c["browserName"] != caps["browserName"] {
+		t.Fatalf("bad browser name - %s", c["browserName"])
+	}
+}
+
+func TestSetAsyncScriptTimeout(t *testing.T) {
+	wd := newRemote("TestSetAsyncScriptTimeout", t)
+	defer wd.Quit()
+
+	err := wd.SetAsyncScriptTimeout(200)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestSetImplicitWaitTimeout(t *testing.T) {
+	wd := newRemote("TestSetImplicitWaitTimeout", t)
+	defer wd.Quit()
+
+	err := wd.SetImplicitWaitTimeout(200)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestCurrentWindowHandle(t *testing.T) {
 	wd := newRemote("TestCurrentWindowHandle", t)
 	defer wd.Quit()
@@ -526,7 +560,7 @@ func TestIsSelected(t *testing.T) {
 
 	err = elem.Click()
 	if err != nil {
-		t.Fatalf("Can't click")
+		t.Fatal("Can't click")
 	}
 
 	selected, err = elem.IsSelected()
