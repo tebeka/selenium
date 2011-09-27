@@ -95,6 +95,20 @@ func TestNewSession(t *testing.T) {
 	}
 }
 
+func TestCapabilities(t *testing.T) {
+	wd := newRemote("TestCapabilities", t)
+	defer wd.Quit()
+
+	c, err := wd.Capabilities()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if c["browserName"] != caps["browserName"] {
+		t.Fatalf("bad browser name - %s", c["browserName"])
+	}
+}
+
 func TestCurrentWindowHandle(t *testing.T) {
 	wd := newRemote("TestCurrentWindowHandle", t)
 	defer wd.Quit()

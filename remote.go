@@ -92,6 +92,9 @@ type sizeReply struct {
 type anyReply struct {
 	Value interface{}
 }
+type capabilitiesReply struct {
+	Value Capabilities
+}
 
 func isMimeType(response *http.Response, mtype string) bool {
 	if ctype, ok := response.Header["Content-Type"]; ok {
@@ -252,6 +255,22 @@ func (wd *remoteWD) NewSession() (string, os.Error) {
 	wd.id = *reply.SessionId
 
 	return wd.id, nil
+}
+
+func (wd *remoteWD) Capabilities() (Capabilities, os.Error) {
+	url := wd.requestURL("/session/%s", wd.id)
+	response, err := wd.execute("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	c := new(capabilitiesReply)
+	err = json.Unmarshal(response, c)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.Value, nil
 }
 
 func (wd *remoteWD) Quit() os.Error {
