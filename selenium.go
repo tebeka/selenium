@@ -71,12 +71,12 @@ type Size struct {
 
 /* Cookie */
 type Cookie struct {
-	Name   string
-	Value  string
-	Path   string
-	Domain string
-	Secure bool
-	Expiry uint
+	Name   string `json:"name"`
+	Value  string `json:"value"`
+	Path   string `json:"path"`
+	Domain string `json:"domain"`
+	Secure bool   `json:"secure"`
+	Expiry uint   `json:"expiry"`
 }
 
 type WebDriver interface {
