@@ -542,6 +542,11 @@ func (wd *remoteWD) SwitchWindow(name string) os.Error {
 	return wd.voidCommand("/session/%s/window", data)
 }
 
+func (wd *remoteWD) CloseWindow(name string) os.Error {
+	_, err := wd.execute("DELETE", "/session/%s/window", nil)
+	return err
+}
+
 func (wd *remoteWD) SwitchFrame(frame string) os.Error {
 	params := map[string]string{
 		"id": frame,
