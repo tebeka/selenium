@@ -1,6 +1,6 @@
 package selenium
 
-var defaultProfile = map[string][string] {
+var defaultProfile = map[string]string {
 	"app.update.auto": "false",
 	"app.update.enabled": "false",
 	"browser.startup.page" : "0",
@@ -16,7 +16,6 @@ var defaultProfile = map[string][string] {
 	"browser.shell.checkDefaultBrowser": "false",
 	"browser.tabs.warnOnClose": "false",
 	"browser.tabs.warnOnOpen": "false",
-	"browser.startup.page": "0",
 	"startup.homepage_welcome_url": "\"about:blank\"",
 	"devtools.errorconsole.enabled": "true",
 	"dom.disable_open_during_load": "false",
@@ -37,7 +36,6 @@ var defaultProfile = map[string][string] {
 	"security.warn_entering_weak.show_once": "false",
 	"security.warn_leaving_secure": "false",
 	"security.warn_leaving_secure.show_once": "false",
-	"security.warn_submit_insecure": "false",
 	"security.warn_viewing_mixed": "false",
 	"security.warn_viewing_mixed.show_once": "false",
 	"signon.rememberSignons": "false",
@@ -46,10 +44,9 @@ var defaultProfile = map[string][string] {
 	"browser.dom.window.dump.enabled": "true",
 	"webdriver_accept_untrusted_certs": "true",
 	"webdriver_enable_native_events": "true",
-	"dom.max_script_run_time": "30",
 }
 
-type FirefoxProfile {
+type FirefoxProfile struct {
 	Root string
 }
 
