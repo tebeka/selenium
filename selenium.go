@@ -1,6 +1,6 @@
-/* Selenium client.
+/* Selenium/Webdriver client.
 
-Currently provides on WebDriver remote client.
+Currently provides only WebDriver remote client.
 
 Version: 0.2.2
 */
