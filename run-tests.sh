@@ -1,7 +1,7 @@
 #!/bin/bash
 # Run the test suite
 
-jar=selenium-server-standalone-2.5.0.jar
+jar=$(./selenium.sh jar)
 if [ ! -f $jar ]; then
 	echo "error: can't find ${jar} (use './selenium.sh download' to get it)"
 	exit 1
