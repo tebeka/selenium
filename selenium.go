@@ -6,10 +6,6 @@ Version: 0.2.2
 */
 package selenium
 
-import (
-	"os"
-)
-
 /* Element finding options */
 const (
 	ById              = "id"
@@ -97,6 +93,7 @@ type Capabilities map[string]interface{}
 type Build struct {
 	Version, Revision, Time string
 }
+
 /* OS object, part of Status return. */
 type OS struct {
 	Arch, Name, Version string
@@ -130,158 +127,158 @@ type Cookie struct {
 
 type WebDriver interface {
 	/* Status (info) on server */
-	Status() (*Status, os.Error)
+	Status() (*Status, error)
 
 	/* Start a new session, return session id */
-	NewSession() (string, os.Error)
+	NewSession() (string, error)
 
 	/* Current session capabilities */
-	Capabilities() (Capabilities, os.Error)
+	Capabilities() (Capabilities, error)
 	/* Set the amount of time, in milliseconds, that asynchronous scripts are permitted to run before they are aborted. */
-	SetAsyncScriptTimeout(ms uint) os.Error
+	SetAsyncScriptTimeout(ms uint) error
 	/* Set the amount of time, in milliseconds, the driver should wait when searching for elements. */
-	SetImplicitWaitTimeout(ms uint) os.Error
+	SetImplicitWaitTimeout(ms uint) error
 
 	// IME
 	/* List all available engines on the machine. */
-	AvailableEngines() ([]string, os.Error)
+	AvailableEngines() ([]string, error)
 	/* Get the name of the active IME engine. */
-	ActiveEngine() (string, os.Error)
+	ActiveEngine() (string, error)
 	/* Indicates whether IME input is active at the moment. */
-	IsEngineActivated() (bool, os.Error)
+	IsEngineActivated() (bool, error)
 	/* De-activates the currently-active IME engine. */
-	DeactivateEngine() os.Error
+	DeactivateEngine() error
 	/* Make an engines active */
-	ActivateEngine(engine string) os.Error
+	ActivateEngine(engine string) error
 
 	/* Quit (end) current session */
-	Quit() os.Error
+	Quit() error
 
 	// Page information and manipulation
 	/* Return id of current window handle. */
-	CurrentWindowHandle() (string, os.Error)
+	CurrentWindowHandle() (string, error)
 	/* Return ids of current open windows. */
-	WindowHandles() ([]string, os.Error)
+	WindowHandles() ([]string, error)
 	/* Current url. */
-	CurrentURL() (string, os.Error)
+	CurrentURL() (string, error)
 	/* Page title. */
-	Title() (string, os.Error)
+	Title() (string, error)
 	/* Get page source. */
-	PageSource() (string, os.Error)
+	PageSource() (string, error)
 	/* Close current window. */
-	Close() os.Error
+	Close() error
 	/* Switch to frame, frame parameter can be name or id. */
-	SwitchFrame(frame string) os.Error
+	SwitchFrame(frame string) error
 	/* Swtich to window. */
-	SwitchWindow(name string) os.Error
+	SwitchWindow(name string) error
 	/* Close window. */
-	CloseWindow(name string) os.Error
+	CloseWindow(name string) error
 
 	// Navigation
 	/* Open url. */
-	Get(url string) os.Error
+	Get(url string) error
 	/* Move forward in history. */
-	Forward() os.Error
+	Forward() error
 	/* Move backward in history. */
-	Back() os.Error
+	Back() error
 	/* Refresh page. */
-	Refresh() os.Error
+	Refresh() error
 
 	// Finding element(s)
 	/* Find, return one element. */
-	FindElement(by, value string) (WebElement, os.Error)
+	FindElement(by, value string) (WebElement, error)
 	/* Find, return list of elements. */
-	FindElements(by, value string) ([]WebElement, os.Error)
+	FindElements(by, value string) ([]WebElement, error)
 	/* Current active element. */
-	ActiveElement() (WebElement, os.Error)
+	ActiveElement() (WebElement, error)
 
 	// Cookies
 	/* Get all cookies */
-	GetCookies() ([]Cookie, os.Error)
+	GetCookies() ([]Cookie, error)
 	/* Add a cookies */
-	AddCookie(cookie *Cookie) os.Error
+	AddCookie(cookie *Cookie) error
 	/* Delete all cookies */
-	DeleteAllCookies() os.Error
+	DeleteAllCookies() error
 	/* Delete a cookie */
-	DeleteCookie(name string) os.Error
+	DeleteCookie(name string) error
 
 	// Mouse
 	/* Click mouse button, button should be on of RightButton, MiddleButton or
 	LeftButton.
 	*/
-	Click(button int) os.Error
+	Click(button int) error
 	/* Dobule click */
-	DoubleClick() os.Error
+	DoubleClick() error
 	/* Mouse button down */
-	ButtonDown() os.Error
+	ButtonDown() error
 	/* Mouse button up */
-	ButtonUp() os.Error
+	ButtonUp() error
 
 	// Misc
 	/* Send modifier key to active element.
 	modifier can be one of ShiftKey, ControlKey, AltKey, MetaKey.
 	*/
-	SendModifier(modifier string, isDown bool) os.Error
-	Screenshot() ([]byte, os.Error)
+	SendModifier(modifier string, isDown bool) error
+	Screenshot() ([]byte, error)
 
 	// Alerts
 	/* Dismiss current alert. */
-	DismissAlert() os.Error
+	DismissAlert() error
 	/* Accept current alert. */
-	AcceptAlert() os.Error
+	AcceptAlert() error
 	/* Current alert text. */
-	AlertText() (string, os.Error)
+	AlertText() (string, error)
 	/* Set current alert text. */
-	SetAlertText(text string) os.Error
+	SetAlertText(text string) error
 
 	// Scripts
 	/* Execute a script. */
-	ExecuteScript(script string, args []interface{}) (interface{}, os.Error)
+	ExecuteScript(script string, args []interface{}) (interface{}, error)
 	/* Execute a script async. */
-	ExecuteScriptAsync(script string, args []interface{}) (interface{}, os.Error)
+	ExecuteScriptAsync(script string, args []interface{}) (interface{}, error)
 }
 
 type WebElement interface {
 	// Manipulation
 
 	/* Click on element */
-	Click() os.Error
+	Click() error
 	/* Send keys (type) into element */
-	SendKeys(keys string) os.Error
+	SendKeys(keys string) error
 	/* Submit */
-	Submit() os.Error
+	Submit() error
 	/* Clear */
-	Clear() os.Error
+	Clear() error
 	/* Move mouse to relative coordinates */
-	MoveTo(xOffset, yOffset int) os.Error
+	MoveTo(xOffset, yOffset int) error
 
 	// Finding
 
 	/* Find children, return one element. */
-	FindElement(by, value string) (WebElement, os.Error)
+	FindElement(by, value string) (WebElement, error)
 	/* Find children, return list of elements. */
-	FindElements(by, value string) ([]WebElement, os.Error)
+	FindElements(by, value string) ([]WebElement, error)
 
 	// Porperties
 
 	/* Element name */
-	TagName() (string, os.Error)
+	TagName() (string, error)
 	/* Text of element */
-	Text() (string, os.Error)
+	Text() (string, error)
 	/* Check if element is selected. */
-	IsSelected() (bool, os.Error)
+	IsSelected() (bool, error)
 	/* Check if element is enabled. */
-	IsEnabled() (bool, os.Error)
+	IsEnabled() (bool, error)
 	/* Check if element is displayed. */
-	IsDiaplayed() (bool, os.Error)
+	IsDiaplayed() (bool, error)
 	/* Get element attribute. */
-	GetAttribute(name string) (string, os.Error)
+	GetAttribute(name string) (string, error)
 	/* Element location. */
-	Location() (*Point, os.Error)
+	Location() (*Point, error)
 	/* Element location once it has been scrolled into view. */
-	LocationInView() (*Point, os.Error)
+	LocationInView() (*Point, error)
 	/* Element size */
-	Size() (*Size, os.Error)
+	Size() (*Size, error)
 	/* Get element CSS property value. */
-	CSSProperty(name string) (string, os.Error)
+	CSSProperty(name string) (string, error)
 }
