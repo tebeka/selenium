@@ -1,12 +1,13 @@
 package selenium
 
 import (
+	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
-	"http"
 	"io/ioutil"
-	"json"
-	"os"
+	"net/http"
+
 	"strings"
 	"testing"
 )
@@ -25,15 +26,15 @@ var serverURL = "http://localhost" + serverPort + "/"
 
 var runOnSauce *bool = flag.Bool("saucelabs", false, "run on sauce")
 
-func readSauce() (*sauceCfg, os.Error) {
+func readSauce() (*sauceCfg, error) {
 	data, err := ioutil.ReadFile("sauce.json")
 	if err != nil {
 		message := fmt.Sprintf("can't open sauce.json - %s\n", err)
-		return nil, os.NewError(message)
+		return nil, errors.New(message)
 	}
 	cfg := &sauceCfg{}
 	if err = json.Unmarshal(data, cfg); err != nil {
-		return nil, os.NewError(fmt.Sprintf("bad JSON- %s\n", err))
+		return nil, errors.New(fmt.Sprintf("bad JSON- %s\n", err))
 	}
 
 	return cfg, nil

@@ -1,10 +1,13 @@
-include $(GOROOT)/src/Make.inc
+export GOPATH := $(PWD)
 
-TARG=selenium
+all:
+	go build selenium
 
-GOFILES= \
-	selenium.go \
-	remote.go \
-	common.go 
+test:
+	@echo WARNING: You probably want to use run-tests.sh
+	go test -v selenium
 
-include $(GOROOT)/src/Make.pkg
+install:
+	go install selenium
+
+.PHONY: all test install
