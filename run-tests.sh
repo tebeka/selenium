@@ -27,5 +27,5 @@ do
 	fi
 done
 
-GOPATH=$PWD go test -v selenium
+GOPATH=$(dirname $(dirname $PWD)) go test -v selenium
 ./selenium.sh stop
