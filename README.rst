@@ -12,6 +12,11 @@ Currently it supports only the remote WebDriver client, so you'll need a
 .. _`Go`: http://golang.org/
 .. _`selenium server`: http://seleniumhq.org/download/
 
+Installing
+==========
+Run
+    `go get bitbucket.org/tebeka/selenium`
+
 
 Changes
 =======
@@ -34,21 +39,22 @@ TODO
 
 Hacking
 =======
+This directory should be under an `src` directory.
+
 You'll need a Selenium server to run the tests, run `selenium.sh download` to
 get it and `selenium.sh start` to run it.
 
-Test with `gotest -v`.
+Test with `./run-tests.sh`.
 
-I (Miki) work on `dev` branch since `goinstall` pull from default.
+I (Miki) work on `dev` branch since `go get` pull from default.
 
 Authors
 =======
 
 * Miki Tebeka <miki.tebeka@gmail.com>
 
-
 License
 =======
-Copyright (C) 2010 Miki Tebeka <miki.tebeka@gmail.com>
+`MIT`_
 
-Distributed under the Eclipse Public License, the same as Clojure.
+.. _MIT: https://bitbucket.org/tebeka/selenium/src/tip/LICENSE.txt

@@ -2,7 +2,7 @@
 
 Currently provides only WebDriver remote client.
 
-Version: 0.2.2
+Version: 0.3.0
 */
 package selenium
 
