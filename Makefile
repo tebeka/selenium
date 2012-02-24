@@ -13,4 +13,4 @@ fix:
 install:
 	go install selenium
 
-.PHONY: all test install
+.PHONY: all test install fix
