@@ -7,6 +7,9 @@ test:
 	@echo WARNING: You probably want to use run-tests.sh
 	go test -v selenium
 
+fix:
+	go fix selenium
+
 install:
 	go install selenium
 
