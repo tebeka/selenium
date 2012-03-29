@@ -99,10 +99,15 @@ type OS struct {
 	Arch, Name, Version string
 }
 
+type Java struct {
+	Version string
+}
+
 /* Information retured by Status method. */
 type Status struct {
-	Build
-	OS
+	Java Java
+	Build Build
+	OS OS
 }
 
 /* Point */
