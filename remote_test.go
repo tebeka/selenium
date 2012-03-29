@@ -1,59 +1,26 @@
 package selenium
 
 import (
-	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"net/http"
-
 	"strings"
 	"testing"
 )
 
-var caps = Capabilities{
-	"browserName": "firefox",
-}
-
-type sauceCfg struct {
-	User string
-	Key  string
-}
-
 var serverPort = ":4793"
 var serverURL = "http://localhost" + serverPort + "/"
+var browserName = *flag.String("browser", "firefox", "browser to use [firefox]")
 
-var runOnSauce *bool = flag.Bool("saucelabs", false, "run on sauce")
-
-func readSauce() (*sauceCfg, error) {
-	data, err := ioutil.ReadFile("sauce.json")
-	if err != nil {
-		message := fmt.Sprintf("can't open sauce.json - %s\n", err)
-		return nil, errors.New(message)
+func getCaps() Capabilities {
+	return Capabilities{
+		"browserName": browserName,
 	}
-	cfg := &sauceCfg{}
-	if err = json.Unmarshal(data, cfg); err != nil {
-		return nil, errors.New(fmt.Sprintf("bad JSON- %s\n", err))
-	}
-
-	return cfg, nil
 }
 
 func newRemote(testName string, t *testing.T) WebDriver {
 	executor := ""
-	// FIXME: Since we use internal http server, we can use SauceLabs ...
-	//if *runOnSauce {
-	if false {
-		cfg, err := readSauce()
-		if err != nil {
-			t.Fatalf("can't read sauce config - %s", err)
-		}
-		caps["name"] = testName // SauceLabs
-		urlTemplate := "http://%s:%s@ondemand.saucelabs.com:80/wd/hub"
-		executor = fmt.Sprintf(urlTemplate, cfg.User, cfg.Key)
-	}
-	wd, err := NewRemote(caps, executor)
+	wd, err := NewRemote(getCaps(), executor)
 	if err != nil {
 		t.Fatalf("can't start session - %s", err)
 	}
@@ -76,10 +43,7 @@ func TestStatus(t *testing.T) {
 }
 
 func TestNewSession(t *testing.T) {
-	if *runOnSauce {
-		return
-	}
-	wd := &remoteWD{capabilities: caps, executor: DEFAULT_EXECUTOR}
+	wd := &remoteWD{capabilities: getCaps(), executor: DEFAULT_EXECUTOR}
 	sid, err := wd.NewSession()
 	defer wd.Quit()
 
@@ -105,8 +69,10 @@ func TestCapabilities(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if c["browserName"] != caps["browserName"] {
-		t.Fatalf("bad browser name - %s", c["browserName"])
+	browser := getCaps()["browserName"]
+
+	if c["browserName"] != browser {
+		t.Fatalf("bad browser name - %s (should be %s)", c["browserName"], browser)
 	}
 }
 
