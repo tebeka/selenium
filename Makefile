@@ -1,16 +1,17 @@
 export GOPATH := $(shell dirname $(shell dirname $(PWD)))
+PACKAGE := selenium
 
 all:
-	go build selenium
+	go build $(PACKAGE)
 
 test:
 	@echo WARNING: You probably want to use run-tests.sh
-	go test -v selenium
+	go test -v $(PACKAGE)
 
 fix:
-	go fix selenium
+	go fix $(PACKAGE)
 
 install:
-	go install selenium
+	go install $(PACKAGE)
 
 .PHONY: all test install fix
