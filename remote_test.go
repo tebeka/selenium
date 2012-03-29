@@ -1,20 +1,31 @@
 package selenium
 
 import (
-	"flag"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 )
 
 var serverPort = ":4793"
 var serverURL = "http://localhost" + serverPort + "/"
-var browserName = *flag.String("browser", "firefox", "browser to use [firefox]")
+
+func browser() string {
+	browser := os.Getenv("TEST_BROWSER")
+	if len(browser) > 0 {
+		return browser
+	}
+	return "firefox"
+}
+
+func isHtmlUnit() bool {
+	return browser() == "htmlunit"
+}
 
 func getCaps() Capabilities {
 	return Capabilities{
-		"browserName": browserName,
+		"browserName": browser(),
 	}
 }
 
@@ -357,6 +368,10 @@ func TestGetCookies(t *testing.T) {
 }
 
 func TestAddCookie(t *testing.T) {
+	if isHtmlUnit() {
+		t.Log("Skipping on htmlunit")
+		return
+	}
 	wd := newRemote("TestAddCookie", t)
 	defer wd.Quit()
 
@@ -472,6 +487,10 @@ func TestSize(t *testing.T) {
 }
 
 func TestExecuteScript(t *testing.T) {
+	if isHtmlUnit() {
+		t.Log("Skipping on htmlunit")
+		return
+	}
 	wd := newRemote("TestExecuteScript", t)
 	defer wd.Quit()
 
@@ -493,6 +512,10 @@ func TestExecuteScript(t *testing.T) {
 }
 
 func TestScreenshot(t *testing.T) {
+	if isHtmlUnit() {
+		t.Log("Skipping on htmlunit")
+		return
+	}
 	wd := newRemote("TestScreenshot", t)
 	defer wd.Quit()
 
@@ -610,6 +633,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func init() {
+	fmt.Printf("Using Browser: %s\n", browser())
+
 	go func() {
 		http.HandleFunc("/", handler)
 		http.ListenAndServe(serverPort, nil)
