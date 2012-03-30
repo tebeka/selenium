@@ -14,6 +14,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 )
 
 /* Errors returned by Selenium server. */
@@ -341,9 +342,9 @@ func (wd *remoteWD) Capabilities() (Capabilities, error) {
 	return c.Value, nil
 }
 
-func (wd *remoteWD) SetAsyncScriptTimeout(ms uint) error {
+func (wd *remoteWD) SetAsyncScriptTimeout(timeout time.Duration) error {
 	params := map[string]uint{
-		"ms": ms,
+		"ms": uint(timeout / 1000000),
 	}
 
 	data, err := json.Marshal(params)
@@ -354,9 +355,9 @@ func (wd *remoteWD) SetAsyncScriptTimeout(ms uint) error {
 	return wd.voidCommand("/session/%s/timeouts/async_script", data)
 }
 
-func (wd *remoteWD) SetImplicitWaitTimeout(ms uint) error {
+func (wd *remoteWD) SetImplicitWaitTimeout(timeout time.Duration) error {
 	params := map[string]uint{
-		"ms": ms,
+		"ms": uint(timeout / 1000000),
 	}
 
 	data, err := json.Marshal(params)
