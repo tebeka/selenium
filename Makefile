@@ -11,7 +11,10 @@ test:
 fix:
 	go fix $(PACKAGE)
 
+doc:
+	go doc $(PACKAGE)
+
 install:
 	go install $(PACKAGE)
 
-.PHONY: all test install fix
+.PHONY: all test install fix doc
