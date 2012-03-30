@@ -344,7 +344,7 @@ func (wd *remoteWD) Capabilities() (Capabilities, error) {
 
 func (wd *remoteWD) SetAsyncScriptTimeout(timeout time.Duration) error {
 	params := map[string]uint{
-		"ms": uint(timeout / 1000000),
+		"ms": uint(timeout / time.Millisecond),
 	}
 
 	data, err := json.Marshal(params)
@@ -357,7 +357,7 @@ func (wd *remoteWD) SetAsyncScriptTimeout(timeout time.Duration) error {
 
 func (wd *remoteWD) SetImplicitWaitTimeout(timeout time.Duration) error {
 	params := map[string]uint{
-		"ms": uint(timeout / 1000000),
+		"ms": uint(timeout / time.Millisecond),
 	}
 
 	data, err := json.Marshal(params)
