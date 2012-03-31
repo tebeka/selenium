@@ -17,6 +17,13 @@ Installing
 Run
     `go get bitbucket.org/tebeka/selenium`
 
+Docs
+====
+Docs are at gopkgdoc_. 
+
+.. _gopkgdoc: http://gopkgdoc.appspot.com/pkg/bitbucket.org/tebeka/selenium
+
+
 
 Changes
 =======
