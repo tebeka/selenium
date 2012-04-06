@@ -285,7 +285,7 @@ type WebElement interface {
 	/* Check if element is enabled. */
 	IsEnabled() (bool, error)
 	/* Check if element is displayed. */
-	IsDiaplayed() (bool, error)
+	IsDisplayed() (bool, error)
 	/* Get element attribute. */
 	GetAttribute(name string) (string, error)
 	/* Element location. */

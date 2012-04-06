@@ -813,7 +813,7 @@ func (elem *remoteWE) IsEnabled() (bool, error) {
 	return elem.boolQuery("/session/%%s/element/%s/enabled")
 }
 
-func (elem *remoteWE) IsDiaplayed() (bool, error) {
+func (elem *remoteWE) IsDisplayed() (bool, error) {
 	return elem.boolQuery("/session/%%s/element/%s/displayed")
 }
 
