@@ -481,7 +481,7 @@ func (wd *remoteWD) find(by, value, suffix, url string) ([]byte, error) {
 	return wd.execute("POST", url, data)
 }
 
-func decodeElement(wd *remoteWD, data []byte) (WebElement, error) {
+func (wd *remoteWD) DecodeElement(data []byte) (WebElement, error) {
 	reply := new(elementReply)
 	err := json.Unmarshal(data, reply)
 	if err != nil {
@@ -498,10 +498,10 @@ func (wd *remoteWD) FindElement(by, value string) (WebElement, error) {
 		return nil, err
 	}
 
-	return decodeElement(wd, response)
+	return wd.DecodeElement(response)
 }
 
-func decodeElements(wd *remoteWD, data []byte) ([]WebElement, error) {
+func (wd *remoteWD) DecodeElements(data []byte) ([]WebElement, error) {
 	reply := new(elementsReply)
 	err := json.Unmarshal(data, reply)
 	if err != nil {
@@ -522,7 +522,7 @@ func (wd *remoteWD) FindElements(by, value string) ([]WebElement, error) {
 		return nil, err
 	}
 
-	return decodeElements(wd, response)
+	return wd.DecodeElements(response)
 }
 
 func (wd *remoteWD) Close() error {
@@ -565,7 +565,7 @@ func (wd *remoteWD) ActiveElement() (WebElement, error) {
 		return nil, err
 	}
 
-	return decodeElement(wd, response)
+	return wd.DecodeElement(response)
 }
 
 func (wd *remoteWD) GetCookies() ([]Cookie, error) {
@@ -669,7 +669,7 @@ func (wd *remoteWD) SetAlertText(text string) error {
 	return wd.voidCommand("/session/%s/alert_text", data)
 }
 
-func (wd *remoteWD) execScript(script string, args []interface{}, suffix string) (interface{}, error) {
+func (wd *remoteWD) execScriptRaw(script string, args[]interface{}, suffix string) ([]byte, error) {
 	params := map[string]interface{}{
 		"script": script,
 		"args":   args,
@@ -682,7 +682,11 @@ func (wd *remoteWD) execScript(script string, args []interface{}, suffix string)
 
 	template := "/session/%s/execute" + suffix
 	url := wd.requestURL(template, wd.id)
-	response, err := wd.execute("POST", url, data)
+	return wd.execute("POST", url, data)
+}
+
+func (wd *remoteWD) execScript(script string, args []interface{}, suffix string) (interface{}, error) {
+	response, err := wd.execScriptRaw(script, args, suffix)
 	if err != nil {
 		return nil, err
 	}
@@ -702,6 +706,14 @@ func (wd *remoteWD) ExecuteScript(script string, args []interface{}) (interface{
 
 func (wd *remoteWD) ExecuteScriptAsync(script string, args []interface{}) (interface{}, error) {
 	return wd.execScript(script, args, "_async")
+}
+
+func (wd *remoteWD) ExecuteScriptRaw(script string, args []interface{}) ([]byte, error) {
+	return wd.execScriptRaw(script, args, "")
+}
+
+func (wd *remoteWD) ExecuteScriptAsyncRaw(script string, args []interface{}) ([]byte, error) {
+	return wd.execScriptRaw(script, args, "_async")
 }
 
 func (wd *remoteWD) Screenshot() ([]byte, error) {
@@ -786,7 +798,7 @@ func (elem *remoteWE) FindElement(by, value string) (WebElement, error) {
 		return nil, err
 	}
 
-	return decodeElement(elem.parent, response)
+	return elem.parent.DecodeElement(response)
 }
 
 func (elem *remoteWE) FindElements(by, value string) ([]WebElement, error) {
@@ -796,7 +808,7 @@ func (elem *remoteWE) FindElements(by, value string) ([]WebElement, error) {
 		return nil, err
 	}
 
-	return decodeElements(elem.parent, response)
+	return elem.parent.DecodeElements(response)
 }
 
 func (elem *remoteWE) boolQuery(urlTemplate string) (bool, error) {
