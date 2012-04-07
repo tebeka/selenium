@@ -563,6 +563,25 @@ func TestIsSelected(t *testing.T) {
 	}
 }
 
+func TestIsDisplayed(t *testing.T) {
+	wd := newRemote("TestIsDisplayed", t)
+	defer wd.Quit()
+
+	wd.Get(serverURL)
+	elem, err := wd.FindElement(ById, "chuk")
+	if err != nil {
+		t.Fatal("Can't find element")
+	}
+	displayed, err := elem.IsDisplayed()
+	if err != nil {
+		t.Fatal("Can't check for displayed")
+	}
+
+	if !displayed {
+		t.Fatal("Not displayed")
+	}
+}
+
 // Test server
 
 var homePage = `
