@@ -2,12 +2,15 @@
 
 Currently provides only WebDriver remote client.
 
-Version: 0.4.0
 */
 package selenium
 
 import (
 	"time"
+)
+
+const (
+	VERSION = "0.5.0" // Driver version
 )
 
 /* Element finding options */
@@ -109,9 +112,9 @@ type Java struct {
 
 /* Information retured by Status method. */
 type Status struct {
-	Java Java
+	Java  Java
 	Build Build
-	OS OS
+	OS    OS
 }
 
 /* Point */
@@ -144,12 +147,12 @@ type WebDriver interface {
 	/* Current session capabilities */
 	Capabilities() (Capabilities, error)
 	/* Set the amount of time, in microseconds, that asynchronous scripts are permitted to run before they are aborted. 
-	
+
 	Note that Selenium/WebDriver timeouts are in milliseconds, timeout will be rounded to nearest millisecond.
 	*/
 	SetAsyncScriptTimeout(timeout time.Duration) error
 	/* Set the amount of time, in milliseconds, the driver should wait when searching for elements. 
-	
+
 	Note that Selenium/WebDriver timeouts are in milliseconds, timeout will be rounded to nearest millisecond.
 	*/
 	SetImplicitWaitTimeout(timeout time.Duration) error
