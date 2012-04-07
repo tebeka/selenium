@@ -669,7 +669,7 @@ func (wd *remoteWD) SetAlertText(text string) error {
 	return wd.voidCommand("/session/%s/alert_text", data)
 }
 
-func (wd *remoteWD) execScriptRaw(script string, args[]interface{}, suffix string) ([]byte, error) {
+func (wd *remoteWD) execScriptRaw(script string, args []interface{}, suffix string) ([]byte, error) {
 	params := map[string]interface{}{
 		"script": script,
 		"args":   args,
