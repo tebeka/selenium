@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -131,6 +132,19 @@ func isRedirect(response *http.Response) bool {
 	return false
 }
 
+func normalizeURL(n string, base string) (string, error) {
+	baseURL, err := url.Parse(base)
+	if err != nil {
+		return "", fmt.Errorf(
+			"Failed to parse base URL %s with error %s", base, err)
+	}
+	nURL, err := baseURL.Parse(n)
+	if err != nil {
+		return "", fmt.Errorf("Failed to parse new URL %s with error %s", n, err)
+	}
+	return nURL.String(), nil
+}
+
 func (wd *remoteWD) requestURL(template string, args ...interface{}) string {
 	path := fmt.Sprintf(template, args...)
 	return wd.executor + path
@@ -150,7 +164,10 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, error) {
 
 	// http.Client don't follow POST redirects ....
 	if (method == "POST") && isRedirect(response) {
-		url := response.Header["Location"][0]
+		url, err := normalizeURL(response.Header["Location"][0], url)
+		if err != nil {
+			return nil, err
+		}
 		request, _ = newRequest("GET", url, nil)
 		response, err = http.DefaultClient.Do(request)
 		if err != nil {
