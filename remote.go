@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -131,6 +132,19 @@ func isRedirect(response *http.Response) bool {
 	return false
 }
 
+func normalizeURL(n string, base string) (string, error) {
+	baseURL, err := url.Parse(base)
+	if err != nil {
+		return "", fmt.Errorf(
+			"Failed to parse base URL %s with error %s", base, err)
+	}
+	nURL, err := baseURL.Parse(n)
+	if err != nil {
+		return "", fmt.Errorf("Failed to parse new URL %s with error %s", n, err)
+	}
+	return nURL.String(), nil
+}
+
 func (wd *remoteWD) requestURL(template string, args ...interface{}) string {
 	path := fmt.Sprintf(template, args...)
 	return wd.executor + path
@@ -150,7 +164,10 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, error) {
 
 	// http.Client don't follow POST redirects ....
 	if (method == "POST") && isRedirect(response) {
-		url := response.Header["Location"][0]
+		url, err := normalizeURL(response.Header["Location"][0], url)
+		if err != nil {
+			return nil, err
+		}
 		request, _ = newRequest("GET", url, nil)
 		response, err = http.DefaultClient.Do(request)
 		if err != nil {
@@ -481,7 +498,7 @@ func (wd *remoteWD) find(by, value, suffix, url string) ([]byte, error) {
 	return wd.execute("POST", url, data)
 }
 
-func decodeElement(wd *remoteWD, data []byte) (WebElement, error) {
+func (wd *remoteWD) DecodeElement(data []byte) (WebElement, error) {
 	reply := new(elementReply)
 	err := json.Unmarshal(data, reply)
 	if err != nil {
@@ -498,10 +515,10 @@ func (wd *remoteWD) FindElement(by, value string) (WebElement, error) {
 		return nil, err
 	}
 
-	return decodeElement(wd, response)
+	return wd.DecodeElement(response)
 }
 
-func decodeElements(wd *remoteWD, data []byte) ([]WebElement, error) {
+func (wd *remoteWD) DecodeElements(data []byte) ([]WebElement, error) {
 	reply := new(elementsReply)
 	err := json.Unmarshal(data, reply)
 	if err != nil {
@@ -522,7 +539,7 @@ func (wd *remoteWD) FindElements(by, value string) ([]WebElement, error) {
 		return nil, err
 	}
 
-	return decodeElements(wd, response)
+	return wd.DecodeElements(response)
 }
 
 func (wd *remoteWD) Close() error {
@@ -565,7 +582,7 @@ func (wd *remoteWD) ActiveElement() (WebElement, error) {
 		return nil, err
 	}
 
-	return decodeElement(wd, response)
+	return wd.DecodeElement(response)
 }
 
 func (wd *remoteWD) GetCookies() ([]Cookie, error) {
@@ -669,7 +686,7 @@ func (wd *remoteWD) SetAlertText(text string) error {
 	return wd.voidCommand("/session/%s/alert_text", data)
 }
 
-func (wd *remoteWD) execScript(script string, args []interface{}, suffix string) (interface{}, error) {
+func (wd *remoteWD) execScriptRaw(script string, args []interface{}, suffix string) ([]byte, error) {
 	params := map[string]interface{}{
 		"script": script,
 		"args":   args,
@@ -682,7 +699,11 @@ func (wd *remoteWD) execScript(script string, args []interface{}, suffix string)
 
 	template := "/session/%s/execute" + suffix
 	url := wd.requestURL(template, wd.id)
-	response, err := wd.execute("POST", url, data)
+	return wd.execute("POST", url, data)
+}
+
+func (wd *remoteWD) execScript(script string, args []interface{}, suffix string) (interface{}, error) {
+	response, err := wd.execScriptRaw(script, args, suffix)
 	if err != nil {
 		return nil, err
 	}
@@ -702,6 +723,14 @@ func (wd *remoteWD) ExecuteScript(script string, args []interface{}) (interface{
 
 func (wd *remoteWD) ExecuteScriptAsync(script string, args []interface{}) (interface{}, error) {
 	return wd.execScript(script, args, "_async")
+}
+
+func (wd *remoteWD) ExecuteScriptRaw(script string, args []interface{}) ([]byte, error) {
+	return wd.execScriptRaw(script, args, "")
+}
+
+func (wd *remoteWD) ExecuteScriptAsyncRaw(script string, args []interface{}) ([]byte, error) {
+	return wd.execScriptRaw(script, args, "_async")
 }
 
 func (wd *remoteWD) Screenshot() ([]byte, error) {
@@ -786,7 +815,7 @@ func (elem *remoteWE) FindElement(by, value string) (WebElement, error) {
 		return nil, err
 	}
 
-	return decodeElement(elem.parent, response)
+	return elem.parent.DecodeElement(response)
 }
 
 func (elem *remoteWE) FindElements(by, value string) ([]WebElement, error) {
@@ -796,7 +825,7 @@ func (elem *remoteWE) FindElements(by, value string) ([]WebElement, error) {
 		return nil, err
 	}
 
-	return decodeElements(elem.parent, response)
+	return elem.parent.DecodeElements(response)
 }
 
 func (elem *remoteWE) boolQuery(urlTemplate string) (bool, error) {

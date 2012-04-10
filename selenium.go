@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	VERSION = "0.5.0" // Driver version
+	VERSION = "0.6.0" // Driver version
 )
 
 /* Element finding options */
@@ -210,6 +210,12 @@ type WebDriver interface {
 	/* Current active element. */
 	ActiveElement() (WebElement, error)
 
+	// Decoding element(s)
+	/* Decode a single element response. */
+	DecodeElement([]byte) (WebElement, error)
+	/* Decode a multi element response. */
+	DecodeElements([]byte) ([]WebElement, error)
+
 	// Cookies
 	/* Get all cookies */
 	GetCookies() ([]Cookie, error)
@@ -254,6 +260,11 @@ type WebDriver interface {
 	ExecuteScript(script string, args []interface{}) (interface{}, error)
 	/* Execute a script async. */
 	ExecuteScriptAsync(script string, args []interface{}) (interface{}, error)
+
+	/* Execute a script but don't JSON decode. */
+	ExecuteScriptRaw(script string, args []interface{}) ([]byte, error)
+	/* Execute a script async but don't JSON decode. */
+	ExecuteScriptAsyncRaw(script string, args []interface{}) ([]byte, error)
 }
 
 type WebElement interface {
