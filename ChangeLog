@@ -1,3 +1,7 @@
+2012-04-10 version 0.6.0
+    * ExecuteScriptRaw, ExecuteScriptAsyncRaw (Naitik Shah)
+    * DecodeElement in API (Naitik Shah)
+
 2012-04-07 version 0.5.0
     * IsDiaplayed -> IsDisplayed (thanks Naitik Shah)
     * VERSION is a const now
