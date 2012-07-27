@@ -1,8 +1,3 @@
-/* Selenium/Webdriver client.
-
-Currently provides only WebDriver remote client.
-
-*/
 package selenium
 
 import (
