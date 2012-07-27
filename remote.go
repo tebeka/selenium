@@ -228,7 +228,7 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, error) {
 
 /* Create new remote client, this will also start a new session.
    capabilities - the desired capabilities, see http://goo.gl/SNlAk
-   executor - the URL to the Selenim server
+   executor - the URL to the Selenim server, *must* be prefixed with protocol (http,https...)
 */
 func NewRemote(capabilities Capabilities, executor string) (WebDriver, error) {
 
