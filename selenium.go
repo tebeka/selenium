@@ -141,12 +141,12 @@ type WebDriver interface {
 
 	/* Current session capabilities */
 	Capabilities() (Capabilities, error)
-	/* Set the amount of time, in microseconds, that asynchronous scripts are permitted to run before they are aborted. 
+	/* Set the amount of time, in microseconds, that asynchronous scripts are permitted to run before they are aborted.
 
 	Note that Selenium/WebDriver timeouts are in milliseconds, timeout will be rounded to nearest millisecond.
 	*/
 	SetAsyncScriptTimeout(timeout time.Duration) error
-	/* Set the amount of time, in milliseconds, the driver should wait when searching for elements. 
+	/* Set the amount of time, in milliseconds, the driver should wait when searching for elements.
 
 	Note that Selenium/WebDriver timeouts are in milliseconds, timeout will be rounded to nearest millisecond.
 	*/

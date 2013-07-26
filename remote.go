@@ -202,7 +202,7 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, error) {
 	}
 
 	/* Some bug(?) in Selenium gets us nil values in output, json.Unmarshal is
-	* not happy about that. 
+	* not happy about that.
 	 */
 	if isMimeType(response, JSON_TYPE) {
 		reply := new(serverReply)
