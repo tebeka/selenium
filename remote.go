@@ -150,6 +150,28 @@ func (wd *remoteWD) requestURL(template string, args ...interface{}) string {
 	return wd.executor + path
 }
 
+func myCheckRedirect(req *http.Request, via []*http.Request) error {
+	if len(via) >= 10 {
+		return errors.New("stopped after 10 redirects")
+	}
+
+	/* We need to specify the Accept header for the Capabilities request.
+	 * See:
+	 * Issue 4476 - selenium - 500 Error, when using `/session/:sessionId` to
+	 * retrieve the capabilities of the specified session.
+	 * https://code.google.com/p/selenium/issues/detail?id=4476#c7
+	 *
+	 * http.Client now follows POST redirects, but it does not copy request
+	 * headers. So we need to do it ourselves for now.
+	 * See:
+	 * Issue 4800 - go - net/http: copy headers when following redirects
+	 * https://code.google.com/p/go/issues/detail?id=4800
+	 */
+	req.Header.Add("Accept", JSON_TYPE)
+
+	return nil
+}
+
 func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, error) {
 	debugLog("-> %s %s\n%s", method, url, data)
 	request, err := newRequest(method, url, data)
@@ -157,22 +179,10 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	response, err := http.DefaultClient.Do(request)
+	client := &http.Client{CheckRedirect: myCheckRedirect}
+	response, err := client.Do(request)
 	if err != nil {
 		return nil, err
-	}
-
-	// http.Client don't follow POST redirects ....
-	if (method == "POST") && isRedirect(response) {
-		url, err := normalizeURL(response.Header["Location"][0], url)
-		if err != nil {
-			return nil, err
-		}
-		request, _ = newRequest("GET", url, nil)
-		response, err = http.DefaultClient.Do(request)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	buf, err := ioutil.ReadAll(response.Body)
