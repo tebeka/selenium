@@ -114,6 +114,7 @@ func newRequest(method string, url string, data []byte) (*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
+	request.Header.Add("Accept", JSON_TYPE)
 
 	return request, nil
 }
