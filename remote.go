@@ -45,6 +45,7 @@ const (
 	SUCCESS          = 0
 	DEFAULT_EXECUTOR = "http://127.0.0.1:4444/wd/hub"
 	JSON_TYPE        = "application/json"
+	MAX_REDIRECTS    = 10
 )
 
 type remoteWD struct {
@@ -98,6 +99,8 @@ type capabilitiesReply struct {
 	Value Capabilities
 }
 
+var httpClient *http.Client
+
 func isMimeType(response *http.Response, mtype string) bool {
 	if ctype, ok := response.Header["Content-Type"]; ok {
 		return strings.HasPrefix(ctype[0], mtype)
@@ -111,7 +114,6 @@ func newRequest(method string, url string, data []byte) (*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
-	request.Header.Add("Accept", JSON_TYPE)
 
 	return request, nil
 }
@@ -157,22 +159,9 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	response, err := http.DefaultClient.Do(request)
+	response, err := httpClient.Do(request)
 	if err != nil {
 		return nil, err
-	}
-
-	// http.Client don't follow POST redirects ....
-	if (method == "POST") && isRedirect(response) {
-		url, err := normalizeURL(response.Header["Location"][0], url)
-		if err != nil {
-			return nil, err
-		}
-		request, _ = newRequest("GET", url, nil)
-		response, err = http.DefaultClient.Do(request)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	buf, err := ioutil.ReadAll(response.Body)
@@ -899,4 +888,18 @@ func (elem *remoteWE) CSSProperty(name string) (string, error) {
 	wd := elem.parent
 	urlTemplate := fmt.Sprintf("/session/%s/element/%s/css/%s", wd.id, elem.id, name)
 	return elem.parent.stringCommand(urlTemplate)
+}
+
+func init() {
+	// http.Client doesn't copy request headers, and selenium requires that
+	httpClient = &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			if len(via) > MAX_REDIRECTS {
+				return fmt.Errorf("too many redirects (%d)", len(via))
+			}
+
+			req.Header.Add("Accept", JSON_TYPE)
+			return nil
+		},
+	}
 }
