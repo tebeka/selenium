@@ -251,6 +251,10 @@ func (wd *remoteWD) stringCommand(urlTemplate string) (string, error) {
 		return "", err
 	}
 
+	if reply.Value == nil {
+		return "", fmt.Errorf("nil return value")
+	}
+
 	return *reply.Value, nil
 }
 
