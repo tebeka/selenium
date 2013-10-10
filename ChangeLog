@@ -1,3 +1,6 @@
+2013-10-09 version 0.6.1
+    * Fix panic when stringCommand return value is nil (issue #6)
+
 2012-04-10 version 0.6.0
     * ExecuteScriptRaw, ExecuteScriptAsyncRaw (Naitik Shah)
     * DecodeElement in API (Naitik Shah)
