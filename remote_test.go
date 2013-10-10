@@ -582,6 +582,22 @@ func TestIsDisplayed(t *testing.T) {
 	}
 }
 
+func TestGetAttributeNotFound(t *testing.T) {
+	wd := newRemote("TestGetAttributeNotFound", t)
+	defer wd.Quit()
+
+	wd.Get(serverURL)
+	elem, err := wd.FindElement(ById, "chuk")
+	if err != nil {
+		t.Fatal("Can't find element")
+	}
+
+	_, err = elem.GetAttribute("no-such-attribute")
+	if err == nil {
+		t.Fatal("Got non existing attribute")
+	}
+}
+
 // Test server
 
 var homePage = `
