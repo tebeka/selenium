@@ -1,3 +1,6 @@
+2013-11-02 version 0.7.0
+    * Added SessionId to Selenium interface
+    
 2013-10-09 version 0.6.1
     * Fix panic when stringCommand return value is nil (issue #6)
 

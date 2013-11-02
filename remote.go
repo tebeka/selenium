@@ -338,6 +338,10 @@ func (wd *remoteWD) NewSession() (string, error) {
 	return wd.id, nil
 }
 
+func (wd *remoteWD) SessionId() string {
+	return wd.id
+}
+
 func (wd *remoteWD) Capabilities() (Capabilities, error) {
 	url := wd.requestURL("/session/%s", wd.id)
 	response, err := wd.execute("GET", url, nil)
