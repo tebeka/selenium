@@ -4,7 +4,7 @@
 
 pidfile=/tmp/selenium.pid
 log=/tmp/selenium.log
-jar=selenium-server-standalone-2.35.0.jar
+jar=selenium-server-standalone-2.37.0.jar
 url=http://selenium.googlecode.com/files/$jar
 
 start() {

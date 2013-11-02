@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	VERSION = "0.6.1" // Driver version
+	VERSION = "0.7.0" // Driver version
 )
 
 /* Element finding options */
@@ -138,6 +138,9 @@ type WebDriver interface {
 
 	/* Start a new session, return session id */
 	NewSession() (string, error)
+
+	/* Current session id (empty string on none) */
+	SessionId() string
 
 	/* Current session capabilities */
 	Capabilities() (Capabilities, error)

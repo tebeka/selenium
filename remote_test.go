@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 var serverPort = ":4793"
@@ -299,6 +300,8 @@ func TestSendKeys(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	time.Sleep(500 * time.Millisecond)
 
 	source, err := wd.PageSource()
 	if err != nil {
@@ -595,6 +598,21 @@ func TestGetAttributeNotFound(t *testing.T) {
 	_, err = elem.GetAttribute("no-such-attribute")
 	if err == nil {
 		t.Fatal("Got non existing attribute")
+	}
+}
+
+func TestSessionId(t *testing.T) {
+	wd := newRemote("TestGetAttributeNotFound", t)
+	wd.Quit()
+
+	sid, err := wd.NewSession()
+	if err != nil {
+		t.Fatalf("error in new session: %s", err)
+	}
+	defer wd.Quit()
+
+	if wd.SessionId() != sid {
+		t.Fatalf("Got session id mismatch %s != %s", sid, wd.SessionId())
 	}
 }
 
