@@ -64,4 +64,4 @@ License
 =======
 `MIT`_
 
-.. _MIT: https://github.com/tebeka/selenium/src/tip/LICENSE.txt
+.. _MIT: https://github.com/tebeka/selenium/blob/master/LICENSE.txt
