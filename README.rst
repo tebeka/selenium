@@ -15,13 +15,13 @@ Currently it supports only the remote WebDriver client, so you'll need a
 Installing
 ==========
 Run
-    `go get bitbucket.org/tebeka/selenium`
+    `go get github.com/tebeka/selenium`
 
 Docs
 ====
 Docs are at gopkgdoc_. 
 
-.. _gopkgdoc: http://gopkgdoc.appspot.com/pkg/bitbucket.org/tebeka/selenium
+.. _gopkgdoc: http://gopkgdoc.appspot.com/pkg/github.com/tebeka/selenium
 
 
 
@@ -64,4 +64,4 @@ License
 =======
 `MIT`_
 
-.. _MIT: https://bitbucket.org/tebeka/selenium/src/tip/LICENSE.txt
+.. _MIT: https://github.com/tebeka/selenium/blob/master/LICENSE.txt
