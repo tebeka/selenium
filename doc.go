@@ -16,7 +16,7 @@ Example usage:
 		"fmt"
 		"time"
 
-		"bitbucket.org/tebeka/selenium"
+		"github.com/tebeka/selenium"
 	)
 
 	var code string = `
