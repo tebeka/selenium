@@ -1,10 +1,23 @@
-include $(GOROOT)/src/Make.inc
+export GOPATH := $(shell dirname $(shell dirname $(PWD)))
+PACKAGE := selenium
 
-TARG=selenium
+all:
+	go build $(PACKAGE)
 
-GOFILES= \
-	selenium.go \
-	remote.go \
-	common.go 
+test:
+	@echo WARNING: You probably want to use run-tests.sh
+	go test -v $(PACKAGE)
 
-include $(GOROOT)/src/Make.pkg
+fix:
+	go fix $(PACKAGE)
+
+doc:
+	go doc $(PACKAGE)
+
+install:
+	go install $(PACKAGE)
+
+README.html: README.md
+	markdown $< > $@
+
+.PHONY: all test install fix doc

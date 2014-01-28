@@ -4,7 +4,7 @@
 
 pidfile=/tmp/selenium.pid
 log=/tmp/selenium.log
-jar=selenium-server-standalone-2.7.0.jar
+jar=selenium-server-standalone-2.39.0.jar
 url=http://selenium.googlecode.com/files/$jar
 
 start() {
@@ -31,5 +31,6 @@ case $1 in
     start ) start;;
     stop ) stop;;
     download ) download;;
+    jar ) echo $jar;;
     * ) echo "error: unknown command - $1"; exit 1;;
 esac

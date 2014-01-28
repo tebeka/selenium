@@ -1,58 +1,38 @@
 package selenium
 
 import (
-	"flag"
 	"fmt"
-	"http"
-	"io/ioutil"
-	"json"
+	"net/http"
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
-
-var caps = Capabilities{
-	"browserName": "firefox",
-}
-
-type sauceCfg struct {
-	User string
-	Key  string
-}
 
 var serverPort = ":4793"
 var serverURL = "http://localhost" + serverPort + "/"
 
-var runOnSauce *bool = flag.Bool("saucelabs", false, "run on sauce")
-
-func readSauce() (*sauceCfg, os.Error) {
-	data, err := ioutil.ReadFile("sauce.json")
-	if err != nil {
-		message := fmt.Sprintf("can't open sauce.json - %s\n", err)
-		return nil, os.NewError(message)
+func browser() string {
+	browser := os.Getenv("TEST_BROWSER")
+	if len(browser) > 0 {
+		return browser
 	}
-	cfg := &sauceCfg{}
-	if err = json.Unmarshal(data, cfg); err != nil {
-		return nil, os.NewError(fmt.Sprintf("bad JSON- %s\n", err))
-	}
+	return "firefox"
+}
 
-	return cfg, nil
+func isHtmlUnit() bool {
+	return browser() == "htmlunit"
+}
+
+func getCaps() Capabilities {
+	return Capabilities{
+		"browserName": browser(),
+	}
 }
 
 func newRemote(testName string, t *testing.T) WebDriver {
 	executor := ""
-	// FIXME: Since we use internal http server, we can use SauceLabs ...
-	//if *runOnSauce {
-	if false {
-		cfg, err := readSauce()
-		if err != nil {
-			t.Fatalf("can't read sauce config - %s", err)
-		}
-		caps["name"] = testName // SauceLabs
-		urlTemplate := "http://%s:%s@ondemand.saucelabs.com:80/wd/hub"
-		executor = fmt.Sprintf(urlTemplate, cfg.User, cfg.Key)
-	}
-	wd, err := NewRemote(caps, executor)
+	wd, err := NewRemote(getCaps(), executor)
 	if err != nil {
 		t.Fatalf("can't start session - %s", err)
 	}
@@ -75,10 +55,7 @@ func TestStatus(t *testing.T) {
 }
 
 func TestNewSession(t *testing.T) {
-	if *runOnSauce {
-		return
-	}
-	wd := &remoteWD{capabilities: caps, executor: DEFAULT_EXECUTOR}
+	wd := &remoteWD{capabilities: getCaps(), executor: DEFAULT_EXECUTOR}
 	sid, err := wd.NewSession()
 	defer wd.Quit()
 
@@ -104,8 +81,10 @@ func TestCapabilities(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if c["browserName"] != caps["browserName"] {
-		t.Fatalf("bad browser name - %s", c["browserName"])
+	browser := getCaps()["browserName"]
+
+	if c["browserName"] != browser {
+		t.Fatalf("bad browser name - %s (should be %s)", c["browserName"], browser)
 	}
 }
 
@@ -322,6 +301,8 @@ func TestSendKeys(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	time.Sleep(500 * time.Millisecond)
+
 	source, err := wd.PageSource()
 	if err != nil {
 		t.Fatal(err)
@@ -390,6 +371,10 @@ func TestGetCookies(t *testing.T) {
 }
 
 func TestAddCookie(t *testing.T) {
+	if isHtmlUnit() {
+		t.Log("Skipping on htmlunit")
+		return
+	}
 	wd := newRemote("TestAddCookie", t)
 	defer wd.Quit()
 
@@ -505,6 +490,10 @@ func TestSize(t *testing.T) {
 }
 
 func TestExecuteScript(t *testing.T) {
+	if isHtmlUnit() {
+		t.Log("Skipping on htmlunit")
+		return
+	}
 	wd := newRemote("TestExecuteScript", t)
 	defer wd.Quit()
 
@@ -526,6 +515,10 @@ func TestExecuteScript(t *testing.T) {
 }
 
 func TestScreenshot(t *testing.T) {
+	if isHtmlUnit() {
+		t.Log("Skipping on htmlunit")
+		return
+	}
 	wd := newRemote("TestScreenshot", t)
 	defer wd.Quit()
 
@@ -570,6 +563,56 @@ func TestIsSelected(t *testing.T) {
 
 	if !selected {
 		t.Fatal("Not selected")
+	}
+}
+
+func TestIsDisplayed(t *testing.T) {
+	wd := newRemote("TestIsDisplayed", t)
+	defer wd.Quit()
+
+	wd.Get(serverURL)
+	elem, err := wd.FindElement(ById, "chuk")
+	if err != nil {
+		t.Fatal("Can't find element")
+	}
+	displayed, err := elem.IsDisplayed()
+	if err != nil {
+		t.Fatal("Can't check for displayed")
+	}
+
+	if !displayed {
+		t.Fatal("Not displayed")
+	}
+}
+
+func TestGetAttributeNotFound(t *testing.T) {
+	wd := newRemote("TestGetAttributeNotFound", t)
+	defer wd.Quit()
+
+	wd.Get(serverURL)
+	elem, err := wd.FindElement(ById, "chuk")
+	if err != nil {
+		t.Fatal("Can't find element")
+	}
+
+	_, err = elem.GetAttribute("no-such-attribute")
+	if err == nil {
+		t.Fatal("Got non existing attribute")
+	}
+}
+
+func TestSessionId(t *testing.T) {
+	wd := newRemote("TestGetAttributeNotFound", t)
+	wd.Quit()
+
+	sid, err := wd.NewSession()
+	if err != nil {
+		t.Fatalf("error in new session: %s", err)
+	}
+	defer wd.Quit()
+
+	if wd.SessionId() != sid {
+		t.Fatalf("Got session id mismatch %s != %s", sid, wd.SessionId())
 	}
 }
 
@@ -643,6 +686,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func init() {
+	fmt.Printf("Using Browser: %s\n", browser())
+
 	go func() {
 		http.HandleFunc("/", handler)
 		http.ListenAndServe(serverPort, nil)
