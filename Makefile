@@ -17,7 +17,7 @@ doc:
 install:
 	go install $(PACKAGE)
 
-README.html: README.rst
-	rst2html $< > $@
+README.html: README.md
+	markdown $< > $@
 
 .PHONY: all test install fix doc
