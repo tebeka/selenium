@@ -16,4 +16,3 @@ func debugLog(format string, args ...interface{}) {
 	}
 	log.Printf(format+"\n", args...)
 }
-
