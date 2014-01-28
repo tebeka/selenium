@@ -101,6 +101,10 @@ type capabilitiesReply struct {
 
 var httpClient *http.Client
 
+func GetHTTPClient() *http.Client {
+	return httpClient
+}
+
 func isMimeType(response *http.Response, mtype string) bool {
 	if ctype, ok := response.Header["Content-Type"]; ok {
 		return strings.HasPrefix(ctype[0], mtype)

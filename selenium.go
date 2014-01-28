@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	VERSION = "0.7.0" // Driver version
+	VERSION = "0.8.0" // Driver version
 )
 
 /* Element finding options */

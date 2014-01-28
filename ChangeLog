@@ -1,3 +1,6 @@
+2014-01-28 version 0.8.0
+    * GetHTTPClient for AppEngine support (issue #8)
+
 2013-11-02 version 0.7.0
     * Added SessionId to Selenium interface
     
