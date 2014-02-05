@@ -189,6 +189,8 @@ type WebDriver interface {
 	SwitchWindow(name string) error
 	/* Close window. */
 	CloseWindow(name string) error
+	/* Maximize window, if name is empty - will use current */
+	MaximizeWindow(name string) error
 
 	// Navigation
 	/* Open url. */
@@ -241,6 +243,7 @@ type WebDriver interface {
 	modifier can be one of ShiftKey, ControlKey, AltKey, MetaKey.
 	*/
 	SendModifier(modifier string, isDown bool) error
+	/* Take a screenshot */
 	Screenshot() ([]byte, error)
 
 	// Alerts

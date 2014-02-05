@@ -559,11 +559,27 @@ func (wd *remoteWD) SwitchWindow(name string) error {
 	if err != nil {
 		return err
 	}
+
 	return wd.voidCommand("/session/%s/window", data)
 }
 
 func (wd *remoteWD) CloseWindow(name string) error {
-	_, err := wd.execute("DELETE", "/session/%s/window", nil)
+	url := wd.requestURL("/session/%s/window", wd.id)
+	_, err := wd.execute("DELETE", url, nil)
+	return err
+}
+
+func (wd *remoteWD) MaximizeWindow(name string) error {
+	var err error
+	if len(name) == 0 {
+		name, err = wd.CurrentWindowHandle()
+		if err != nil {
+			return err
+		}
+	}
+
+	url := wd.requestURL("/session/%s/window/%s/maximize", wd.id, name)
+	_, err = wd.execute("POST", url, nil)
 	return err
 }
 
