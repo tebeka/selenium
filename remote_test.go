@@ -616,6 +616,18 @@ func TestSessionId(t *testing.T) {
 	}
 }
 
+func TestMaximizeWindow(t *testing.T) {
+	wd := newRemote("TestMaximizeWindow", t)
+	defer wd.Quit()
+
+	wd.Get(serverURL)
+
+	err := wd.MaximizeWindow("")
+	if err != nil {
+		t.Fatalf("error maximizing window: %s", err)
+	}
+}
+
 // Test server
 
 var homePage = `

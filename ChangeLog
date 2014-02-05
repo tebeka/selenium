@@ -1,3 +1,7 @@
+2014-02-04 version 0.8.1
+    * MaximizeWindow (issue #9)
+    * VERSION -> Version
+    
 2014-01-28 version 0.8.0
     * GetHTTPClient for AppEngine support (issue #8)
 
