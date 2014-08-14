@@ -212,7 +212,7 @@ func TestTitle(t *testing.T) {
 
 	expectedTitle := "Go Selenium Test Suite"
 	if title != expectedTitle {
-		t.Fatal("Bad title %s, should be %s", title, expectedTitle)
+		t.Fatalf("Bad title %s, should be %s", title, expectedTitle)
 	}
 }
 
@@ -270,7 +270,7 @@ func TestFindElements(t *testing.T) {
 	}
 
 	if len(elems) != 1 {
-		t.Fatal("Wrong number of elements %d (should be 1)", len(elems))
+		t.Fatalf("Wrong number of elements %d (should be 1)", len(elems))
 	}
 
 	we, ok := elems[0].(*remoteWE)
@@ -510,7 +510,7 @@ func TestExecuteScript(t *testing.T) {
 	}
 
 	if result != 3 {
-		t.Fatal("Bad result %d (expected 3)", result)
+		t.Fatalf("Bad result %d (expected 3)", result)
 	}
 }
 
