@@ -628,6 +628,18 @@ func TestMaximizeWindow(t *testing.T) {
 	}
 }
 
+func TestResizeWindow(t *testing.T) {
+	wd := newRemote("TestResizeWindow", t)
+	defer wd.Quit()
+
+	wd.Get(serverURL)
+
+	err := wd.ResizeWindow("", 100, 100)
+	if err != nil {
+		t.Fatalf("error resizing window: %s", err)
+	}
+}
+
 // Test server
 
 var homePage = `
