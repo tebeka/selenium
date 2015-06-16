@@ -4,8 +4,11 @@
 
 pidfile=/tmp/selenium.pid
 log=/tmp/selenium.log
-jar=selenium-server-standalone-2.39.0.jar
+ver=2.46
+verm=${ver}.0
+jar=selenium-server-standalone-${verm}.jar
 url=http://selenium.googlecode.com/files/$jar
+url=http://selenium-release.storage.googleapis.com/${ver}/selenium-server-standalone-${verm}.jar
 
 start() {
     java -jar $jar > $log 2>&1 &

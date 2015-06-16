@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	Version = "0.8.2" // Driver version
+	Version = "0.8.3" // Driver version
 )
 
 /* Element finding options */
@@ -191,6 +191,8 @@ type WebDriver interface {
 	CloseWindow(name string) error
 	/* Maximize window, if name is empty - will use current */
 	MaximizeWindow(name string) error
+	/* Resize window, if name is empty - will use current */
+	ResizeWindow(name string, width, height int) error
 
 	// Navigation
 	/* Open url. */

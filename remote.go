@@ -583,6 +583,32 @@ func (wd *remoteWD) MaximizeWindow(name string) error {
 	return err
 }
 
+func (wd *remoteWD) ResizeWindow(name string, width, height int) error {
+	var err error
+	if len(name) == 0 {
+		name, err = wd.CurrentWindowHandle()
+		if err != nil {
+			return err
+		}
+	}
+
+	params := struct {
+		Width  int `json:"width"`
+		Height int `json:"height"`
+	}{
+		width,
+		height,
+	}
+	data, err := json.Marshal(params)
+	if err != nil {
+		return err
+	}
+
+	url := wd.requestURL("/session/%s/window/%s/size", wd.id, name)
+	_, err = wd.execute("POST", url, data)
+	return err
+}
+
 func (wd *remoteWD) SwitchFrame(frame string) error {
 	params := map[string]string{
 		"id": frame,
