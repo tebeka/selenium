@@ -6,7 +6,7 @@ import (
 
 var debugFlag = false
 
-func setDebug(debug bool) {
+func SetDebug(debug bool) {
 	debugFlag = debug
 }
 
