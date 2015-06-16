@@ -1,3 +1,6 @@
+2015-06-16 version 0.8.4
+    * Make SetDebug visible (github PR #8 by dskora)
+
 2015-02-10 version 0.8.3
     * ResizeWindow (MR #3 by eide)
 
