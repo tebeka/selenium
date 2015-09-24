@@ -12,7 +12,7 @@ Currently it supports only the remote WebDriver client, so you'll need a
 # Installing
 Run
 
-    go get bitbucket.org/tebeka/selenium
+    go get github.com/tebeka/selenium
 
 # Docs
 Docs are at [godoc.org][godoc]. 
