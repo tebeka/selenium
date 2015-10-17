@@ -17,7 +17,7 @@ Run
 # Docs
 Docs are at [godoc.org][godoc]. 
 
-[godoc]: http://godoc.org/bitbucket.org/tebeka/selenium
+[godoc]: https://godoc.org/github.com/tebeka/selenium
 
 ## AppEngine
 
