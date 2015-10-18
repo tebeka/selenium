@@ -1,3 +1,6 @@
+2015-06-16 version 0.8.5
+    * Fix URL in go.doc (@RaviTezu  in PR #15)
+
 2015-06-16 version 0.8.4
     * Make SetDebug visible (github PR #8 by dskora)
 
