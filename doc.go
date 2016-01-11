@@ -19,7 +19,7 @@ Example usage:
 		"github.com/tebeka/selenium"
 	)
 
-	var code string = `
+	var code = `
 	package main
 	import "fmt"
 
