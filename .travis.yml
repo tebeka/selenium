@@ -1,10 +1,11 @@
 language: go
 go:
     - 1.5.2
+
 # travis have firefox installed already
 before_script:
-  - "export DISPLAY=:0.0"
+  - "export DISPLAY=:99.0"
   - "sh -e /etc/init.d/xvfb start"
-  - sleep 3 # give xvfb some time to start
+  - sleep 10 # give xvfb some time to start
 script: go test -v
 sudo: false
