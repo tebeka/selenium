@@ -2,6 +2,9 @@ language: go
 go:
     - 1.5.2
 
+jdk:
+    - openjdk7
+
 # travis have firefox installed already
 before_script:
   - "export DISPLAY=:99.0"
