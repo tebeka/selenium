@@ -59,6 +59,8 @@ See [here][changelog].
 * You'll need a Selenium server to run the tests, run `selenium.sh download` to
   get it and `selenium.sh start` to run it.
 * Test with `./run-tests.sh`.
+    * Alternatively if you have docker run `make test-docker` which will run the
+      tests in a docker container without all these annoying windows popping up.
 * I (Miki) work on `dev` branch since `go get` pull from default.
 
 # License
