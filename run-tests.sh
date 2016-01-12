@@ -1,15 +1,12 @@
 #!/bin/bash
 # Run the test suite
 
-# Exit on 1'st error
-set -e
-
-# Show commands
-set -e
-
 jar=$(./selenium.sh jar)
 if [ ! -f $jar ]; then
     ./selenium.sh download
+    if [ $? -ne 0 ]; then
+        exit $?
+    fi
 fi
 
 ./selenium.sh start
