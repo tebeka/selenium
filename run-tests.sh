@@ -3,8 +3,10 @@
 
 jar=$(./selenium.sh jar)
 if [ ! -f $jar ]; then
-	echo "error: can't find ${jar} (use './selenium.sh download' to get it)"
-	exit 1
+    ./selenium download
+    if [ $? -ne 0 ]; then
+        exit $?
+    fi
 fi
 
 ./selenium.sh start
