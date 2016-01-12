@@ -1,5 +1,7 @@
 `selenium` - Selenium Client For Go
 
+[![Travis](https://travis-ci.org/tebeka/selenium.svg?branch=master)](https://travis-ci.org/tebeka/selenium)
+
 # About
 This is a [Selenium][selenium] client for [Go][go].
 Currently it supports only the remote WebDriver client, so you'll need a
