@@ -132,6 +132,13 @@ type Cookie struct {
 	Expiry uint   `json:"expiry"`
 }
 
+/* LogMessage returned from the Log method.*/
+type LogMessage struct {
+	Timestamp int
+	Level     string
+	Message   string
+}
+
 type WebDriver interface {
 	/* Status (info) on server */
 	Status() (*Status, error)
@@ -247,6 +254,12 @@ type WebDriver interface {
 	SendModifier(modifier string, isDown bool) error
 	/* Take a screenshot */
 	Screenshot() ([]byte, error)
+	/* Get the logs configured in the capabilities.
+
+	Common values for log type are 'server', 'browser', 'client', 'driver'.
+	NOTE: will return an error (not implemented) on IE11 or Edge drivers.
+	*/
+	Log(typ string) ([]LogMessage, error)
 
 	// Alerts
 	/* Dismiss current alert. */
