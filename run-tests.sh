@@ -1,6 +1,9 @@
 #!/bin/bash
 # Run the test suite
 
+# Show commands
+set -x
+
 jar=$(./selenium.sh jar)
 if [ ! -f $jar ]; then
     ./selenium.sh download

@@ -8,8 +8,12 @@ test:
 	@echo WARNING: You probably want to use run-tests.sh
 	go test -v $(PACKAGE)
 
-fix:
-	go fix $(PACKAGE)
+test-docker:
+	docker build -t go-selenium .
+	docker run \
+	    -v ${PWD}:/code \
+	    -w /code \
+	    go-selenium ./docker-test.sh
 
 doc:
 	go doc $(PACKAGE)
@@ -20,4 +24,4 @@ install:
 README.html: README.md
 	markdown $< > $@
 
-.PHONY: all test install fix doc
+.PHONY: all test install fix doc test-docker
