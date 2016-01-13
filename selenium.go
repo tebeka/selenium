@@ -91,6 +91,10 @@ http://code.google.com/p/selenium/wiki/JsonWireProtocol#Capabilities_JSON_Object
 */
 type Capabilities map[string]interface{}
 
+// Proxy  object, see
+// https://code.google.com/p/selenium/wiki/JsonWireProtocol#Proxy_JSON_Object
+type Proxy map[string]string
+
 /* Build object, part of Status return. */
 type Build struct {
 	Version, Revision, Time string
