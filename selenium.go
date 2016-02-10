@@ -154,6 +154,10 @@ type WebDriver interface {
 	Note that Selenium/WebDriver timeouts are in milliseconds, timeout will be rounded to nearest millisecond.
 	*/
 	SetImplicitWaitTimeout(timeout time.Duration) error
+	/* Set the amount of time, in milliseconds, the driver should wait when
+	loading a page.  Note that Selenium/WebDriver timeouts are in milliseconds,
+	timeout will be rounded to nearest millisecond.  */
+	SetPageLoadTimeout(timeout time.Duration) error
 
 	// IME
 	/* List all available engines on the machine. */

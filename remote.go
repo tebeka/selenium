@@ -388,6 +388,20 @@ func (wd *remoteWD) SetImplicitWaitTimeout(timeout time.Duration) error {
 	return wd.voidCommand("/session/%s/timeouts/implicit_wait", data)
 }
 
+func (wd *remoteWD) SetPageLoadTimeout(timeout time.Duration) error {
+	params := map[string]interface{}{
+		"ms":   uint(timeout / time.Millisecond),
+		"type": "page load",
+	}
+
+	data, err := json.Marshal(params)
+	if err != nil {
+		return err
+	}
+
+	return wd.voidCommand("/session/%s/timeouts", data)
+}
+
 func (wd *remoteWD) AvailableEngines() ([]string, error) {
 	return wd.stringsCommand("/session/%s/ime/available_engines")
 }
