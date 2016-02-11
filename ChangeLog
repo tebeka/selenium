@@ -1,3 +1,10 @@
+2016-02-11 version 0.9.0
+    * Testing on docker with go 1.5.3
+    * Testing with Selenium 2.51.0
+    * SwitchSession (@minusnine in PR #27)
+    * KeyUp and KeyDown (@minusnine in PR #26)
+    * Capability type (@minusnine in PR #25)
+
 2015-06-16 version 0.8.5
     * Fix URL in go.doc (@RaviTezu  in PR #15)
 
