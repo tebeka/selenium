@@ -91,6 +91,42 @@ http://code.google.com/p/selenium/wiki/JsonWireProtocol#Capabilities_JSON_Object
 */
 type Capabilities map[string]interface{}
 
+// Proxy specifies configuration for proxies in the browser. Set the key
+// "proxy" in Capabilities to an instance of this type.
+type Proxy struct {
+	Type ProxyType `json:"proxyType"`
+
+	// AutoconfigURL is the URL to be used for proxy auto configuration. This is
+	// required if Type is set to PAC.
+	AutoconfigURL string `json:"proxyAutoconfigUrl,omitempty"`
+
+	// The following are used when Type is set to Manual.
+	FTP           string `json:"ftpProxy,omitempty"`
+	HTTP          string `json:"httpProxy,omitempty"`
+	SSL           string `json:"sslProxy,omitempty"`
+	SOCKS         string `json:"socksProxy,omitempty"`
+	SOCKSUsername string `json:"socksUsername,omitempty"`
+	SOCKSPassword string `json:"socksPassword,omitempty"`
+	NoProxy       string `json:"noProxy,omitempty"`
+}
+
+// ProxyType is an enumeration of the types of proxies available.
+type ProxyType string
+
+const (
+	// A direct connection - no proxy in use.
+	Direct ProxyType = "direct"
+	// Manual proxy settings configured, e.g. setting a proxy for HTTP, a proxy
+	// for FTP, etc.
+	Manual = "manual"
+	// Proxy autodetection, probably with WPAD
+	Autodetect = "autodetect"
+	// Use system settings.
+	System = "system"
+	// Proxy autoconfiguration from a URL.
+	PAC = "pac"
+)
+
 /* Build object, part of Status return. */
 type Build struct {
 	Version, Revision, Time string
