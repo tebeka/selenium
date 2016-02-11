@@ -178,6 +178,9 @@ type WebDriver interface {
 	/* Current session id (empty string on none) */
 	SessionId() string
 
+	/* SwitchSession switches to the given session id. */
+	SwitchSession(sessionID string) error
+
 	/* Current session capabilities */
 	Capabilities() (Capabilities, error)
 	/* Set the amount of time, in microseconds, that asynchronous scripts are permitted to run before they are aborted.
