@@ -649,6 +649,28 @@ func TestResizeWindow(t *testing.T) {
 	}
 }
 
+func TestKeyDownUp(t *testing.T) {
+	wd := newRemote("TestKeyDownUp", t)
+	defer wd.Quit()
+
+	wd.Get(serverURL)
+
+	e, err := wd.FindElement(ByLinkText, "other page")
+	if err != nil {
+		t.Fatalf("error finding other page link: %v", err)
+	}
+
+	if err := wd.KeyDown(ControlKey); err != nil {
+		t.Fatalf("error pressing control key down: %v", err)
+	}
+	if err := e.Click(); err != nil {
+		t.Fatalf("error clicking the other page link: %v", err)
+	}
+	if err := wd.KeyUp(ControlKey); err != nil {
+		t.Fatalf("error releasing control key: %v", err)
+	}
+}
+
 // Test server
 
 var homePage = `
@@ -662,6 +684,7 @@ var homePage = `
 		<input name="q" /> <input type="submit" id="submit"/> <br />
 		<input id="chuk" type="checkbox" /> A checkbox.
 	</form>
+	Link to the <a href="/other">other page</a>.
 </body>
 </html>
 `

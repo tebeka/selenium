@@ -721,6 +721,19 @@ func (wd *remoteWD) SendModifier(modifier string, isDown bool) error {
 	return wd.voidCommand("/session/%s/modifier", data)
 }
 
+func (wd *remoteWD) KeyDown(keys string) error {
+	data, err := processKeyString(keys)
+	if err != nil {
+		return err
+	}
+
+	return wd.voidCommand("/session/%s/keys", data)
+}
+
+func (wd *remoteWD) KeyUp(keys string) error {
+	return wd.KeyDown(keys)
+}
+
 func (wd *remoteWD) DismissAlert() error {
 	return wd.voidCommand("/session/%s/dismiss_alert", nil)
 }
@@ -817,6 +830,16 @@ func (elem *remoteWE) Click() error {
 }
 
 func (elem *remoteWE) SendKeys(keys string) error {
+	data, err := processKeyString(keys)
+	if err != nil {
+		return err
+	}
+
+	urlTemplate := fmt.Sprintf("/session/%%s/element/%s/value", elem.id)
+	return elem.parent.voidCommand(urlTemplate, data)
+}
+
+func processKeyString(keys string) ([]byte, error) {
 	chars := make([]string, len(keys))
 	for i, c := range keys {
 		chars[i] = string(c)
@@ -827,11 +850,9 @@ func (elem *remoteWE) SendKeys(keys string) error {
 
 	data, err := json.Marshal(params)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	urlTemplate := fmt.Sprintf("/session/%%s/element/%s/value", elem.id)
-	return elem.parent.voidCommand(urlTemplate, data)
+	return data, nil
 }
 
 func (elem *remoteWE) TagName() (string, error) {

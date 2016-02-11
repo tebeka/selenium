@@ -285,6 +285,11 @@ type WebDriver interface {
 	modifier can be one of ShiftKey, ControlKey, AltKey, MetaKey.
 	*/
 	SendModifier(modifier string, isDown bool) error
+	/* Send a sequence of keystrokes to the active element. Similar to
+	SendKeys but without the implicit termination. Modifiers are not released
+	at the end of each call. */
+	KeyDown(keys string) error
+	KeyUp(keys string) error
 	/* Take a screenshot */
 	Screenshot() ([]byte, error)
 
