@@ -108,6 +108,15 @@ func TestSetImplicitWaitTimeout(t *testing.T) {
 	}
 }
 
+func TestSetPageLoadTimeout(t *testing.T) {
+	wd := newRemote("TestSetPageLoadTimeout", t)
+	defer wd.Quit()
+
+	if err := wd.SetPageLoadTimeout(200); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestCurrentWindowHandle(t *testing.T) {
 	wd := newRemote("TestCurrentWindowHandle", t)
 	defer wd.Quit()
