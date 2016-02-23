@@ -1,3 +1,6 @@
+2016-02-23 version 0.9.1
+    * Log method (@wetherbeei in PR #21)
+
 2016-02-11 version 0.9.0
     * Testing on docker with go 1.5.3
     * Testing with Selenium 2.51.0
