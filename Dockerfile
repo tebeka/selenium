@@ -1,4 +1,4 @@
-FROM golang:1.6rc2
+FROM golang:1.6
 MAINTAINER Miki Tebeka <miki.tebeka@gmail.com>
 
 
