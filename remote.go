@@ -98,6 +98,9 @@ type anyReply struct {
 type capabilitiesReply struct {
 	Value Capabilities
 }
+type logReply struct {
+	Value []LogMessage
+}
 
 var httpClient *http.Client
 
@@ -820,6 +823,29 @@ func (wd *remoteWD) Screenshot() ([]byte, error) {
 	buf := []byte(data)
 	decoder := base64.NewDecoder(base64.StdEncoding, bytes.NewBuffer(buf))
 	return ioutil.ReadAll(decoder)
+}
+
+func (wd *remoteWD) Log(typ LogType) ([]LogMessage, error) {
+	url := wd.requestURL("/session/%s/log", wd.id)
+	params := map[string]LogType{
+		"type": typ,
+	}
+	data, err := json.Marshal(params)
+	if err != nil {
+		return nil, err
+	}
+	response, err := wd.execute("POST", url, data)
+	if err != nil {
+		return nil, err
+	}
+
+	c := new(logReply)
+	err = json.Unmarshal(response, c)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.Value, nil
 }
 
 // WebElement interface implementation

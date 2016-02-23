@@ -542,6 +542,25 @@ func TestScreenshot(t *testing.T) {
 	}
 }
 
+func TestLog(t *testing.T) {
+	if isHtmlUnit() {
+		t.Log("Skipping on htmlunit")
+		return
+	}
+	wd := newRemote("TestLog", t)
+	defer wd.Quit()
+
+	wd.Get(serverURL + "log")
+	logs, err := wd.Log("browser")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(logs) == 0 {
+		t.Fatal("Empty reply")
+	}
+}
+
 func TestIsSelected(t *testing.T) {
 	wd := newRemote("TestIsSelected", t)
 	defer wd.Quit()
@@ -714,10 +733,26 @@ var searchPage = `
 </html>
 `
 
+var logPage = `
+<html>
+<head>
+	<title>Go Selenium Test Suite - Log Page</title>
+	<script>
+		console.log("console log");
+		throw "exception log";
+	</script>
+</head>
+<body>
+	Log test page.
+</body>
+</html>
+`
+
 var pages = map[string]string{
 	"/":       homePage,
 	"/other":  otherPage,
 	"/search": searchPage,
+	"/log":    logPage,
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
