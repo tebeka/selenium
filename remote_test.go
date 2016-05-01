@@ -341,7 +341,7 @@ func TestClick(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	button, err := wd.FindElement(ById, "submit")
+	button, err := wd.FindElement(ByID, "submit")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -443,7 +443,7 @@ func TestLocation(t *testing.T) {
 	defer wd.Quit()
 
 	wd.Get(serverURL)
-	button, err := wd.FindElement(ById, "submit")
+	button, err := wd.FindElement(ByID, "submit")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -463,7 +463,7 @@ func TestLocationInView(t *testing.T) {
 	defer wd.Quit()
 
 	wd.Get(serverURL)
-	button, err := wd.FindElement(ById, "submit")
+	button, err := wd.FindElement(ByID, "submit")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -483,7 +483,7 @@ func TestSize(t *testing.T) {
 	defer wd.Quit()
 
 	wd.Get(serverURL)
-	button, err := wd.FindElement(ById, "submit")
+	button, err := wd.FindElement(ByID, "submit")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -566,7 +566,7 @@ func TestIsSelected(t *testing.T) {
 	defer wd.Quit()
 
 	wd.Get(serverURL)
-	elem, err := wd.FindElement(ById, "chuk")
+	elem, err := wd.FindElement(ByID, "chuk")
 	if err != nil {
 		t.Fatal("Can't find element")
 	}
@@ -599,7 +599,7 @@ func TestIsDisplayed(t *testing.T) {
 	defer wd.Quit()
 
 	wd.Get(serverURL)
-	elem, err := wd.FindElement(ById, "chuk")
+	elem, err := wd.FindElement(ByID, "chuk")
 	if err != nil {
 		t.Fatal("Can't find element")
 	}
@@ -618,7 +618,7 @@ func TestGetAttributeNotFound(t *testing.T) {
 	defer wd.Quit()
 
 	wd.Get(serverURL)
-	elem, err := wd.FindElement(ById, "chuk")
+	elem, err := wd.FindElement(ByID, "chuk")
 	if err != nil {
 		t.Fatal("Can't find element")
 	}

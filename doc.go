@@ -1,5 +1,5 @@
 /*
-Selenium/Webdriver client.
+Package selenium provider a Selenium/Webdriver client.
 
 Currently provides only WebDriver remote client.
 This means you'll need to run the Selenium server by yourself (or use a service

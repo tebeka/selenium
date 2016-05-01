@@ -5,12 +5,13 @@ import (
 )
 
 const (
-	Version = "0.9.1" // Driver version
+	// Version of driver
+	Version = "0.9.1"
 )
 
 /* Element finding options */
 const (
-	ById              = "id"
+	ByID              = "id"
 	ByXPATH           = "xpath"
 	ByLinkText        = "link text"
 	ByPartialLinkText = "partial link text"
@@ -86,9 +87,10 @@ const (
 	MetaKey       = string('\ue03d')
 )
 
-/* Browser capabilities, see
-http://code.google.com/p/selenium/wiki/JsonWireProtocol#Capabilities_JSON_Object
-*/
+// Capabilities of browser, see
+// https://w3c.github.io/webdriver/webdriver-spec.html
+// and
+// https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol
 type Capabilities map[string]interface{}
 
 // Proxy specifies configuration for proxies in the browser. Set the key
@@ -114,51 +116,52 @@ type Proxy struct {
 type ProxyType string
 
 const (
-	// A direct connection - no proxy in use.
+	// Direct connection - no proxy in use.
 	Direct ProxyType = "direct"
 	// Manual proxy settings configured, e.g. setting a proxy for HTTP, a proxy
 	// for FTP, etc.
 	Manual = "manual"
-	// Proxy autodetection, probably with WPAD
+	// Autodetect proxy, probably with WPAD
 	Autodetect = "autodetect"
-	// Use system settings.
+	// System settings used.
 	System = "system"
-	// Proxy autoconfiguration from a URL.
+	// PAC - Proxy autoconfiguration from a URL.
 	PAC = "pac"
 )
 
-/* Build object, part of Status return. */
+// Build object, part of Status return.
 type Build struct {
 	Version, Revision, Time string
 }
 
-/* OS object, part of Status return. */
+// OS object, part of Status return.
 type OS struct {
 	Arch, Name, Version string
 }
 
+// Java version informat
 type Java struct {
 	Version string
 }
 
-/* Information retured by Status method. */
+// Status information retured by Status method
 type Status struct {
 	Java  Java
 	Build Build
 	OS    OS
 }
 
-/* Point */
+// Point is a 2D point
 type Point struct {
 	X, Y int
 }
 
-/* Size */
+// Size is a size of HTML element
 type Size struct {
 	Width, Height int
 }
 
-/* Cookie */
+// Cookie represents HTTP cookie
 type Cookie struct {
 	Name   string `json:"name"`
 	Value  string `json:"value"`
@@ -168,13 +171,14 @@ type Cookie struct {
 	Expiry uint   `json:"expiry"`
 }
 
-/* LogMessage returned from the Log method.*/
+// LogMessage returned from the Log method
 type LogMessage struct {
 	Timestamp int
 	Level     string
 	Message   string
 }
 
+// LogType are logger types
 type LogType string
 
 const (
@@ -186,6 +190,7 @@ const (
 	Profiler            = "profiler"
 )
 
+// WebDriver defines methods supported by WebDriver drivers
 type WebDriver interface {
 	/* Status (info) on server */
 	Status() (*Status, error)
@@ -342,6 +347,7 @@ type WebDriver interface {
 	ExecuteScriptAsyncRaw(script string, args []interface{}) ([]byte, error)
 }
 
+// WebElement defines method supported by web elements
 type WebElement interface {
 	// Manipulation
 

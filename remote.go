@@ -19,7 +19,7 @@ import (
 )
 
 /* Errors returned by Selenium server. */
-var errors_ = map[int]string{
+var remoteErrors = map[int]string{
 	7:  "no such element",
 	8:  "no such frame",
 	9:  "unknown command",
@@ -42,7 +42,8 @@ var errors_ = map[int]string{
 }
 
 const (
-	SUCCESS          = 0
+	// Success of method
+	Success          = 0
 	DEFAULT_EXECUTOR = "http://127.0.0.1:4444/wd/hub"
 	JSON_TYPE        = "application/json"
 	MAX_REDIRECTS    = 10
@@ -190,7 +191,7 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, error) {
 		if err != nil {
 			return nil, errors.New(fmt.Sprintf("Bad server reply status: %s", response.Status))
 		}
-		message, ok := errors_[reply.Status]
+		message, ok := remoteErrors[reply.Status]
 		if !ok {
 			message = fmt.Sprintf("unknown error - %d", reply.Status)
 		}
@@ -208,8 +209,8 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, error) {
 			return nil, err
 		}
 
-		if reply.Status != SUCCESS {
-			message, ok := errors_[reply.Status]
+		if reply.Status != Success {
+			message, ok := remoteErrors[reply.Status]
 			if !ok {
 				message = fmt.Sprintf("unknown error - %d", reply.Status)
 			}
