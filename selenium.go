@@ -88,9 +88,8 @@ const (
 )
 
 // Capabilities of browser, see
-// https://w3c.github.io/webdriver/webdriver-spec.html
-// and
-// https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol
+// https://w3c.github.io/webdriver/webdriver-spec.html#capabilities
+// Note that you can specify browser profile here
 type Capabilities map[string]interface{}
 
 // Proxy specifies configuration for proxies in the browser. Set the key
