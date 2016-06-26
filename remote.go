@@ -1,6 +1,7 @@
 /* Remote Selenium client implementation.
 
-See http://code.google.com/p/selenium/wiki/JsonWireProtocol for wire protocol.
+See https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol for wire
+protocol.
 */
 
 package selenium
