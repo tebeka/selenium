@@ -358,7 +358,8 @@ type WebElement interface {
 	Submit() error
 	/* Clear */
 	Clear() error
-	/* Move mouse to relative coordinates */
+	/* Move mouse to relative coordinates from center of element,
+	If the element is not visible, it will be scrolled into view.*/
 	MoveTo(xOffset, yOffset int) error
 
 	// Finding
@@ -368,7 +369,7 @@ type WebElement interface {
 	/* Find children, return list of elements. */
 	FindElements(by, value string) ([]WebElement, error)
 
-	// Porperties
+	// Properties
 
 	/* Element name */
 	TagName() (string, error)
