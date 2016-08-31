@@ -634,9 +634,13 @@ func (wd *remoteWD) ResizeWindow(name string, width, height int) error {
 }
 
 func (wd *remoteWD) SwitchFrame(frame string) error {
-	params := map[string]string{
+	params := map[string]interface{}{
 		"id": frame,
 	}
+	if len(frame) == 0 {
+		params["id"] = nil
+	}
+
 	data, err := json.Marshal(params)
 	if err != nil {
 		return err
