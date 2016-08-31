@@ -1,3 +1,6 @@
+2016-08-31 version 0.9.2
+    * SwithFrame with nil id (@exjimsk in PR #34)
+
 2016-02-23 version 0.9.1
     * Log method (@wetherbeei in PR #21)
 
