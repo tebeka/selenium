@@ -61,6 +61,10 @@ type remoteWD struct {
 type serverReply struct {
 	SessionId *string // sessionId can be null
 	Status    int
+	State     string
+	Value     struct {
+		Message interface{}
+	}
 }
 
 /* Various reply types, we use them to json.Unmarshal replies */
@@ -192,9 +196,13 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, error) {
 		if err != nil {
 			return nil, errors.New(fmt.Sprintf("Bad server reply status: %s", response.Status))
 		}
-		message, ok := remoteErrors[reply.Status]
+
+		message, ok := reply.Value.Message.(string)
 		if !ok {
-			message = fmt.Sprintf("unknown error - %d", reply.Status)
+			message, ok = remoteErrors[reply.Status]
+			if !ok {
+				message = fmt.Sprintf("unknown error - %d", reply.Status)
+			}
 		}
 
 		return nil, errors.New(message)
