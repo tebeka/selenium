@@ -20,7 +20,7 @@ func browser() string {
 	return "firefox"
 }
 
-func isHtmlUnit() bool {
+func isHTMLUnit() bool {
 	return browser() == "htmlunit"
 }
 
@@ -55,7 +55,7 @@ func TestStatus(t *testing.T) {
 }
 
 func TestNewSession(t *testing.T) {
-	wd := &remoteWD{capabilities: getCaps(), executor: DEFAULT_EXECUTOR}
+	wd := &remoteWD{capabilities: getCaps(), executor: DefaultExecutor}
 	sid, err := wd.NewSession()
 	defer wd.Quit()
 
@@ -380,7 +380,7 @@ func TestGetCookies(t *testing.T) {
 }
 
 func TestAddCookie(t *testing.T) {
-	if isHtmlUnit() {
+	if isHTMLUnit() {
 		t.Log("Skipping on htmlunit")
 		return
 	}
@@ -499,7 +499,7 @@ func TestSize(t *testing.T) {
 }
 
 func TestExecuteScript(t *testing.T) {
-	if isHtmlUnit() {
+	if isHTMLUnit() {
 		t.Log("Skipping on htmlunit")
 		return
 	}
@@ -524,7 +524,7 @@ func TestExecuteScript(t *testing.T) {
 }
 
 func TestScreenshot(t *testing.T) {
-	if isHtmlUnit() {
+	if isHTMLUnit() {
 		t.Log("Skipping on htmlunit")
 		return
 	}
@@ -543,7 +543,7 @@ func TestScreenshot(t *testing.T) {
 }
 
 func TestLog(t *testing.T) {
-	if isHtmlUnit() {
+	if isHTMLUnit() {
 		t.Log("Skipping on htmlunit")
 		return
 	}

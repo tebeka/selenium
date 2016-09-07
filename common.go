@@ -6,6 +6,7 @@ import (
 
 var debugFlag = false
 
+// SetDebug sets debug mode
 func SetDebug(debug bool) {
 	debugFlag = debug
 }

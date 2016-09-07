@@ -180,6 +180,7 @@ type LogMessage struct {
 // LogType are logger types
 type LogType string
 
+// Various server log flags
 const (
 	ServerLog   LogType = "server"
 	Browser             = "browser"
@@ -197,8 +198,11 @@ type WebDriver interface {
 	/* Start a new session, return session id */
 	NewSession() (string, error)
 
-	/* Current session id (empty string on none) */
+	/* SessionId is deprecated, use SessionID */
 	SessionId() string
+
+	/* Current session id (empty string on none) */
+	SessionID() string
 
 	/* SwitchSession switches to the given session id. */
 	SwitchSession(sessionID string) error
