@@ -138,6 +138,18 @@ func cleanNils(buf []byte) {
 	}
 }
 
+func extractMessage(iVal interface{}) (msg string, ok bool) {
+	val := map[string]interface{}{}
+
+	if val, ok = iVal.(map[string]interface{}); ok {
+		if _, ok = val["message"]; ok {
+			msg, ok = val["message"].(string)
+		}
+	}
+
+	return
+}
+
 func isRedirect(response *http.Response) bool {
 	switch response.StatusCode {
 	case 301, 302, 303, 307:
@@ -200,13 +212,8 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, error) {
 			message = fmt.Sprintf("unknown error - %d", reply.Status)
 		}
 
-		if val, ok := reply.Value.(map[string]interface{}); ok {
-			_, exists := val["message"]
-			if exists {
-				if _message, ok := val["message"].(string); ok {
-					message = _message
-				}
-			}
+		if moreDetailsMessage, ok := extractMessage(reply.Value); ok {
+			message = moreDetailsMessage
 		}
 
 		return nil, errors.New(message)
