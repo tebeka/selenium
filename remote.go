@@ -61,6 +61,8 @@ type remoteWD struct {
 type serverReply struct {
 	SessionId *string // sessionId can be null
 	Status    int
+	State     string
+	Value     interface{}
 }
 
 /* Various reply types, we use them to json.Unmarshal replies */
@@ -136,6 +138,18 @@ func cleanNils(buf []byte) {
 	}
 }
 
+func extractMessage(iVal interface{}) (msg string, ok bool) {
+	val := map[string]interface{}{}
+
+	if val, ok = iVal.(map[string]interface{}); ok {
+		if _, ok = val["message"]; ok {
+			msg, ok = val["message"].(string)
+		}
+	}
+
+	return
+}
+
 func isRedirect(response *http.Response) bool {
 	switch response.StatusCode {
 	case 301, 302, 303, 307:
@@ -192,9 +206,14 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, error) {
 		if err != nil {
 			return nil, errors.New(fmt.Sprintf("Bad server reply status: %s", response.Status))
 		}
+
 		message, ok := remoteErrors[reply.Status]
 		if !ok {
 			message = fmt.Sprintf("unknown error - %d", reply.Status)
+		}
+
+		if moreDetailsMessage, ok := extractMessage(reply.Value); ok {
+			message = moreDetailsMessage
 		}
 
 		return nil, errors.New(message)
