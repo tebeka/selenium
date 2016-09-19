@@ -4,7 +4,7 @@ Package selenium provider a Selenium/Webdriver client.
 Currently provides only WebDriver remote client.
 This means you'll need to run the Selenium server by yourself (or use a service
 like SauceLabs). The easiest way to do that is to grab the Selenium server jar
-from http://selenium.googlecode.com/files and run it
+from http://www.seleniumhq.org/download/ and run it
 	java -jar selenium-server-standalone-2.24.1.jar
 
 Example usage:
