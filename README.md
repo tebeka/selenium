@@ -2,6 +2,10 @@
 
 [![Travis](https://travis-ci.org/tebeka/selenium.svg?branch=master)](https://travis-ci.org/tebeka/selenium)
 
+# Looking for Maintainer
+If you're interested in taking over this package, please contact me (@tebeka).
+There's no active development other than accepting patches currently.
+
 # About
 This is a [Selenium][selenium] client for [Go][go].
 Currently it supports only the remote WebDriver client, so you'll need a

@@ -20,7 +20,7 @@ func browser() string {
 	return "firefox"
 }
 
-func isHtmlUnit() bool {
+func isHTMLUnit() bool {
 	return browser() == "htmlunit"
 }
 
@@ -55,7 +55,7 @@ func TestStatus(t *testing.T) {
 }
 
 func TestNewSession(t *testing.T) {
-	wd := &remoteWD{capabilities: getCaps(), executor: DEFAULT_EXECUTOR}
+	wd := &remoteWD{capabilities: getCaps(), executor: DefaultExecutor}
 	sid, err := wd.NewSession()
 	defer wd.Quit()
 
@@ -341,7 +341,7 @@ func TestClick(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	button, err := wd.FindElement(ById, "submit")
+	button, err := wd.FindElement(ByID, "submit")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -380,7 +380,7 @@ func TestGetCookies(t *testing.T) {
 }
 
 func TestAddCookie(t *testing.T) {
-	if isHtmlUnit() {
+	if isHTMLUnit() {
 		t.Log("Skipping on htmlunit")
 		return
 	}
@@ -443,7 +443,7 @@ func TestLocation(t *testing.T) {
 	defer wd.Quit()
 
 	wd.Get(serverURL)
-	button, err := wd.FindElement(ById, "submit")
+	button, err := wd.FindElement(ByID, "submit")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -463,7 +463,7 @@ func TestLocationInView(t *testing.T) {
 	defer wd.Quit()
 
 	wd.Get(serverURL)
-	button, err := wd.FindElement(ById, "submit")
+	button, err := wd.FindElement(ByID, "submit")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -483,7 +483,7 @@ func TestSize(t *testing.T) {
 	defer wd.Quit()
 
 	wd.Get(serverURL)
-	button, err := wd.FindElement(ById, "submit")
+	button, err := wd.FindElement(ByID, "submit")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -499,7 +499,7 @@ func TestSize(t *testing.T) {
 }
 
 func TestExecuteScript(t *testing.T) {
-	if isHtmlUnit() {
+	if isHTMLUnit() {
 		t.Log("Skipping on htmlunit")
 		return
 	}
@@ -524,7 +524,7 @@ func TestExecuteScript(t *testing.T) {
 }
 
 func TestScreenshot(t *testing.T) {
-	if isHtmlUnit() {
+	if isHTMLUnit() {
 		t.Log("Skipping on htmlunit")
 		return
 	}
@@ -543,7 +543,7 @@ func TestScreenshot(t *testing.T) {
 }
 
 func TestLog(t *testing.T) {
-	if isHtmlUnit() {
+	if isHTMLUnit() {
 		t.Log("Skipping on htmlunit")
 		return
 	}
@@ -566,7 +566,7 @@ func TestIsSelected(t *testing.T) {
 	defer wd.Quit()
 
 	wd.Get(serverURL)
-	elem, err := wd.FindElement(ById, "chuk")
+	elem, err := wd.FindElement(ByID, "chuk")
 	if err != nil {
 		t.Fatal("Can't find element")
 	}
@@ -599,7 +599,7 @@ func TestIsDisplayed(t *testing.T) {
 	defer wd.Quit()
 
 	wd.Get(serverURL)
-	elem, err := wd.FindElement(ById, "chuk")
+	elem, err := wd.FindElement(ByID, "chuk")
 	if err != nil {
 		t.Fatal("Can't find element")
 	}
@@ -618,7 +618,7 @@ func TestGetAttributeNotFound(t *testing.T) {
 	defer wd.Quit()
 
 	wd.Get(serverURL)
-	elem, err := wd.FindElement(ById, "chuk")
+	elem, err := wd.FindElement(ByID, "chuk")
 	if err != nil {
 		t.Fatal("Can't find element")
 	}

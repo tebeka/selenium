@@ -1,6 +1,7 @@
 /* Remote Selenium client implementation.
 
-See http://code.google.com/p/selenium/wiki/JsonWireProtocol for wire protocol.
+See https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol for wire
+protocol.
 */
 
 package selenium
@@ -19,7 +20,7 @@ import (
 )
 
 /* Errors returned by Selenium server. */
-var errors_ = map[int]string{
+var remoteErrors = map[int]string{
 	7:  "no such element",
 	8:  "no such frame",
 	9:  "unknown command",
@@ -42,10 +43,14 @@ var errors_ = map[int]string{
 }
 
 const (
-	SUCCESS          = 0
-	DEFAULT_EXECUTOR = "http://127.0.0.1:4444/wd/hub"
-	JSON_TYPE        = "application/json"
-	MAX_REDIRECTS    = 10
+	// Success of method
+	Success = 0
+	// DefaultExecutor is the default executor URL
+	DefaultExecutor = "http://127.0.0.1:4444/wd/hub"
+	// JSONType is JSON content type
+	JSONType = "application/json"
+	// MaxRedirects to follow
+	MaxRedirects = 10
 )
 
 type remoteWD struct {
@@ -57,8 +62,10 @@ type remoteWD struct {
 
 /* Server reply */
 type serverReply struct {
-	SessionId *string // sessionId can be null
+	SessionID *string // sessionId can be null
 	Status    int
+	State     string
+	Value     interface{}
 }
 
 /* Various reply types, we use them to json.Unmarshal replies */
@@ -104,6 +111,7 @@ type logReply struct {
 
 var httpClient *http.Client
 
+// GetHTTPClient return the defalt HTTP client
 func GetHTTPClient() *http.Client {
 	return httpClient
 }
@@ -121,7 +129,7 @@ func newRequest(method string, url string, data []byte) (*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
-	request.Header.Add("Accept", JSON_TYPE)
+	request.Header.Add("Accept", JSONType)
 
 	return request, nil
 }
@@ -132,6 +140,18 @@ func cleanNils(buf []byte) {
 			buf[i] = ' '
 		}
 	}
+}
+
+func extractMessage(iVal interface{}) (msg string, ok bool) {
+	val := map[string]interface{}{}
+
+	if val, ok = iVal.(map[string]interface{}); ok {
+		if _, ok = val["message"]; ok {
+			msg, ok = val["message"].(string)
+		}
+	}
+
+	return
 }
 
 func isRedirect(response *http.Response) bool {
@@ -180,7 +200,7 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, error) {
 	}
 
 	if err != nil {
-		return nil, errors.New(string(buf))
+		return nil, fmt.Errorf("%s", (string(buf)))
 	}
 
 	cleanNils(buf)
@@ -188,11 +208,16 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, error) {
 		reply := new(serverReply)
 		err := json.Unmarshal(buf, reply)
 		if err != nil {
-			return nil, errors.New(fmt.Sprintf("Bad server reply status: %s", response.Status))
+			return nil, fmt.Errorf("Bad server reply status: %s", response.Status)
 		}
-		message, ok := errors_[reply.Status]
+
+		message, ok := remoteErrors[reply.Status]
 		if !ok {
 			message = fmt.Sprintf("unknown error - %d", reply.Status)
+		}
+
+		if moreDetailsMessage, ok := extractMessage(reply.Value); ok {
+			message = moreDetailsMessage
 		}
 
 		return nil, errors.New(message)
@@ -201,15 +226,15 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, error) {
 	/* Some bug(?) in Selenium gets us nil values in output, json.Unmarshal is
 	* not happy about that.
 	 */
-	if isMimeType(response, JSON_TYPE) {
+	if isMimeType(response, JSONType) {
 		reply := new(serverReply)
 		err := json.Unmarshal(buf, reply)
 		if err != nil {
 			return nil, err
 		}
 
-		if reply.Status != SUCCESS {
-			message, ok := errors_[reply.Status]
+		if reply.Status != Success {
+			message, ok := remoteErrors[reply.Status]
 			if !ok {
 				message = fmt.Sprintf("unknown error - %d", reply.Status)
 			}
@@ -223,15 +248,17 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, error) {
 	return buf, nil
 }
 
-/* Create new remote client, this will also start a new session.
-   capabilities - the desired capabilities, see http://goo.gl/SNlAk
-   executor - the URL to the Selenim server, *must* be prefixed with protocol (http,https...).
-              Empty string means DEFAULT_EXECUTOR
+/*
+NewRemote creates new remote client, this will also start a new session.
+capabilities - the desired capabilities, see http://goo.gl/SNlAk executor - the
+URL to the Selenim server, *must* be prefixed with protocol (http,https...).
+
+Empty string means DefaultExecutor
 */
 func NewRemote(capabilities Capabilities, executor string) (WebDriver, error) {
 
 	if len(executor) == 0 {
-		executor = DEFAULT_EXECUTOR
+		executor = DefaultExecutor
 	}
 
 	wd := &remoteWD{executor: executor, capabilities: capabilities}
@@ -340,12 +367,18 @@ func (wd *remoteWD) NewSession() (string, error) {
 	reply := new(serverReply)
 	json.Unmarshal(response, reply)
 
-	wd.id = *reply.SessionId
+	wd.id = *reply.SessionID
 
 	return wd.id, nil
 }
 
+// SessionId is deprecated, use SessionID
 func (wd *remoteWD) SessionId() string {
+	return wd.SessionID()
+}
+
+// SessionId returns the current session ID
+func (wd *remoteWD) SessionID() string {
 	return wd.id
 }
 
@@ -632,9 +665,13 @@ func (wd *remoteWD) ResizeWindow(name string, width, height int) error {
 }
 
 func (wd *remoteWD) SwitchFrame(frame string) error {
-	params := map[string]string{
+	params := map[string]interface{}{
 		"id": frame,
 	}
+	if len(frame) == 0 {
+		params["id"] = nil
+	}
+
 	data, err := json.Marshal(params)
 	if err != nil {
 		return err
@@ -1015,11 +1052,11 @@ func init() {
 	// http.Client doesn't copy request headers, and selenium requires that
 	httpClient = &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			if len(via) > MAX_REDIRECTS {
+			if len(via) > MaxRedirects {
 				return fmt.Errorf("too many redirects (%d)", len(via))
 			}
 
-			req.Header.Add("Accept", JSON_TYPE)
+			req.Header.Add("Accept", JSONType)
 			return nil
 		},
 	}
