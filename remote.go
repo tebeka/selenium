@@ -197,9 +197,9 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, error) {
 	// Are we in debug mode, and did we read the response Body successfully?
 	if debugFlag && err == nil {
 		// Pretty print the JSON response
-		prettyBuf := bytes.NewBufferString("")
-		err = json.Indent(prettyBuf, buf, "", "    ")
-		if prettyBuf.Len() > 0 {
+		var prettyBuf bytes.Buffer
+		err = json.Indent(&prettyBuf, buf, "", "    ")
+		if err == nil && prettyBuf.Len() > 0 {
 			buf = prettyBuf.Bytes()
 		}
 	}
