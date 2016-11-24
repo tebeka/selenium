@@ -675,12 +675,12 @@ func (wd *remoteWD) ResizeWindow(name string, width, height int) error {
 	return err
 }
 
-func (wd *remoteWD) SwitchFrame(frame string) error {
+func (wd *remoteWD) SwitchFrame(we WebElement) error {
 	params := map[string]interface{}{
-		"id": frame,
+		"id": nil,
 	}
-	if len(frame) == 0 {
-		params["id"] = nil
+	if we != nil {
+		params["id"] = map[string]string{"ELEMENT": we.(*remoteWE).id}
 	}
 
 	data, err := json.Marshal(params)
