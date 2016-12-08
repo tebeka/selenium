@@ -2,6 +2,7 @@ package selenium
 
 import (
 	"fmt"
+	"math"
 	"net/http"
 	"os"
 	"strings"
@@ -388,7 +389,11 @@ func TestAddCookie(t *testing.T) {
 	defer wd.Quit()
 
 	wd.Get(serverURL)
-	cookie := &Cookie{Name: "the nameless cookie", Value: "I have nothing"}
+	cookie := &Cookie{
+		Name:   "the nameless cookie",
+		Value:  "I have nothing",
+		Expiry: math.MaxUint32,
+	}
 	err := wd.AddCookie(cookie)
 	if err != nil {
 		t.Fatal(err)
@@ -399,7 +404,7 @@ func TestAddCookie(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, c := range cookies {
-		if (c.Name == cookie.Name) && (c.Value == cookie.Value) {
+		if (c.Name == cookie.Name) && (c.Value == cookie.Value) && (c.Expiry == math.MaxUint32) {
 			return
 		}
 	}
