@@ -224,8 +224,11 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, error) {
 			message = fmt.Sprintf("unknown error - %d", reply.Status)
 		}
 
+		// TODO(minusnine): Add a test for this concatenation. Some clients
+		// inspect the string for the value of remoteErrors[reply.Status].
+		// Consider exposing these better.
 		if moreDetailsMessage, ok := extractMessage(reply.Value); ok {
-			message = moreDetailsMessage
+			message = fmt.Sprintf("%s: %s", message, moreDetailsMessage)
 		}
 
 		return nil, errors.New(message)
