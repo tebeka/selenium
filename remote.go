@@ -90,9 +90,6 @@ type elementReply struct {
 type elementsReply struct {
 	Value []element
 }
-type cookiesReply struct {
-	Value []Cookie
-}
 type locationReply struct {
 	Value Point
 }
@@ -707,13 +704,42 @@ func (wd *remoteWD) GetCookies() ([]Cookie, error) {
 		return nil, err
 	}
 
-	reply := new(cookiesReply)
-	err = json.Unmarshal(data, reply)
-	if err != nil {
+	// ChromeDriver returns the expiration date as a float. Handle both formats via a type switch.
+	type cookie struct {
+		Name   string      `json:"name"`
+		Value  string      `json:"value"`
+		Path   string      `json:"path"`
+		Domain string      `json:"domain"`
+		Secure bool        `json:"secure"`
+		Expiry interface{} `json:"expiry"`
+	}
+
+	reply := new(struct{ Value []cookie })
+	if err = json.Unmarshal(data, reply); err != nil {
 		return nil, err
 	}
 
-	return reply.Value, nil
+	cookies := make([]Cookie, len(reply.Value))
+	for i, c := range reply.Value {
+		sanitized := Cookie{
+			Name:   c.Name,
+			Value:  c.Value,
+			Path:   c.Path,
+			Domain: c.Domain,
+			Secure: c.Secure,
+		}
+		switch expiry := c.Expiry.(type) {
+		case int:
+			if expiry > 0 {
+				sanitized.Expiry = uint(expiry)
+			}
+		case float64:
+			sanitized.Expiry = uint(expiry)
+		}
+		cookies[i] = sanitized
+	}
+
+	return cookies, nil
 }
 
 func (wd *remoteWD) AddCookie(cookie *Cookie) error {
