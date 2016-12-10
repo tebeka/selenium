@@ -2,14 +2,12 @@
 
 [![Travis](https://travis-ci.org/tebeka/selenium.svg?branch=master)](https://travis-ci.org/tebeka/selenium)
 
-# Looking for Maintainer
-If you're interested in taking over this package, please contact me (@tebeka).
-There's no active development other than accepting patches currently.
-
 # About
 This is a [Selenium][selenium] client for [Go][go].
 Currently it supports only the remote WebDriver client, so you'll need a
 [selenium server][server] running.
+
+`selenium` is currently maintained by Eric Garrido (@minusnine).
 
 [selenium]: http://seleniumhq.org/
 [go]: http://golang.org/
@@ -65,7 +63,6 @@ See [here][changelog].
 * Test with `./run-tests.sh`.
     * Alternatively if you have docker run `make test-docker` which will run the
       tests in a docker container without all these annoying windows popping up.
-* I (Miki) work on `dev` branch since `go get` pull from default.
 
 # License
 [MIT][mit]
