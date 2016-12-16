@@ -1,8 +1,8 @@
-`selenium` - Selenium Client For Go
+# `selenium` - Selenium Client For Go
 
 [![Travis](https://travis-ci.org/tebeka/selenium.svg?branch=master)](https://travis-ci.org/tebeka/selenium)
 
-# About
+## About
 This is a [Selenium][selenium] client for [Go][go].
 Currently it supports only the remote WebDriver client, so you'll need a
 [selenium server][server] running.
@@ -13,17 +13,17 @@ Currently it supports only the remote WebDriver client, so you'll need a
 [go]: http://golang.org/
 [server]: http://seleniumhq.org/download/
 
-# Installing
+## Installing
 Run
 
     go get github.com/tebeka/selenium
 
-# Docs
+## Docs
 Docs are at [godoc.org][godoc]. 
 
 [godoc]: https://godoc.org/github.com/tebeka/selenium
 
-## AppEngine
+### AppEngine
 
 `GetHTTPClient` exposes the HTTP client used by the driver. You can access it to
 add the request context.
@@ -39,12 +39,12 @@ add the request context.
 Thanks to [bthomson](https://bitbucket.org/tebeka/selenium/issue/8) for this
 one.
 
-# Changes
+## Changes
 See [here][changelog].
 
 [changelog]: ChangeLog
 
-# TODO
+## TODO
 * Support Firefox profiles
 * Finish full [Selenium API][api].
 * More testing
@@ -56,7 +56,7 @@ See [here][changelog].
 [sel1]: http://wiki.openqa.org/display/SRC/Specifications+for+Selenium+Remote+Control+Client+Driver+Protocol
 [sauce]: http://saucelabs.com/docs/quickstart
 
-# Hacking
+## Hacking
 
 * You'll need a Selenium server to run the tests, run `selenium.sh download` to
   get it and `selenium.sh start` to run it.
@@ -64,7 +64,12 @@ See [here][changelog].
     * Alternatively if you have docker run `make test-docker` which will run the
       tests in a docker container without all these annoying windows popping up.
 
-# License
+## License
 [MIT][mit]
 
 [mit]: https://bitbucket.org/tebeka/selenium/src/tip/LICENSE.txt
+
+
+## Disclaimer
+
+This is not an official Google product.
