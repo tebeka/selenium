@@ -109,6 +109,9 @@ type Proxy struct {
 	SOCKSUsername string `json:"socksUsername,omitempty"`
 	SOCKSPassword string `json:"socksPassword,omitempty"`
 	NoProxy       string `json:"noProxy,omitempty"`
+
+	// TODO(minusnine): The W3C draft spec includes port fields as well. Should
+	// they be added here?
 }
 
 // ProxyType is an enumeration of the types of proxies available.
