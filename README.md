@@ -1,17 +1,22 @@
 # `selenium` - Selenium Client For Go
 
+[![GoDoc](https://godoc.org/github.com/tebeka/selenium?status.svg)](https://godoc.org/github.com/tebeka/selenium)
 [![Travis](https://travis-ci.org/tebeka/selenium.svg?branch=master)](https://travis-ci.org/tebeka/selenium)
+[![Go Report Card](https://goreportcard.com/badge/github.com/tebeka/selenium)](https://goreportcard.com/report/github.com/tebeka/selenium)
 
 ## About
-This is a [Selenium][selenium] client for [Go][go].
-Currently it supports only the remote WebDriver client, so you'll need a
-[selenium server][server] running.
 
-`selenium` is currently maintained by Eric Garrido (@minusnine).
+This is a [Selenium][selenium] client for [Go][go]. It supports the WebDriver
+protocol and has been tested on [Selenium WebDriver][selenium] and
+[ChromeDriver][chromedriver].
+
+`selenium` is currently maintained by Eric Garrido ([@minusnine][minusnine]).
 
 [selenium]: http://seleniumhq.org/
 [go]: http://golang.org/
 [server]: http://seleniumhq.org/download/
+[chromedriver]: https://sites.google.com/a/chromium.org/chromedriver/
+[minusnine]: http://github.com/minusnine
 
 ## Installing
 
@@ -21,9 +26,7 @@ Run
 
 ## Docs
 
-Docs are at [godoc.org][godoc]. 
-
-[godoc]: https://godoc.org/github.com/tebeka/selenium
+Docs are at https://godoc.org/github.com/tebeka/selenium
 
 ### AppEngine
 
@@ -41,22 +44,19 @@ add the request context.
 Thanks to [bthomson](https://bitbucket.org/tebeka/selenium/issue/8) for this
 one.
 
-## Changes
-See [here][changelog].
-
-[changelog]: ChangeLog
-
 ## TODO
-* Support Firefox profiles
-* Finish full [Selenium API][api].
-* More testing
-* [Selenium 1][sel1] client
-* Our own server for testing (getting out takes too much time)
-* [SauceLabs][sauce] integration
 
-[api]: http://code.google.com/p/selenium/wiki/JsonWireProtocol
-[sel1]: http://wiki.openqa.org/display/SRC/Specifications+for+Selenium+Remote+Control+Client+Driver+Protocol
+* Finish full [Selenium API][api].
+* Test with Selenium [WebDriver 3.0][webdriver3]
+* [SauceLabs][sauce] integration
+* Add usage examples
+* Support Firefox profiles
+* Implement types that provide [all capabilities][allcaps].
+
+[api]: https://www.w3.org/TR/webdriver/
 [sauce]: http://saucelabs.com/docs/quickstart
+[webdriver3]: https://seleniumhq.wordpress.com/2016/10/13/selenium-3-0-out-now
+[allcaps]: https://github.com/SeleniumHQ/selenium/wiki/DesiredCapabilities
 
 ## Hacking
 
@@ -100,11 +100,13 @@ Run the tests:
 
 #### With Docker
 
-Run the tests under docker:
+You will need an installed and running Docker system.
+
+To run the tests under Docker, run:
 
     $ go test --docker
 
-This will create a new docker container and run the tests in it. (Note: flags
+This will create a new Docker container and run the tests in it. (Note: flags
 supplied to this invocation are not curried to the `go test` invocation within
 the Docker container).
 
@@ -113,7 +115,3 @@ the Docker container).
 This project is licensed under the [MIT][mit] license.
 
 [mit]: https://raw.githubusercontent.com/tebeka/selenium/master/LICENSE
-
-## Disclaimer
-
-This is not an official Google product.
