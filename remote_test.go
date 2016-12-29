@@ -1,49 +1,239 @@
 package selenium
 
 import (
+	"flag"
 	"fmt"
 	"math"
+	"net"
 	"net/http"
+	"net/http/httptest"
 	"os"
+	"os/exec"
 	"strings"
 	"testing"
 	"time"
 )
 
-var serverPort = ":4793"
-var serverURL = "http://localhost" + serverPort + "/"
+var (
+	seleniumPath     = flag.String("selenium_path", "vendor/selenium-server-standalone-2.53.1.jar", "The path to the Selenium server JAR. If empty or the file is not present, Firefox tests will not be run.")
+	firefoxBinary    = flag.String("firefox_binary", "firefox", "The name of the Firefox binary or the path to it. If the name does not contain directory separators, the PATH will be searched.")
+	chromeDriverPath = flag.String("chrome_driver_path", "vendor/chromedriver-linux64-2.26", "The path to the ChromeDriver binary. If empty of the file is not present, Chrome tests will not be run.")
+	chromeBinary     = flag.String("chrome_binary", "chromium", "The name of the Firefox binary or the path to it. If the name does not contain directory separators, the PATH will be searched.")
 
-func browser() string {
-	browser := os.Getenv("TEST_BROWSER")
-	if len(browser) > 0 {
-		return browser
-	}
-	return "firefox"
+	useDocker          = flag.Bool("docker", false, "If set, run the tests in a Docker container.")
+	runningUnderDocker = flag.Bool("running_under_docker", false, "This is set by the Docker test harness and should not be needed otherwise.")
+
+	startFrameBuffer = flag.Bool("start_frame_buffer", true, "If true, start an Xvfb subprocess and run the browsers in that X server.")
+
+	serverURL string
+)
+
+func TestMain(m *testing.M) {
+	flag.Parse()
+	s := httptest.NewServer(http.HandlerFunc(handler))
+	serverURL = s.URL
+	defer s.Close()
+	os.Exit(m.Run())
 }
 
-func isHTMLUnit() bool {
-	return browser() == "htmlunit"
-}
-
-func getCaps() Capabilities {
-	return Capabilities{
-		"browserName": browser(),
-	}
-}
-
-func newRemote(testName string, t *testing.T) WebDriver {
-	executor := ""
-	wd, err := NewRemote(getCaps(), executor)
+func pickUnusedPort() (int, error) {
+	addr, err := net.ResolveTCPAddr("tcp", "127.0.0.1:0")
 	if err != nil {
-		t.Fatalf("can't start session - %s", err)
+		return 0, err
 	}
 
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return 0, err
+	}
+	port := l.Addr().(*net.TCPAddr).Port
+	if err := l.Close(); err != nil {
+		return 0, err
+	}
+	return port, nil
+}
+
+type config struct {
+	addr, browser string
+}
+
+func TestChrome(t *testing.T) {
+	if *useDocker {
+		t.Skip("Skipping Chrome tests because they will be run under a Docker container")
+	}
+	_, statErr := os.Stat(*chromeBinary)
+	_, lookupErr := exec.LookPath(*chromeBinary)
+	if statErr != nil && lookupErr != nil {
+		t.Skipf("Skipping Chrome tests because binary %q not found", *chromeBinary)
+	}
+	if _, err := os.Stat(*chromeDriverPath); err != nil {
+		t.Skipf("Skipping Chrome tests because ChromeDriver not found at path %q", *chromeDriverPath)
+	}
+
+	var opts []ServiceOption
+	if *startFrameBuffer {
+		opts = append(opts, StartFrameBuffer())
+	}
+	if testing.Verbose() {
+		opts = append(opts, Output(os.Stderr))
+	}
+
+	port, err := pickUnusedPort()
+	if err != nil {
+		t.Fatalf("pickUnusedPort() returned error: %v", err)
+	}
+
+	s, err := NewChromeDriverService(*chromeDriverPath, port, opts...)
+	if err != nil {
+		t.Fatalf("Error starting the ChromeDriver server: %v", err)
+	}
+
+	runTests(t, config{
+		addr:    fmt.Sprintf("http://127.0.0.1:%d/wd/hub", port),
+		browser: *chromeBinary,
+	})
+
+	if err := s.Stop(); err != nil {
+		t.Fatalf("Error stopping the ChromeDriver service: %v", err)
+	}
+}
+
+func TestFirefox(t *testing.T) {
+	if *useDocker {
+		t.Skip("Skipping Firefox tests because they will be run under a Docker container")
+	}
+
+	_, statErr := os.Stat(*firefoxBinary)
+	_, lookupErr := exec.LookPath(*firefoxBinary)
+	if statErr != nil && lookupErr != nil {
+		t.Skipf("Skipping Firefox tests because binary %q not found", *firefoxBinary)
+	}
+	if _, err := os.Stat(*seleniumPath); err != nil {
+		t.Skipf("Skipping Firefox tests because Selenium WebDriver JAR not found at path %q", *seleniumPath)
+	}
+
+	var opts []ServiceOption
+	if *startFrameBuffer {
+		opts = append(opts, StartFrameBuffer())
+	}
+	if testing.Verbose() {
+		opts = append(opts, Output(os.Stderr))
+	}
+
+	port, err := pickUnusedPort()
+	if err != nil {
+		t.Fatalf("pickUnusedPort() returned error: %v", err)
+	}
+
+	s, err := NewSeleniumService(*seleniumPath, port, opts...)
+	if err != nil {
+		t.Fatalf("Error starting the Selenium server: %v", err)
+	}
+
+	runTests(t, config{
+		addr:    fmt.Sprintf("http://127.0.0.1:%d/wd/hub", port),
+		browser: *firefoxBinary,
+	})
+
+	if err := s.Stop(); err != nil {
+		t.Fatalf("Error stopping the Selenium service: %v", err)
+	}
+}
+
+func TestDocker(t *testing.T) {
+	if *runningUnderDocker {
+		return
+	}
+	if !*useDocker {
+		t.Skip("Skipping Docker tests because --docker was not specified.")
+	}
+
+	args := []string{"build", "-t", "go-selenium", "testing/"}
+	if out, err := exec.Command("docker", args...).CombinedOutput(); err != nil {
+		t.Logf("Output from `docker %s`:\n%s", strings.Join(args, " "), string(out))
+		t.Fatalf("Building Docker container failed: %v", err)
+	}
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("os.Getwd() returned error: %v", err)
+	}
+	args = []string{"run", "-v", cwd + ":/code", "-w", "/code", "go-selenium", "testing/docker-test.sh"}
+	cmd := exec.Command("docker", args...)
+	if testing.Verbose() {
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+	}
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("docker run failed: %v", err)
+	}
+}
+
+func newRemote(t *testing.T, c config) WebDriver {
+	caps := Capabilities{
+		"browserName": c.browser,
+	}
+	if *runningUnderDocker && c.browser != "firefox" {
+		caps["chromeOptions"] = ChromeOptions{
+			Args: []string{"--no-sandbox"},
+		}
+	}
+	wd, err := NewRemote(caps, c.addr)
+	if err != nil {
+		t.Fatalf("NewRemote(%v, %q) returned error: %v", caps, c.addr, err)
+	}
 	return wd
 }
 
-func TestStatus(t *testing.T) {
-	wd := newRemote("TestStatus", t)
-	defer wd.Quit()
+func quitRemote(t *testing.T, wd WebDriver) {
+	if err := wd.Quit(); err != nil {
+		t.Errorf("wd.Quit() returned error: %v", err)
+	}
+}
+
+func runTest(f func(*testing.T, config), c config) func(*testing.T) {
+	return func(t *testing.T) {
+		f(t, c)
+	}
+}
+
+func runTests(t *testing.T, c config) {
+	t.Run("Status", runTest(testStatus, c))
+	t.Run("NewSession", runTest(testNewSession, c))
+	t.Run("Capabilities", runTest(testCapabilities, c))
+	t.Run("SetAsyncScriptTimeout", runTest(testSetAsyncScriptTimeout, c))
+	t.Run("SetImplicitWaitTimeout", runTest(testSetImplicitWaitTimeout, c))
+	t.Run("SetPageLoadTimeout", runTest(testSetPageLoadTimeout, c))
+	t.Run("CurrentWindowHandle", runTest(testCurrentWindowHandle, c))
+	t.Run("WindowHandles", runTest(testWindowHandles, c))
+	t.Run("Get", runTest(testGet, c))
+	t.Run("Navigation", runTest(testNavigation, c))
+	t.Run("Title", runTest(testTitle, c))
+	t.Run("PageSource", runTest(testPageSource, c))
+	t.Run("FindElement", runTest(testFindElement, c))
+	t.Run("FindElements", runTest(testFindElements, c))
+	t.Run("SendKeys", runTest(testSendKeys, c))
+	t.Run("Click", runTest(testClick, c))
+	t.Run("GetCookies", runTest(testGetCookies, c))
+	t.Run("AddCookie", runTest(testAddCookie, c))
+	t.Run("DeleteCookie", runTest(testDeleteCookie, c))
+	t.Run("Location", runTest(testLocation, c))
+	t.Run("LocationInView", runTest(testLocationInView, c))
+	t.Run("Size", runTest(testSize, c))
+	t.Run("ExecuteScript", runTest(testExecuteScript, c))
+	t.Run("Screenshot", runTest(testScreenshot, c))
+	t.Run("Log", runTest(testLog, c))
+	t.Run("IsSelected", runTest(testIsSelected, c))
+	t.Run("IsDisplayed", runTest(testIsDisplayed, c))
+	t.Run("GetAttributeNotFound", runTest(testGetAttributeNotFound, c))
+	t.Run("MaximizeWindow", runTest(testMaximizeWindow, c))
+	t.Run("ResizeWindow", runTest(testResizeWindow, c))
+	t.Run("KeyDownUp", runTest(testKeyDownUp, c))
+}
+
+func testStatus(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
 
 	status, err := wd.Status()
 	if err != nil {
@@ -55,14 +245,24 @@ func TestStatus(t *testing.T) {
 	}
 }
 
-func TestNewSession(t *testing.T) {
-	wd := &remoteWD{capabilities: getCaps(), executor: DefaultExecutor}
-	sid, err := wd.NewSession()
-	defer wd.Quit()
+func testNewSession(t *testing.T, c config) {
+	wd := &remoteWD{
+		capabilities: Capabilities{
+			"browserName": c.browser,
+		},
+		executor: c.addr,
+	}
+	if *runningUnderDocker && c.browser != "firefox" {
+		wd.capabilities["chromeOptions"] = ChromeOptions{
+			Args: []string{"--no-sandbox"},
+		}
+	}
 
+	sid, err := wd.NewSession()
 	if err != nil {
 		t.Fatalf("error in new session - %s", err)
 	}
+	defer wd.Quit()
 
 	if len(sid) == 0 {
 		t.Fatal("Empty session id")
@@ -71,27 +271,40 @@ func TestNewSession(t *testing.T) {
 	if wd.id != sid {
 		t.Fatal("Session id mismatch")
 	}
+
+	if wd.SessionID() != sid {
+		t.Fatalf("Got session id mismatch %s != %s", sid, wd.SessionID())
+	}
 }
 
-func TestCapabilities(t *testing.T) {
-	wd := newRemote("TestCapabilities", t)
-	defer wd.Quit()
+func testCapabilities(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
 
-	c, err := wd.Capabilities()
+	caps, err := wd.Capabilities()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	browser := getCaps()["browserName"]
+	want := map[string]string{
+		"firefox":          "firefox",
+		"chromium":         "chrome",
+		"chromium-browser": "chrome",
+		"google-chrome":    "chrome",
+	}[c.browser]
 
-	if c["browserName"] != browser {
-		t.Fatalf("bad browser name - %s (should be %s)", c["browserName"], browser)
+	if want == "" {
+		t.Skip("Canonicalized browser name for %q not found. Update testCapabilities with the mapping.", c.browser)
+	}
+
+	if caps["browserName"] != want {
+		t.Fatalf("bad browser name - %s (should be %s)", caps["browserName"], want)
 	}
 }
 
-func TestSetAsyncScriptTimeout(t *testing.T) {
-	wd := newRemote("TestSetAsyncScriptTimeout", t)
-	defer wd.Quit()
+func testSetAsyncScriptTimeout(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
 
 	err := wd.SetAsyncScriptTimeout(200)
 	if err != nil {
@@ -99,9 +312,9 @@ func TestSetAsyncScriptTimeout(t *testing.T) {
 	}
 }
 
-func TestSetImplicitWaitTimeout(t *testing.T) {
-	wd := newRemote("TestSetImplicitWaitTimeout", t)
-	defer wd.Quit()
+func testSetImplicitWaitTimeout(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
 
 	err := wd.SetImplicitWaitTimeout(200)
 	if err != nil {
@@ -109,18 +322,18 @@ func TestSetImplicitWaitTimeout(t *testing.T) {
 	}
 }
 
-func TestSetPageLoadTimeout(t *testing.T) {
-	wd := newRemote("TestSetPageLoadTimeout", t)
-	defer wd.Quit()
+func testSetPageLoadTimeout(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
 
 	if err := wd.SetPageLoadTimeout(200); err != nil {
 		t.Fatal(err)
 	}
 }
 
-func TestCurrentWindowHandle(t *testing.T) {
-	wd := newRemote("TestCurrentWindowHandle", t)
-	defer wd.Quit()
+func testCurrentWindowHandle(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
 
 	handle, err := wd.CurrentWindowHandle()
 
@@ -133,9 +346,9 @@ func TestCurrentWindowHandle(t *testing.T) {
 	}
 }
 
-func TestWindowHandles(t *testing.T) {
-	wd := newRemote("TestWindowHandles", t)
-	defer wd.Quit()
+func testWindowHandles(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
 
 	handles, err := wd.CurrentWindowHandle()
 	if err != nil {
@@ -147,9 +360,9 @@ func TestWindowHandles(t *testing.T) {
 	}
 }
 
-func TestGet(t *testing.T) {
-	wd := newRemote("TestGet", t)
-	defer wd.Quit()
+func testGet(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
 
 	err := wd.Get(serverURL)
 	if err != nil {
@@ -161,14 +374,14 @@ func TestGet(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if newURL != serverURL {
+	if newURL != serverURL+"/" {
 		t.Fatalf("%s != %s", newURL, serverURL)
 	}
 }
 
-func TestNavigation(t *testing.T) {
-	wd := newRemote("TestNavigation", t)
-	defer wd.Quit()
+func testNavigation(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
 
 	url1 := serverURL
 	err := wd.Get(url1)
@@ -176,7 +389,7 @@ func TestNavigation(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	url2 := serverURL + "other"
+	url2 := serverURL + "/other"
 	err = wd.Get(url2)
 	if err != nil {
 		t.Fatal(err)
@@ -187,8 +400,8 @@ func TestNavigation(t *testing.T) {
 		t.Fatal(err)
 	}
 	url, _ := wd.CurrentURL()
-	if url != url1 {
-		t.Fatalf("back got me to %s (expected %s)", url, url1)
+	if url != url1+"/" {
+		t.Fatalf("back got me to %s (expected %s/)", url, url1)
 	}
 	err = wd.Forward()
 	if err != nil {
@@ -209,9 +422,9 @@ func TestNavigation(t *testing.T) {
 	}
 }
 
-func TestTitle(t *testing.T) {
-	wd := newRemote("TestTitle", t)
-	defer wd.Quit()
+func testTitle(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
 
 	wd.Get(serverURL)
 
@@ -226,9 +439,9 @@ func TestTitle(t *testing.T) {
 	}
 }
 
-func TestPageSource(t *testing.T) {
-	wd := newRemote("TestPageSource", t)
-	defer wd.Quit()
+func testPageSource(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
 
 	err := wd.Get(serverURL)
 	if err != nil {
@@ -245,9 +458,9 @@ func TestPageSource(t *testing.T) {
 	}
 }
 
-func TestFindElement(t *testing.T) {
-	wd := newRemote("TestFindElement", t)
-	defer wd.Quit()
+func testFindElement(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
 
 	wd.Get(serverURL)
 	elem, err := wd.FindElement(ByName, "q")
@@ -269,9 +482,9 @@ func TestFindElement(t *testing.T) {
 	}
 }
 
-func TestFindElements(t *testing.T) {
-	wd := newRemote("TestFindElements", t)
-	defer wd.Quit()
+func testFindElements(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
 
 	wd.Get(serverURL)
 	elems, err := wd.FindElements(ByName, "q")
@@ -297,9 +510,9 @@ func TestFindElements(t *testing.T) {
 	}
 }
 
-func TestSendKeys(t *testing.T) {
-	wd := newRemote("TestSendKeys", t)
-	defer wd.Quit()
+func testSendKeys(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
 
 	wd.Get(serverURL)
 	input, err := wd.FindElement(ByName, "q")
@@ -328,9 +541,9 @@ func TestSendKeys(t *testing.T) {
 
 }
 
-func TestClick(t *testing.T) {
-	wd := newRemote("TestClick", t)
-	defer wd.Quit()
+func testClick(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
 
 	wd.Get(serverURL)
 	input, err := wd.FindElement(ByName, "q")
@@ -361,9 +574,9 @@ func TestClick(t *testing.T) {
 	}
 }
 
-func TestGetCookies(t *testing.T) {
-	wd := newRemote("TestGetCookies", t)
-	defer wd.Quit()
+func testGetCookies(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
 
 	wd.Get(serverURL)
 	cookies, err := wd.GetCookies()
@@ -380,13 +593,13 @@ func TestGetCookies(t *testing.T) {
 	}
 }
 
-func TestAddCookie(t *testing.T) {
-	if isHTMLUnit() {
+func testAddCookie(t *testing.T, c config) {
+	if c.browser == "htmlunit" {
 		t.Log("Skipping on htmlunit")
 		return
 	}
-	wd := newRemote("TestAddCookie", t)
-	defer wd.Quit()
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
 
 	wd.Get(serverURL)
 	cookie := &Cookie{
@@ -412,9 +625,9 @@ func TestAddCookie(t *testing.T) {
 	t.Fatal("Can't find new cookie")
 }
 
-func TestDeleteCookie(t *testing.T) {
-	wd := newRemote("TestDeleteCookie", t)
-	defer wd.Quit()
+func testDeleteCookie(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
 
 	wd.Get(serverURL)
 	cookies, err := wd.GetCookies()
@@ -443,9 +656,9 @@ func TestDeleteCookie(t *testing.T) {
 	}
 }
 
-func TestLocation(t *testing.T) {
-	wd := newRemote("TestLocation", t)
-	defer wd.Quit()
+func testLocation(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
 
 	wd.Get(serverURL)
 	button, err := wd.FindElement(ByID, "submit")
@@ -463,9 +676,9 @@ func TestLocation(t *testing.T) {
 	}
 }
 
-func TestLocationInView(t *testing.T) {
-	wd := newRemote("TestLocationInView", t)
-	defer wd.Quit()
+func testLocationInView(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
 
 	wd.Get(serverURL)
 	button, err := wd.FindElement(ByID, "submit")
@@ -483,9 +696,9 @@ func TestLocationInView(t *testing.T) {
 	}
 }
 
-func TestSize(t *testing.T) {
-	wd := newRemote("TestSize", t)
-	defer wd.Quit()
+func testSize(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
 
 	wd.Get(serverURL)
 	button, err := wd.FindElement(ByID, "submit")
@@ -503,13 +716,13 @@ func TestSize(t *testing.T) {
 	}
 }
 
-func TestExecuteScript(t *testing.T) {
-	if isHTMLUnit() {
+func testExecuteScript(t *testing.T, c config) {
+	if c.browser == "htmlunit" {
 		t.Log("Skipping on htmlunit")
 		return
 	}
-	wd := newRemote("TestExecuteScript", t)
-	defer wd.Quit()
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
 
 	script := "return arguments[0] + arguments[1]"
 	args := []interface{}{1, 2}
@@ -524,17 +737,17 @@ func TestExecuteScript(t *testing.T) {
 	}
 
 	if result != 3 {
-		t.Fatalf("Bad result %d (expected 3)", result)
+		t.Fatalf("Bad result %d (expected 3)", int(result))
 	}
 }
 
-func TestScreenshot(t *testing.T) {
-	if isHTMLUnit() {
+func testScreenshot(t *testing.T, c config) {
+	if c.browser == "htmlunit" {
 		t.Log("Skipping on htmlunit")
 		return
 	}
-	wd := newRemote("TestScreenshot", t)
-	defer wd.Quit()
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
 
 	wd.Get(serverURL)
 	data, err := wd.Screenshot()
@@ -547,15 +760,15 @@ func TestScreenshot(t *testing.T) {
 	}
 }
 
-func TestLog(t *testing.T) {
-	if isHTMLUnit() {
+func testLog(t *testing.T, c config) {
+	if c.browser == "htmlunit" {
 		t.Log("Skipping on htmlunit")
 		return
 	}
-	wd := newRemote("TestLog", t)
-	defer wd.Quit()
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
 
-	wd.Get(serverURL + "log")
+	wd.Get(serverURL + "/log")
 	logs, err := wd.Log("browser")
 	if err != nil {
 		t.Fatal(err)
@@ -566,9 +779,9 @@ func TestLog(t *testing.T) {
 	}
 }
 
-func TestIsSelected(t *testing.T) {
-	wd := newRemote("TestIsSelected", t)
-	defer wd.Quit()
+func testIsSelected(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
 
 	wd.Get(serverURL)
 	elem, err := wd.FindElement(ByID, "chuk")
@@ -599,9 +812,9 @@ func TestIsSelected(t *testing.T) {
 	}
 }
 
-func TestIsDisplayed(t *testing.T) {
-	wd := newRemote("TestIsDisplayed", t)
-	defer wd.Quit()
+func testIsDisplayed(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
 
 	wd.Get(serverURL)
 	elem, err := wd.FindElement(ByID, "chuk")
@@ -618,9 +831,9 @@ func TestIsDisplayed(t *testing.T) {
 	}
 }
 
-func TestGetAttributeNotFound(t *testing.T) {
-	wd := newRemote("TestGetAttributeNotFound", t)
-	defer wd.Quit()
+func testGetAttributeNotFound(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
 
 	wd.Get(serverURL)
 	elem, err := wd.FindElement(ByID, "chuk")
@@ -634,24 +847,9 @@ func TestGetAttributeNotFound(t *testing.T) {
 	}
 }
 
-func TestSessionId(t *testing.T) {
-	wd := newRemote("TestGetAttributeNotFound", t)
-	wd.Quit()
-
-	sid, err := wd.NewSession()
-	if err != nil {
-		t.Fatalf("error in new session: %s", err)
-	}
-	defer wd.Quit()
-
-	if wd.SessionId() != sid {
-		t.Fatalf("Got session id mismatch %s != %s", sid, wd.SessionId())
-	}
-}
-
-func TestMaximizeWindow(t *testing.T) {
-	wd := newRemote("TestMaximizeWindow", t)
-	defer wd.Quit()
+func testMaximizeWindow(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
 
 	wd.Get(serverURL)
 
@@ -661,9 +859,9 @@ func TestMaximizeWindow(t *testing.T) {
 	}
 }
 
-func TestResizeWindow(t *testing.T) {
-	wd := newRemote("TestResizeWindow", t)
-	defer wd.Quit()
+func testResizeWindow(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
 
 	wd.Get(serverURL)
 
@@ -673,9 +871,9 @@ func TestResizeWindow(t *testing.T) {
 	}
 }
 
-func TestKeyDownUp(t *testing.T) {
-	wd := newRemote("TestKeyDownUp", t)
-	defer wd.Quit()
+func testKeyDownUp(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
 
 	wd.Get(serverURL)
 
@@ -774,18 +972,10 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	}
 	// Some cookies for the tests
 	for i := 0; i < 3; i++ {
-		name := fmt.Sprintf("cookie-%d", i)
-		value := fmt.Sprintf("value-%d", i)
-		http.SetCookie(w, &http.Cookie{Name: name, Value: value})
+		http.SetCookie(w, &http.Cookie{
+			Name:  fmt.Sprintf("cookie-%d", i),
+			Value: fmt.Sprintf("value-%d", i),
+		})
 	}
 	fmt.Fprintf(w, page)
-}
-
-func init() {
-	fmt.Printf("Using Browser: %s\n", browser())
-
-	go func() {
-		http.HandleFunc("/", handler)
-		http.ListenAndServe(serverPort, nil)
-	}()
 }

@@ -1,14 +1,13 @@
 language: go
 go:
-    - 1.5.2
+    - 1.7.x
 
 jdk:
     - openjdk7
 
-# travis have firefox installed already
 before_script:
-  - "export DISPLAY=:99.0"
-  - "sh -e /etc/init.d/xvfb start"
-  - sleep 10 # give xvfb some time to start
-script: ./run-tests.sh
+    - "export DISPLAY=:99.0"
+    - "sh -e /etc/init.d/xvfb start"
+    - sleep 3 # give xvfb some time to start
+script: ./testing/travis-ci-test.sh
 sudo: false
