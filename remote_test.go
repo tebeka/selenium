@@ -9,16 +9,19 @@ import (
 	"net/http/httptest"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/tebeka/selenium/chrome"
 )
 
 var (
 	seleniumPath     = flag.String("selenium_path", "vendor/selenium-server-standalone-2.53.1.jar", "The path to the Selenium server JAR. If empty or the file is not present, Firefox tests will not be run.")
 	firefoxBinary    = flag.String("firefox_binary", "firefox", "The name of the Firefox binary or the path to it. If the name does not contain directory separators, the PATH will be searched.")
 	chromeDriverPath = flag.String("chrome_driver_path", "vendor/chromedriver-linux64-2.26", "The path to the ChromeDriver binary. If empty of the file is not present, Chrome tests will not be run.")
-	chromeBinary     = flag.String("chrome_binary", "chromium", "The name of the Firefox binary or the path to it. If the name does not contain directory separators, the PATH will be searched.")
+	chromeBinary     = flag.String("chrome_binary", "chromium", "The name of the Chrome binary or the path to it. If name is not an exact path, the PATH will be searched.")
 
 	useDocker          = flag.Bool("docker", false, "If set, run the tests in a Docker container.")
 	runningUnderDocker = flag.Bool("running_under_docker", false, "This is set by the Docker test harness and should not be needed otherwise.")
@@ -54,17 +57,19 @@ func pickUnusedPort() (int, error) {
 }
 
 type config struct {
-	addr, browser string
+	addr, browser, path string
 }
 
 func TestChrome(t *testing.T) {
 	if *useDocker {
 		t.Skip("Skipping Chrome tests because they will be run under a Docker container")
 	}
-	_, statErr := os.Stat(*chromeBinary)
-	_, lookupErr := exec.LookPath(*chromeBinary)
-	if statErr != nil && lookupErr != nil {
-		t.Skipf("Skipping Chrome tests because binary %q not found", *chromeBinary)
+	if _, err := os.Stat(*chromeBinary); err != nil {
+		path, err := exec.LookPath(*chromeBinary)
+		if err != nil {
+			t.Skipf("Skipping Chrome tests because binary %q not found", *chromeBinary)
+		}
+		*chromeBinary = path
 	}
 	if _, err := os.Stat(*chromeDriverPath); err != nil {
 		t.Skipf("Skipping Chrome tests because ChromeDriver not found at path %q", *chromeDriverPath)
@@ -75,6 +80,7 @@ func TestChrome(t *testing.T) {
 		opts = append(opts, StartFrameBuffer())
 	}
 	if testing.Verbose() {
+		SetDebug(true)
 		opts = append(opts, Output(os.Stderr))
 	}
 
@@ -87,11 +93,12 @@ func TestChrome(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error starting the ChromeDriver server: %v", err)
 	}
-
-	runTests(t, config{
+	c := config{
 		addr:    fmt.Sprintf("http://127.0.0.1:%d/wd/hub", port),
-		browser: *chromeBinary,
-	})
+		browser: "chrome",
+		path:    *chromeBinary,
+	}
+	runTests(t, c)
 
 	if err := s.Stop(); err != nil {
 		t.Fatalf("Error stopping the ChromeDriver service: %v", err)
@@ -117,6 +124,7 @@ func TestFirefox(t *testing.T) {
 		opts = append(opts, StartFrameBuffer())
 	}
 	if testing.Verbose() {
+		SetDebug(true)
 		opts = append(opts, Output(os.Stderr))
 	}
 
@@ -154,14 +162,17 @@ func TestDocker(t *testing.T) {
 		t.Fatalf("Building Docker container failed: %v", err)
 	}
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("os.Getwd() returned error: %v", err)
+	pathToMount := os.Getenv("GOPATH")
+	if strings.Contains(pathToMount, ":") {
+		cwd, err := os.Getwd()
+		if err != nil {
+			t.Fatalf("os.Getwd() returned error: %v", err)
+		}
+		pathToMount = filepath.Join(cwd, "../../../..")
 	}
 	// TODO(minusnine): pass through relevant flags to docker-test.sh to be
 	// passed to go test.
-	args = []string{"run", "-v", cwd + ":/code", "-w", "/code", "go-selenium", "testing/docker-test.sh"}
-	cmd := exec.Command("docker", args...)
+	cmd := exec.Command("docker", "run", fmt.Sprintf("--volume=%s:/code", pathToMount), "--workdir=/code/src/github.com/tebeka/selenium", "go-selenium", "testing/docker-test.sh")
 	if testing.Verbose() {
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
@@ -175,11 +186,17 @@ func newRemote(t *testing.T, c config) WebDriver {
 	caps := Capabilities{
 		"browserName": c.browser,
 	}
-	if *runningUnderDocker && c.browser != "firefox" {
-		caps["chromeOptions"] = ChromeOptions{
-			Args: []string{"--no-sandbox"},
+	switch c.browser {
+	case "chrome":
+		chrCaps := chrome.Capabilities{
+			Path: c.path,
 		}
+		if *runningUnderDocker {
+			chrCaps.Args = []string{"--no-sandbox"}
+		}
+		caps[chrome.CapabilitiesKey] = chrCaps
 	}
+
 	wd, err := NewRemote(caps, c.addr)
 	if err != nil {
 		t.Fatalf("NewRemote(%v, %q) returned error: %v", caps, c.addr, err)
@@ -251,17 +268,8 @@ func testStatus(t *testing.T, c config) {
 }
 
 func testNewSession(t *testing.T, c config) {
-	wd := &remoteWD{
-		capabilities: Capabilities{
-			"browserName": c.browser,
-		},
-		executor: c.addr,
-	}
-	if *runningUnderDocker && c.browser != "firefox" {
-		wd.capabilities["chromeOptions"] = ChromeOptions{
-			Args: []string{"--no-sandbox"},
-		}
-	}
+	wd := newRemote(t, c)
+	quitRemote(t, wd)
 
 	sid, err := wd.NewSession()
 	if err != nil {
@@ -273,7 +281,7 @@ func testNewSession(t *testing.T, c config) {
 		t.Fatal("Empty session id")
 	}
 
-	if wd.id != sid {
+	if wd.(*remoteWD).id != sid {
 		t.Fatal("Session id mismatch")
 	}
 
@@ -291,19 +299,8 @@ func testCapabilities(t *testing.T, c config) {
 		t.Fatal(err)
 	}
 
-	want := map[string]string{
-		"firefox":          "firefox",
-		"chromium":         "chrome",
-		"chromium-browser": "chrome",
-		"google-chrome":    "chrome",
-	}[c.browser]
-
-	if want == "" {
-		t.Skip("Canonicalized browser name for %q not found. Update testCapabilities with the mapping.", c.browser)
-	}
-
-	if caps["browserName"] != want {
-		t.Fatalf("bad browser name - %s (should be %s)", caps["browserName"], want)
+	if caps["browserName"] != c.browser {
+		t.Fatalf("bad browser name - %s (should be %s)", caps["browserName"], c.browser)
 	}
 }
 
