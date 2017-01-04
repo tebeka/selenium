@@ -11,7 +11,6 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 )
 
@@ -114,9 +113,8 @@ func newService(cmd *exec.Cmd, port int, opts ...ServiceOption) (*Service, error
 	cmd.Stderr = s.output
 	cmd.Stdout = s.output
 	cmd.Env = os.Environ()
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Pdeathsig: syscall.SIGTERM,
-	}
+	// TODO(minusnine): Pdeathsig is only supported on Linux. Somehow, make sure
+	// process cleanup happens as gracefully as possible.
 	if s.display != "" {
 		cmd.Env = append(cmd.Env, "DISPLAY=:"+s.display)
 	}
@@ -196,9 +194,8 @@ func NewFrameBuffer() (*FrameBuffer, error) {
 	xvfb.ExtraFiles = []*os.File{w}
 
 	// TODO(minusnine): plumb a way to set xvfb.Std{err,out} conditionally.
-	xvfb.SysProcAttr = &syscall.SysProcAttr{
-		Pdeathsig: syscall.SIGTERM,
-	}
+	// TODO(minusnine): Pdeathsig is only supported on Linux. Somehow, make sure
+	// process cleanup happens as gracefully as possible.
 	xvfb.Env = []string{"XAUTHORITY=" + authPath}
 	if err := xvfb.Start(); err != nil {
 		return nil, err
