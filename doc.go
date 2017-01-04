@@ -15,7 +15,7 @@ and configure the webdriver in your Go code like this
             "browserName":            "firefox",
             "webdriver.gecko.driver": "/path/to/downloaded/geckodriver",
         }
-        
+
 Example usage:
 
 	// Run some code on play.golang.org and display the result

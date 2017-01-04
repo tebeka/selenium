@@ -158,6 +158,8 @@ func TestDocker(t *testing.T) {
 	if err != nil {
 		t.Fatalf("os.Getwd() returned error: %v", err)
 	}
+	// TODO(minusnine): pass through relevant flags to docker-test.sh to be
+	// passed to go test.
 	args = []string{"run", "-v", cwd + ":/code", "-w", "/code", "go-selenium", "testing/docker-test.sh"}
 	cmd := exec.Command("docker", args...)
 	if testing.Verbose() {
@@ -306,8 +308,7 @@ func testSetAsyncScriptTimeout(t *testing.T, c config) {
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
-	err := wd.SetAsyncScriptTimeout(200)
-	if err != nil {
+	if err := wd.SetAsyncScriptTimeout(200); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -316,8 +317,7 @@ func testSetImplicitWaitTimeout(t *testing.T, c config) {
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
-	err := wd.SetImplicitWaitTimeout(200)
-	if err != nil {
+	if err := wd.SetImplicitWaitTimeout(200); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -336,7 +336,6 @@ func testCurrentWindowHandle(t *testing.T, c config) {
 	defer quitRemote(t, wd)
 
 	handle, err := wd.CurrentWindowHandle()
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -364,8 +363,7 @@ func testGet(t *testing.T, c config) {
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
-	err := wd.Get(serverURL)
-	if err != nil {
+	if err := wd.Get(serverURL); err != nil {
 		t.Fatal(err)
 	}
 
@@ -384,39 +382,43 @@ func testNavigation(t *testing.T, c config) {
 	defer quitRemote(t, wd)
 
 	url1 := serverURL
-	err := wd.Get(url1)
-	if err != nil {
+	if err := wd.Get(url1); err != nil {
 		t.Fatal(err)
 	}
 
 	url2 := serverURL + "/other"
-	err = wd.Get(url2)
-	if err != nil {
+	if err := wd.Get(url2); err != nil {
 		t.Fatal(err)
 	}
 
-	err = wd.Back()
-	if err != nil {
+	if err := wd.Back(); err != nil {
 		t.Fatal(err)
 	}
-	url, _ := wd.CurrentURL()
+	url, err := wd.CurrentURL()
+	if err != nil {
+		t.Fatalf("wd.CurrentURL() returned error: %v", err)
+	}
 	if url != url1+"/" {
 		t.Fatalf("back got me to %s (expected %s/)", url, url1)
 	}
-	err = wd.Forward()
-	if err != nil {
+	if err := wd.Forward(); err != nil {
 		t.Fatal(err)
 	}
-	url, _ = wd.CurrentURL()
+	url, err = wd.CurrentURL()
+	if err != nil {
+		t.Fatalf("wd.CurrentURL() returned error: %v", err)
+	}
 	if url != url2 {
 		t.Fatalf("forward got me to %s (expected %s)", url, url2)
 	}
 
-	err = wd.Refresh()
-	if err != nil {
+	if err := wd.Refresh(); err != nil {
 		t.Fatal(err)
 	}
-	url, _ = wd.CurrentURL()
+	url, err = wd.CurrentURL()
+	if err != nil {
+		t.Fatalf("wd.CurrentURL() returned error: %v", err)
+	}
 	if url != url2 {
 		t.Fatalf("refresh got me to %s (expected %s)", url, url2)
 	}
@@ -426,7 +428,9 @@ func testTitle(t *testing.T, c config) {
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
-	wd.Get(serverURL)
+	if err := wd.Get(serverURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
 
 	title, err := wd.Title()
 	if err != nil {
@@ -443,8 +447,7 @@ func testPageSource(t *testing.T, c config) {
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
-	err := wd.Get(serverURL)
-	if err != nil {
+	if err := wd.Get(serverURL); err != nil {
 		t.Fatal(err)
 	}
 
@@ -462,7 +465,9 @@ func testFindElement(t *testing.T, c config) {
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
-	wd.Get(serverURL)
+	if err := wd.Get(serverURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
 	elem, err := wd.FindElement(ByName, "q")
 	if err != nil {
 		t.Fatal(err)
@@ -486,7 +491,9 @@ func testFindElements(t *testing.T, c config) {
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
-	wd.Get(serverURL)
+	if err := wd.Get(serverURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
 	elems, err := wd.FindElements(ByName, "q")
 	if err != nil {
 		t.Fatal(err)
@@ -514,13 +521,14 @@ func testSendKeys(t *testing.T, c config) {
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
-	wd.Get(serverURL)
+	if err := wd.Get(serverURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
 	input, err := wd.FindElement(ByName, "q")
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = input.SendKeys("golang\n")
-	if err != nil {
+	if err := input.SendKeys("golang\n"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -538,20 +546,20 @@ func testSendKeys(t *testing.T, c config) {
 	if !strings.Contains(source, "golang") {
 		t.Fatal("Can't find search query in source")
 	}
-
 }
 
 func testClick(t *testing.T, c config) {
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
-	wd.Get(serverURL)
+	if err := wd.Get(serverURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
 	input, err := wd.FindElement(ByName, "q")
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = input.SendKeys("golang")
-	if err != nil {
+	if err = input.SendKeys("golang"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -559,8 +567,7 @@ func testClick(t *testing.T, c config) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = button.Click()
-	if err != nil {
+	if err = button.Click(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -578,7 +585,9 @@ func testGetCookies(t *testing.T, c config) {
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
-	wd.Get(serverURL)
+	if err := wd.Get(serverURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
 	cookies, err := wd.GetCookies()
 	if err != nil {
 		t.Fatal(err)
@@ -601,14 +610,15 @@ func testAddCookie(t *testing.T, c config) {
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
-	wd.Get(serverURL)
+	if err := wd.Get(serverURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
 	cookie := &Cookie{
 		Name:   "the nameless cookie",
 		Value:  "I have nothing",
 		Expiry: math.MaxUint32,
 	}
-	err := wd.AddCookie(cookie)
-	if err != nil {
+	if err := wd.AddCookie(cookie); err != nil {
 		t.Fatal(err)
 	}
 
@@ -629,7 +639,9 @@ func testDeleteCookie(t *testing.T, c config) {
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
-	wd.Get(serverURL)
+	if err := wd.Get(serverURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
 	cookies, err := wd.GetCookies()
 	if err != nil {
 		t.Fatal(err)
@@ -637,8 +649,7 @@ func testDeleteCookie(t *testing.T, c config) {
 	if len(cookies) == 0 {
 		t.Fatal("No cookies")
 	}
-	err = wd.DeleteCookie(cookies[0].Name)
-	if err != nil {
+	if err := wd.DeleteCookie(cookies[0].Name); err != nil {
 		t.Fatal(err)
 	}
 	newCookies, err := wd.GetCookies()
@@ -660,7 +671,9 @@ func testLocation(t *testing.T, c config) {
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
-	wd.Get(serverURL)
+	if err := wd.Get(serverURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
 	button, err := wd.FindElement(ByID, "submit")
 	if err != nil {
 		t.Fatal(err)
@@ -671,7 +684,7 @@ func testLocation(t *testing.T, c config) {
 		t.Fatal(err)
 	}
 
-	if (loc.X == 0) || (loc.Y == 0) {
+	if loc.X == 0 || loc.Y == 0 {
 		t.Fatalf("Bad location: %v\n", loc)
 	}
 }
@@ -680,7 +693,9 @@ func testLocationInView(t *testing.T, c config) {
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
-	wd.Get(serverURL)
+	if err := wd.Get(serverURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
 	button, err := wd.FindElement(ByID, "submit")
 	if err != nil {
 		t.Fatal(err)
@@ -691,7 +706,7 @@ func testLocationInView(t *testing.T, c config) {
 		t.Fatal(err)
 	}
 
-	if (loc.X == 0) || (loc.Y == 0) {
+	if loc.X == 0 || loc.Y == 0 {
 		t.Fatalf("Bad location: %v\n", loc)
 	}
 }
@@ -700,7 +715,9 @@ func testSize(t *testing.T, c config) {
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
-	wd.Get(serverURL)
+	if err := wd.Get(serverURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
 	button, err := wd.FindElement(ByID, "submit")
 	if err != nil {
 		t.Fatal(err)
@@ -711,7 +728,7 @@ func testSize(t *testing.T, c config) {
 		t.Fatal(err)
 	}
 
-	if (size.Width == 0) || (size.Height == 0) {
+	if size.Width == 0 || size.Height == 0 {
 		t.Fatalf("Bad size: %v\n", size)
 	}
 }
@@ -749,7 +766,9 @@ func testScreenshot(t *testing.T, c config) {
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
-	wd.Get(serverURL)
+	if err := wd.Get(serverURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
 	data, err := wd.Screenshot()
 	if err != nil {
 		t.Fatal(err)
@@ -768,8 +787,11 @@ func testLog(t *testing.T, c config) {
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
-	wd.Get(serverURL + "/log")
-	logs, err := wd.Log("browser")
+	url := serverURL + "/log"
+	if err := wd.Get(url); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", url, err)
+	}
+	logs, err := wd.Log(Browser)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -783,7 +805,9 @@ func testIsSelected(t *testing.T, c config) {
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
-	wd.Get(serverURL)
+	if err := wd.Get(serverURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
 	elem, err := wd.FindElement(ByID, "chuk")
 	if err != nil {
 		t.Fatal("Can't find element")
@@ -797,8 +821,7 @@ func testIsSelected(t *testing.T, c config) {
 		t.Fatal("Already selected")
 	}
 
-	err = elem.Click()
-	if err != nil {
+	if err := elem.Click(); err != nil {
 		t.Fatal("Can't click")
 	}
 
@@ -816,7 +839,9 @@ func testIsDisplayed(t *testing.T, c config) {
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
-	wd.Get(serverURL)
+	if err := wd.Get(serverURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
 	elem, err := wd.FindElement(ByID, "chuk")
 	if err != nil {
 		t.Fatal("Can't find element")
@@ -835,14 +860,15 @@ func testGetAttributeNotFound(t *testing.T, c config) {
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
-	wd.Get(serverURL)
+	if err := wd.Get(serverURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
 	elem, err := wd.FindElement(ByID, "chuk")
 	if err != nil {
 		t.Fatal("Can't find element")
 	}
 
-	_, err = elem.GetAttribute("no-such-attribute")
-	if err == nil {
+	if _, err = elem.GetAttribute("no-such-attribute"); err == nil {
 		t.Fatal("Got non existing attribute")
 	}
 }
@@ -851,10 +877,11 @@ func testMaximizeWindow(t *testing.T, c config) {
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
-	wd.Get(serverURL)
+	if err := wd.Get(serverURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
 
-	err := wd.MaximizeWindow("")
-	if err != nil {
+	if err := wd.MaximizeWindow(""); err != nil {
 		t.Fatalf("error maximizing window: %s", err)
 	}
 }
@@ -863,10 +890,11 @@ func testResizeWindow(t *testing.T, c config) {
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
-	wd.Get(serverURL)
+	if err := wd.Get(serverURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
 
-	err := wd.ResizeWindow("", 100, 100)
-	if err != nil {
+	if err := wd.ResizeWindow("", 100, 100); err != nil {
 		t.Fatalf("error resizing window: %s", err)
 	}
 }
@@ -875,7 +903,9 @@ func testKeyDownUp(t *testing.T, c config) {
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
-	wd.Get(serverURL)
+	if err := wd.Get(serverURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
 
 	e, err := wd.FindElement(ByLinkText, "other page")
 	if err != nil {
@@ -892,8 +922,6 @@ func testKeyDownUp(t *testing.T, c config) {
 		t.Fatalf("error releasing control key: %v", err)
 	}
 }
-
-// Test server
 
 var homePage = `
 <html>
@@ -951,16 +979,14 @@ var logPage = `
 </html>
 `
 
-var pages = map[string]string{
-	"/":       homePage,
-	"/other":  otherPage,
-	"/search": searchPage,
-	"/log":    logPage,
-}
-
 func handler(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
-	page, ok := pages[path]
+	page, ok := map[string]string{
+		"/":       homePage,
+		"/other":  otherPage,
+		"/search": searchPage,
+		"/log":    logPage,
+	}[path]
 	if !ok {
 		http.NotFound(w, r)
 		return
