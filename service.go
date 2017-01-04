@@ -17,7 +17,7 @@ import (
 // ServiceOption configures a Service instance.
 type ServiceOption func(*Service) error
 
-// Display specifies the value to which set the DISPLAY environement variable,
+// Display specifies the value to which set the DISPLAY environment variable,
 // as well as the path to the Xauthority file containing credentials needed to
 // write to that X server.
 func Display(d, xauthPath string) ServiceOption {
