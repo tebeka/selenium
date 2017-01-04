@@ -256,7 +256,7 @@ type WebDriver interface {
 	/* Close current window. */
 	Close() error
 	/* Switch to frame, frame parameter can be name or id. */
-	SwitchFrame(frame string) error
+	SwitchFrame(we WebElement) error
 	/* Switch to window. */
 	SwitchWindow(name string) error
 	/* Close window. */
