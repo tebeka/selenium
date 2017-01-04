@@ -844,6 +844,14 @@ func (wd *remoteWD) SetAlertText(text string) error {
 }
 
 func (wd *remoteWD) execScriptRaw(script string, args []interface{}, suffix string) ([]byte, error) {
+	for index, value := range args {
+		if ori, ok := value.(*remoteWE); ok {
+			args[index] = ori.toMap()
+		} else if ori, ok := value.(remoteWE); ok {
+			args[index] = ori.toMap()
+		}
+	}
+
 	params := map[string]interface{}{
 		"script": script,
 		"args":   args,
@@ -1086,6 +1094,13 @@ func (elem *remoteWE) CSSProperty(name string) (string, error) {
 	wd := elem.parent
 	urlTemplate := fmt.Sprintf("/session/%s/element/%s/css/%s", wd.id, elem.id, name)
 	return elem.parent.stringCommand(urlTemplate)
+}
+
+func (elem *remoteWE) toMap() map[string]string {
+	element := make(map[string]string)
+	element["ELEMENT"] = elem.id
+	element["element-6066-11e4-a52e-4f735466cecf"] = elem.id
+	return element
 }
 
 func init() {
