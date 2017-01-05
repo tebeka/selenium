@@ -4,12 +4,12 @@ import (
 	"time"
 )
 
-const (
-	// Version of driver
-	Version = "0.9.3"
-)
+// Version specifies the semantic version (SemVer) of this driver.
+const Version = "0.9.3"
 
-/* Element finding options */
+// TODO(minusnine): make an enum type called FindMethod.
+
+// Methods by which to find elements.
 const (
 	ByID              = "id"
 	ByXPATH           = "xpath"
@@ -21,14 +21,14 @@ const (
 	ByCSSSelector     = "css selector"
 )
 
-/* Mouse buttons */
+// Mouse buttons.
 const (
 	LeftButton = iota
 	MiddleButton
 	RightButton
 )
 
-/* Keys */
+// Special keyboard keys, for SendKeys.
 const (
 	NullKey       = string('\ue000')
 	CancelKey     = string('\ue001')
@@ -87,9 +87,8 @@ const (
 	MetaKey       = string('\ue03d')
 )
 
-// Capabilities of browser, see
-// https://w3c.github.io/webdriver/webdriver-spec.html#capabilities
-// Note that you can specify browser profile here
+// Capabilities configures both the WebDriver process and the target browsers,
+// with standard and browser-specific options.
 type Capabilities map[string]interface{}
 
 // Proxy specifies configuration for proxies in the browser. Set the key
@@ -131,39 +130,30 @@ const (
 	PAC = "pac"
 )
 
-// Build object, part of Status return.
-type Build struct {
-	Version, Revision, Time string
-}
-
-// OS object, part of Status return.
-type OS struct {
-	Arch, Name, Version string
-}
-
-// Java version informat
-type Java struct {
-	Version string
-}
-
-// Status information retured by Status method
+// Status contains information returned by the Status method.
 type Status struct {
-	Java  Java
-	Build Build
-	OS    OS
+	Java struct {
+		Version string
+	}
+	Build struct {
+		Version, Revision, Time string
+	}
+	OS struct {
+		Arch, Name, Version string
+	}
 }
 
-// Point is a 2D point
+// Point is a 2D point.
 type Point struct {
 	X, Y int
 }
 
-// Size is a size of HTML element
+// Size is a size of HTML element.
 type Size struct {
 	Width, Height int
 }
 
-// Cookie represents HTTP cookie
+// Cookie represents an HTTP cookie.
 type Cookie struct {
 	Name   string `json:"name"`
 	Value  string `json:"value"`
@@ -173,7 +163,7 @@ type Cookie struct {
 	Expiry uint   `json:"expiry"`
 }
 
-// LogMessage returned from the Log method
+// LogMessage is returned from the Log method.
 type LogMessage struct {
 	Timestamp int
 	Level     string
@@ -183,7 +173,7 @@ type LogMessage struct {
 // LogType are logger types
 type LogType string
 
-// Various server log flags
+// The valid log types.
 const (
 	ServerLog   LogType = "server"
 	Browser             = "browser"
@@ -193,209 +183,198 @@ const (
 	Profiler            = "profiler"
 )
 
-// WebDriver defines methods supported by WebDriver drivers
+// WebDriver defines methods supported by WebDriver drivers.
 type WebDriver interface {
-	/* Status (info) on server */
+	// Status returns various pieces of information about the server environment.
 	Status() (*Status, error)
 
-	/* Start a new session, return session id */
+	// NewSession starts a new session and returns the session ID.
 	NewSession() (string, error)
 
-	/* SessionId is deprecated, use SessionID */
+	// SessionId returns the current session ID
+	//
+	// Deprecated: This identifier is not Go-style correct. Use SessionID
+	// instead.
 	SessionId() string
 
-	/* Current session id (empty string on none) */
+	// SessionID returns the current session ID.
 	SessionID() string
 
-	/* SwitchSession switches to the given session id. */
+	// SwitchSession switches to the given session ID.
 	SwitchSession(sessionID string) error
 
-	/* Current session capabilities */
+	// Capabilities returns the current session's capabilities.
 	Capabilities() (Capabilities, error)
-	/* Set the amount of time, in microseconds, that asynchronous scripts are permitted to run before they are aborted.
 
-	Note that Selenium/WebDriver timeouts are in milliseconds, timeout will be rounded to nearest millisecond.
-	*/
+	// SetAsyncScriptTimeout sets the amount of time that asynchronous scripts
+	// are permitted to run before they are aborted. The timeout will be rounded
+	// to nearest millisecond.
 	SetAsyncScriptTimeout(timeout time.Duration) error
-	/* Set the amount of time, in milliseconds, the driver should wait when searching for elements.
-
-	Note that Selenium/WebDriver timeouts are in milliseconds, timeout will be rounded to nearest millisecond.
-	*/
+	// SetImplicitWaitTimeout sets the amount of time the driver should wait when
+	// searching for elements. The timeout will be rounded to nearest millisecond.
 	SetImplicitWaitTimeout(timeout time.Duration) error
-	/* Set the amount of time, in milliseconds, the driver should wait when
-	loading a page.  Note that Selenium/WebDriver timeouts are in milliseconds,
-	timeout will be rounded to nearest millisecond.  */
+	// SetPageLoadTimeout sets the amount of time the driver should wait when
+	// loading a page. The timeout will be rounded to nearest millisecond.
 	SetPageLoadTimeout(timeout time.Duration) error
 
-	// IME
-	/* List all available engines on the machine. */
+	// AvailableEngines lists all available engines on the machine.
 	AvailableEngines() ([]string, error)
-	/* Get the name of the active IME engine. */
+	// ActiveEngine gets the name of the active IME engine.
 	ActiveEngine() (string, error)
-	/* Indicates whether IME input is active at the moment. */
+	// IsEngineActivated indicates whether IME input is active at the moment.
 	IsEngineActivated() (bool, error)
-	/* De-activates the currently-active IME engine. */
+	// DeactivateEngine deactivates the currently-active IME engine.
 	DeactivateEngine() error
-	/* Make an engines active */
+	// ActivateEngine make an engines active.
 	ActivateEngine(engine string) error
 
-	/* Quit (end) current session */
+	// Quit ends the current session. The browser instance will be closed.
 	Quit() error
 
-	// Page information and manipulation
-	/* Return id of current window handle. */
+	// CurrentWindowHandle returns the ID of current window handle.
 	CurrentWindowHandle() (string, error)
-	/* Return ids of current open windows. */
+	// WindowHandles returns the IDs of current open windows.
 	WindowHandles() ([]string, error)
-	/* Current url. */
+	// CurrentURL returns the browser's current URL.
 	CurrentURL() (string, error)
-	/* Page title. */
+	// Title returns the current page's title.
 	Title() (string, error)
-	/* Get page source. */
+	// PageSource returns the current page's source.
 	PageSource() (string, error)
-	/* Close current window. */
+	// Close closes the current window.
 	Close() error
-	/* Switch to frame, frame parameter can be name or id. */
+	// SwitchFrame switches to the given frame. The frame parameter can be the
+	// frame's name or ID.
 	SwitchFrame(frame string) error
-	/* Switch to window. */
+	// SwitchWindow switches the context to the specified window.
 	SwitchWindow(name string) error
-	/* Close window. */
+	// CloseWindow closes the specified window.
 	CloseWindow(name string) error
-	/* Maximize window, if name is empty - will use current */
+	// MaximizeWindow maximizes a window. If the name is empty, the current
+	// window will be maximized.
 	MaximizeWindow(name string) error
-	/* Resize window, if name is empty - will use current */
+	// ResizeWindow changes the dimensions of a window. If the name is empty, the
+	// current window will be maximized.
 	ResizeWindow(name string, width, height int) error
 
-	// Navigation
-	/* Open url. */
+	// Get navigates the browser to the provided URL.
 	Get(url string) error
-	/* Move forward in history. */
+	// Forward moves forward in history.
 	Forward() error
-	/* Move backward in history. */
+	// Back moves backward in history.
 	Back() error
-	/* Refresh page. */
+	// Refresh refreshes the page.
 	Refresh() error
 
-	// Finding element(s)
-	/* Find, return one element. */
+	// FindElement finds exactly one element in the current page's DOM.
 	FindElement(by, value string) (WebElement, error)
-	/* Find, return list of elements. */
+	// FindElement finds potentially many elements in the current page's DOM.
 	FindElements(by, value string) ([]WebElement, error)
-	/* Current active element. */
+	// ActiveElement returns the currently active element on the page.
 	ActiveElement() (WebElement, error)
 
-	// Decoding element(s)
-	/* Decode a single element response. */
+	// DecodeElement decodes a single element response.
 	DecodeElement([]byte) (WebElement, error)
-	/* Decode a multi element response. */
+	// DecodeElements decodes a multi-element response.
 	DecodeElements([]byte) ([]WebElement, error)
 
-	// Cookies
-	/* Get all cookies */
+	// GetCookies returns all of the cookies in the browser's jar.
 	GetCookies() ([]Cookie, error)
-	/* Add a cookies */
+	// AddCookie adds a cookie to the browser's jar.
 	AddCookie(cookie *Cookie) error
-	/* Delete all cookies */
+	// DeleteAllCookies deletes all of the cookies in the browser's jar.
 	DeleteAllCookies() error
-	/* Delete a cookie */
+	// DeleteCookie deletes a cookie to the browser's jar.
 	DeleteCookie(name string) error
 
-	// Mouse
-	/* Click mouse button, button should be on of RightButton, MiddleButton or
-	LeftButton.
-	*/
+	// Click clicks a mouse button. The button should be one of RightButton,
+	// MiddleButton or LeftButton.
 	Click(button int) error
-	/* Dobule click */
+	// DoubleClick clicks the left mouse button twice.
 	DoubleClick() error
-	/* Mouse button down */
+	// ButtonDown causes the left mouse button to be held down.
 	ButtonDown() error
-	/* Mouse button up */
+	// ButtonUp causes the left mouse button to be released.
 	ButtonUp() error
 
-	// Misc
-	/* Send modifier key to active element.
-	modifier can be one of ShiftKey, ControlKey, AltKey, MetaKey.
-	*/
+	// SendModifier sends the modifier key to the active element. The modifier
+	// can be one of ShiftKey, ControlKey, AltKey, MetaKey.
 	SendModifier(modifier string, isDown bool) error
-	/* Send a sequence of keystrokes to the active element. Similar to
-	SendKeys but without the implicit termination. Modifiers are not released
-	at the end of each call. */
+	// KeyDown sends a sequence of keystrokes to the active element. This method
+	// is similar to SendKeys but without the implicit termination. Modifiers are
+	// not released at the end of each call.
 	KeyDown(keys string) error
+	// KeyUp indicates that a previous keystroke sent by KeyDown should be
+	// released.
 	KeyUp(keys string) error
-	/* Take a screenshot */
+	// Screenshot takes a screenshot of the browser window.
 	Screenshot() ([]byte, error)
-	/* Get the logs configured in the capabilities.
-
-	Common values for log type are 'server', 'browser', 'client', 'driver'.
-	NOTE: will return an error (not implemented) on IE11 or Edge drivers.
-	*/
+	// Log fetches the logs. Log types must be previously configured in the
+	// capabilities.
+	//
+	// NOTE: will return an error (not implemented) on IE11 or Edge drivers.
 	Log(typ LogType) ([]LogMessage, error)
 
-	// Alerts
-	/* Dismiss current alert. */
+	// DismissAlert dismisses current alert.
 	DismissAlert() error
-	/* Accept current alert. */
+	// AcceptAlert accepts the current alert.
 	AcceptAlert() error
-	/* Current alert text. */
+	// AlertText returns the current alert text.
 	AlertText() (string, error)
-	/* Set current alert text. */
+	// SetAlertText sets the current alert text.
 	SetAlertText(text string) error
 
-	// Scripts
-	/* Execute a script. */
+	// ExecuteScript executes a script.
 	ExecuteScript(script string, args []interface{}) (interface{}, error)
-	/* Execute a script async. */
+	// ExecuteScriptAsync asynchronously executes a script.
 	ExecuteScriptAsync(script string, args []interface{}) (interface{}, error)
 
-	/* Execute a script but don't JSON decode. */
+	// ExecuteScriptRaw executes a script but does not perform JSON decoding.
 	ExecuteScriptRaw(script string, args []interface{}) ([]byte, error)
-	/* Execute a script async but don't JSON decode. */
+	// ExecuteScriptAsyncRaw asynchronously executes a script but does not
+	// perform JSON decoding.
 	ExecuteScriptAsyncRaw(script string, args []interface{}) ([]byte, error)
 }
 
-// WebElement defines method supported by web elements
+// WebElement defines method supported by web elements.
 type WebElement interface {
-	// Manipulation
-
-	/* Click on element */
+	// Click clicks on the element.
 	Click() error
-	/* Send keys (type) into element */
+	// SendKeys types into the element.
 	SendKeys(keys string) error
-	/* Submit */
+	// Submit submits the button.
 	Submit() error
-	/* Clear */
+	// Clear clears the element.
 	Clear() error
-	/* Move mouse to relative coordinates from center of element,
-	If the element is not visible, it will be scrolled into view.*/
+	// MoveTo moves the mouse to relative coordinates from center of element, If
+	// the element is not visible, it will be scrolled into view.
 	MoveTo(xOffset, yOffset int) error
 
-	// Finding
-
-	/* Find children, return one element. */
+	// FindElement finds a child element.
 	FindElement(by, value string) (WebElement, error)
-	/* Find children, return list of elements. */
+	// FindElement finds multiple children elements.
 	FindElements(by, value string) ([]WebElement, error)
 
-	// Properties
-
-	/* Element name */
+	// TagName returns the element's name.
 	TagName() (string, error)
-	/* Text of element */
+	// Text returns the text of the element.
 	Text() (string, error)
-	/* Check if element is selected. */
+	// IsSelected returns true if element is selected.
 	IsSelected() (bool, error)
-	/* Check if element is enabled. */
+	// IsEnabled returns true if the element is enabled.
 	IsEnabled() (bool, error)
-	/* Check if element is displayed. */
+	// IsDisplayed returns true if the element is displayed.
 	IsDisplayed() (bool, error)
-	/* Get element attribute. */
+	// GetAttribute returns the named attribute of the element.
 	GetAttribute(name string) (string, error)
-	/* Element location. */
+	// Location returns the element's location.
 	Location() (*Point, error)
-	/* Element location once it has been scrolled into view. */
+	// LocationInView returns the element's location once it has been scrolled
+	// into view.
 	LocationInView() (*Point, error)
-	/* Element size */
+	// Size returns the element's size.
 	Size() (*Size, error)
-	/* Get element CSS property value. */
+	// CSSProperty returns the value of the specified CSS property of the
+	// element.
 	CSSProperty(name string) (string, error)
 }
