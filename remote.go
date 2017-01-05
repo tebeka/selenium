@@ -852,9 +852,17 @@ func (wd *remoteWD) execScriptRaw(script string, args []interface{}, suffix stri
 		}
 	}
 
-	params := map[string]interface{}{
-		"script": script,
-		"args":   args,
+	var params map[string]interface{}
+	if args == nil {
+		params = map[string]interface{}{
+			"script": script,
+			"args":   []string{},
+		}
+	} else {
+		params = map[string]interface{}{
+			"script": script,
+			"args":   args,
+		}
 	}
 
 	data, err := json.Marshal(params)
