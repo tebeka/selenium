@@ -781,35 +781,23 @@ func (wd *remoteWD) SetAlertText(text string) error {
 }
 
 func (wd *remoteWD) execScriptRaw(script string, args []interface{}, suffix string) ([]byte, error) {
-<<<<<<< HEAD
-	for index, value := range args {
-		if ori, ok := value.(*remoteWE); ok {
-			args[index] = ori.toMap()
-		} else if ori, ok := value.(remoteWE); ok {
-			args[index] = ori.toMap()
-		}
-	}
-
-	var params map[string]interface{}
 	if args == nil {
-		params = map[string]interface{}{
-			"script": script,
-			"args":   []string{},
-		}
+		args = make([]interface{}, 0)
 	} else {
-		params = map[string]interface{}{
-			"script": script,
-			"args":   args,
+		for index, value := range args {
+			if ori, ok := value.(*remoteWE); ok {
+				args[index] = ori.toMap()
+			} else if ori, ok := value.(remoteWE); ok {
+				args[index] = ori.toMap()
+			}
 		}
 	}
 
-	data, err := json.Marshal(params)
-=======
 	data, err := json.Marshal(map[string]interface{}{
 		"script": script,
 		"args":   args,
 	})
->>>>>>> tebeka/master
+
 	if err != nil {
 		return nil, err
 	}
