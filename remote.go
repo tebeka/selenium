@@ -40,7 +40,7 @@ var remoteErrors = map[int]string{
 }
 
 const (
-	// Indicates the method was successful.
+	// Success is status code that indicates the method was successful.
 	Success = 0
 	// DefaultExecutor is the default executor URL.
 	DefaultExecutor = "http://127.0.0.1:4444/wd/hub"
