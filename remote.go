@@ -1023,10 +1023,10 @@ func (elem *remoteWE) CSSProperty(name string) (string, error) {
 }
 
 func (elem *remoteWE) toMap() map[string]string {
-	element := make(map[string]string)
-	element["ELEMENT"] = elem.id
-	element["element-6066-11e4-a52e-4f735466cecf"] = elem.id
-	return element
+	return map[string]string{
+		"ELEMENT": elem.id,
+		"element-6066-11e4-a52e-4f735466cecf": elem.id,
+	}
 }
 
 func init() {
