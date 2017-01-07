@@ -223,6 +223,8 @@ func runTests(t *testing.T, c config) {
 	t.Run("LocationInView", runTest(testLocationInView, c))
 	t.Run("Size", runTest(testSize, c))
 	t.Run("ExecuteScript", runTest(testExecuteScript, c))
+	t.Run("ExecuteScriptOnElement", runTest(testExecuteScriptOnElement, c))
+	t.Run("ExecuteScriptWithNilArgs", runTest(testExecuteScriptWithNilArgs, c))
 	t.Run("Screenshot", runTest(testScreenshot, c))
 	t.Run("Log", runTest(testLog, c))
 	t.Run("IsSelected", runTest(testIsSelected, c))
@@ -755,6 +757,71 @@ func testExecuteScript(t *testing.T, c config) {
 
 	if result != 3 {
 		t.Fatalf("Bad result %d (expected 3)", int(result))
+	}
+}
+
+func testExecuteScriptWithNilArgs(t *testing.T, c config) {
+	if c.browser == "htmlunit" {
+		t.Log("Skipping on htmlunit")
+		return
+	}
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
+
+	if err := wd.Get(serverURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
+
+	script := "return document.readyState"
+	_, err := wd.ExecuteScript(script, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+} 
+
+func testExecuteScriptOnElement(t *testing.T, c config) {
+	if c.browser == "htmlunit" {
+		t.Log("Skipping on htmlunit")
+		return
+	}
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
+
+	if err := wd.Get(serverURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
+
+	input, err := wd.FindElement(ByName, "q")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := input.SendKeys("golang"); err != nil {
+		t.Fatal(err)
+	}
+
+	time.Sleep(500 * time.Millisecond)
+
+	we, err := wd.FindElement(ByXPATH, "//input[@type='submit']")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	script := "arguments[0].click()"
+	args := []interface{}{we}
+	_, err = wd.ExecuteScript(script, args)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	time.Sleep(500 * time.Millisecond)
+
+	source, err := wd.PageSource()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.Contains(source, "The Go Programming Language") {
+		t.Fatal("Can't find Go")
 	}
 }
 
