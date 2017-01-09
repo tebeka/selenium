@@ -773,11 +773,10 @@ func testExecuteScriptWithNilArgs(t *testing.T, c config) {
 	}
 
 	script := "return document.readyState"
-	_, err := wd.ExecuteScript(script, nil)
-	if err != nil {
+	if _, err := wd.ExecuteScript(script, nil); err != nil {
 		t.Fatal(err)
 	}
-} 
+}
 
 func testExecuteScriptOnElement(t *testing.T, c config) {
 	if c.browser == "htmlunit" {
@@ -795,11 +794,10 @@ func testExecuteScriptOnElement(t *testing.T, c config) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if err := input.SendKeys("golang"); err != nil {
 		t.Fatal(err)
 	}
-
-	time.Sleep(500 * time.Millisecond)
 
 	we, err := wd.FindElement(ByXPATH, "//input[@type='submit']")
 	if err != nil {
@@ -808,8 +806,8 @@ func testExecuteScriptOnElement(t *testing.T, c config) {
 
 	script := "arguments[0].click()"
 	args := []interface{}{we}
-	_, err = wd.ExecuteScript(script, args)
-	if err != nil {
+
+	if _, err = wd.ExecuteScript(script, args); err != nil {
 		t.Fatal(err)
 	}
 

@@ -785,9 +785,11 @@ func (wd *remoteWD) execScriptRaw(script string, args []interface{}, suffix stri
 		args = make([]interface{}, 0)
 	} else {
 		for index, value := range args {
+			if value == nil {
+				continue
+			}
+
 			if ori, ok := value.(*remoteWE); ok {
-				args[index] = ori.toMap()
-			} else if ori, ok := value.(remoteWE); ok {
 				args[index] = ori.toMap()
 			}
 		}
@@ -797,7 +799,6 @@ func (wd *remoteWD) execScriptRaw(script string, args []interface{}, suffix stri
 		"script": script,
 		"args":   args,
 	})
-
 	if err != nil {
 		return nil, err
 	}
