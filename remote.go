@@ -1013,15 +1013,11 @@ func (elem *remoteWE) CSSProperty(name string) (string, error) {
 	return elem.parent.stringCommand(urlTemplate)
 }
 
-func (elem *remoteWE) toMap() map[string]string {
-	return map[string]string{
+func (elem *remoteWE) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]string{
 		"ELEMENT": elem.id,
 		"element-6066-11e4-a52e-4f735466cecf": elem.id,
-	}
-}
-
-func (elem *remoteWE) MarshalJSON() ([]byte, error) {
-	return json.Marshal(elem.toMap())
+	})
 }
 
 func init() {
