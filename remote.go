@@ -1009,8 +1009,7 @@ func (elem *remoteWE) Size() (*Size, error) {
 
 func (elem *remoteWE) CSSProperty(name string) (string, error) {
 	wd := elem.parent
-	urlTemplate := fmt.Sprintf("/session/%s/element/%s/css/%s", wd.id, elem.id, name)
-	return elem.parent.stringCommand(urlTemplate)
+	return wd.stringCommand(fmt.Sprintf("/session/%%s/element/%s/css/%s", elem.id, name))
 }
 
 func (elem *remoteWE) MarshalJSON() ([]byte, error) {

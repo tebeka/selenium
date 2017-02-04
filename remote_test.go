@@ -233,6 +233,7 @@ func runTests(t *testing.T, c config) {
 	t.Run("MaximizeWindow", runTest(testMaximizeWindow, c))
 	t.Run("ResizeWindow", runTest(testResizeWindow, c))
 	t.Run("KeyDownUp", runTest(testKeyDownUp, c))
+	t.Run("CSSProperty", runTest(testCSSProperty, c))
 }
 
 func testStatus(t *testing.T, c config) {
@@ -985,6 +986,29 @@ func testKeyDownUp(t *testing.T, c config) {
 	}
 	if err := wd.KeyUp(ControlKey); err != nil {
 		t.Fatalf("error releasing control key: %v", err)
+	}
+}
+
+func testCSSProperty(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
+
+	if err := wd.Get(serverURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
+
+	e, err := wd.FindElement(ByLinkText, "other page")
+	if err != nil {
+		t.Fatalf("error finding other page link: %v", err)
+	}
+
+	color, err := e.CSSProperty("color")
+	if err != nil {
+		t.Fatalf(`e.CSSProperty("color") returned error: %v`, err)
+	}
+	wantColor := "rgba(0, 0, 238, 1)"
+	if color != wantColor {
+		t.Fatalf(`e.CSSProperty("color") = %q, want %q`, color, wantColor)
 	}
 }
 
