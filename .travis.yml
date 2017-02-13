@@ -1,9 +1,9 @@
 language: go
 go:
-    - 1.7.x
+    - 1.8.x
 
 jdk:
-    - openjdk7
+    - openjdk8
 
 before_script:
     - "export DISPLAY=:99.0"
