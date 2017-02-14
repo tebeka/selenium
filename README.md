@@ -47,16 +47,39 @@ one.
 ## TODO
 
 * Finish full [Selenium API][api].
-* Test with Selenium [WebDriver 3.0][webdriver3]
 * [SauceLabs][sauce] integration
 * Add usage examples
 * Support Firefox profiles
-* Implement types that provide [all capabilities][allcaps].
+* Test Chrome interaction on Travis. Currently, only Firefox is tested.
+* Any additional TODOs marked in the code.
+* Allow testing on Windows and OS X.
 
 [api]: https://www.w3.org/TR/webdriver/
 [sauce]: http://saucelabs.com/docs/quickstart
-[webdriver3]: https://seleniumhq.wordpress.com/2016/10/13/selenium-3-0-out-now
-[allcaps]: https://github.com/SeleniumHQ/selenium/wiki/DesiredCapabilities
+
+### Known issues
+
+### Selenium 2
+
+1. Selenium 2 does not support versions of Firefox newer than 47.0.2.
+
+### Selenium 3 and Geckodriver
+
+1. [Geckodriver GetAllCookies does not return the expiration date of the
+   cookie](https://github.com/mozilla/geckodriver/issues/463).
+2. [Selenium 3 NewSession does not implement the W3C-specified
+   parameters](https://github.com/SeleniumHQ/selenium/issues/2827).
+3. [Selenium 3 NewSession does not support Firefox
+   capabilities](https://github.com/SeleniumHQ/selenium/issues/3055).
+4. [Marionnette does not implement the actions
+   API](https://bugzilla.mozilla.org/show_bug.cgi?id=1292178), which is needed
+   for keyboard and mouse actions, among others. Then, [Geckodriver doesn't
+   implement this support](https://github.com/mozilla/geckodriver/issues/159).
+   Then, [Selenium 3 doesn't implement this support for
+   Firefox](https://github.com/SeleniumHQ/selenium/issues/2285).
+
+The Geckodriver team recommends using the newest available Firefox version, as
+the integration is actively being developed.
 
 ## Hacking
 
@@ -66,18 +89,18 @@ pass.
 
 ### Testing
 
-First, download the ChromeDriver binary and the Selenium WebDriver JARs:
+First, download the ChromeDriver binary, the Firefox binary and the Selenium
+WebDriver JARs:
 
     $ cd vendor
     $ go run init.go
     $ cd ..
 
-You only have to do this once.
+You only have to do this once initially and later when version numbers in
+init.go change.
 
-Ensure that you have a `firefox` and a `chromium` binary in your path. If the
-binaries are named differently, run the tests with the flags
-`--firefox_binary=<binary name>` and/or `--chrome_binary=<binary name>` as
-appropriate.
+Ensure that the `chromium` binary is in your path. If the binary is named
+differently, run the tests with the flags `--chrome_binary=<binary name>`.
 
 #### Locally
 
@@ -85,18 +108,24 @@ Run the tests:
 
     $ go test 
 
-* There is one top-level test per browser (Chromium and ChromeDriver, and
-  Firefox and Selenium). There are subtests that are shared between both
-  top-level tests.
-* To run only one of the top-level tests, pass `-test.run=TestFirefox` or
+* There is one top-level test for each of:
+    1. Chromium and ChromeDriver.
+    2. A new version of Firefox and Selenium 3.
+    3. An old version of Firefox and Selenium 2
+    
+  There are subtests that are shared between both top-level tests.
+* To run only one of the top-level tests, pass
+  `-test.run=TestFirefoxSelenium2`, `-test.run=TestFirefoxSelenium3`, or
   `-test.run=TestChrome`. To run a specific subtest, pass
-  `-test.run=Test<Browser>/<subtest>` as appropriate.
-* If the `chromium` or `firefox` binaries, the Selenium JAR, or the
-  ChromeDriver binary cannot be found, the corresponding tests will be
+  `-test.run=Test<Browser>/<subtest>` as appropriate. This flag supports
+  regular expressions.
+* If the Chrome or Firefox binaries, the Selenium JAR, the Geckodriver binary,
+  or the ChromeDriver binary cannot be found, the corresponding tests will be
   skipped.
 * The binaries and JAR under test can be configured by passing flags to `go
   test`. See the available flags with `go test --arg --help`.
-* Add the argument `-test.v` to see the output from Selenium.
+* Add the argument `-test.v` to see detailed output from Selenium and the
+  browsers.
 
 #### With Docker
 
@@ -107,8 +136,13 @@ To run the tests under Docker, run:
     $ go test --docker
 
 This will create a new Docker container and run the tests in it. (Note: flags
-supplied to this invocation are not curried to the `go test` invocation within
-the Docker container).
+supplied to this invocation are not curried through to the `go test` invocation
+within the Docker container).
+
+For debugging docker directly, run the following commands:
+
+    $ docker build -t go-selenium testing/
+    $ docker run --volume=${GOPATH?}:/code --workdir=/code/src/github.com/tebeka/selenium -it go-selenium bash
 
 ## License
 

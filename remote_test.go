@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -22,6 +23,10 @@ import (
 var (
 	selenium2Path          = flag.String("selenium2_path", "vendor/selenium-server-standalone-2.53.1.jar", "The path to the Selenium 2 server JAR. If empty or the file is not present, Firefox tests on Selenium 2 will not be run.")
 	firefoxBinarySelenium2 = flag.String("firefox_binary_for_selenium2", "vendor/firefox-47/firefox", "The name of the Firefox binary for Selenium 2 tests or the path to it. If the name does not contain directory separators, the PATH will be searched.")
+
+	selenium3Path          = flag.String("selenium3_path", "vendor/selenium-server-standalone-3.0.1.jar", "The path to the Selenium 3 server JAR. If empty or the file is not present, Firefox tests using Selenium 3 will not be run.")
+	firefoxBinarySelenium3 = flag.String("firefox_binary_for_selenium3", "vendor/firefox-nightly/firefox", "The name of the Firefox binary for Selenium 3 tests or the path to it. If the name does not contain directory separators, the PATH will be searched.")
+	geckoDriverPath        = flag.String("geckodriver_path", "vendor/geckodriver-v0.14.0-linux64", "The path to the geckodriver binary. If empty of the file is not present, the Geckodriver tests will not be run.")
 
 	chromeDriverPath = flag.String("chrome_driver_path", "vendor/chromedriver-linux64-2.27", "The path to the ChromeDriver binary. If empty of the file is not present, Chrome tests will not be run.")
 	chromeBinary     = flag.String("chrome_binary", "chromium", "The name of the Chrome binary or the path to it. If name is not an exact path, the PATH will be searched.")
@@ -62,6 +67,7 @@ func pickUnusedPort() (int, error) {
 type config struct {
 	addr, browser, path string
 	seleniumVersion     semver.Version
+	serviceOptions      []ServiceOption
 }
 
 func TestChrome(t *testing.T) {
@@ -97,12 +103,12 @@ func TestChrome(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error starting the ChromeDriver server: %v", err)
 	}
-	c := config{
+
+	runTests(t, config{
 		addr:    fmt.Sprintf("http://127.0.0.1:%d/wd/hub", port),
 		browser: "chrome",
 		path:    *chromeBinary,
-	}
-	runTests(t, c)
+	})
 
 	if err := s.Stop(); err != nil {
 		t.Fatalf("Error stopping the ChromeDriver service: %v", err)
@@ -122,6 +128,24 @@ func TestFirefoxSelenium2(t *testing.T) {
 	})
 }
 
+func TestFirefoxSelenium3(t *testing.T) {
+	if *useDocker {
+		t.Skip("Skipping tests because they will be run under a Docker container")
+	}
+	if _, err := os.Stat(*selenium3Path); err != nil {
+		t.Skipf("Skipping Firefox tests using Selenium 3 because Selenium WebDriver JAR not found at path %q", *selenium3Path)
+	}
+	if _, err := os.Stat(*geckoDriverPath); err != nil {
+		t.Skipf("Skipping Firefox tests on Selenium 3 because geckodriver binary %q not found", *geckoDriverPath)
+	}
+
+	runFirefoxTests(t, *selenium3Path, config{
+		seleniumVersion: semver.MustParse("3.0.0"),
+		serviceOptions:  []ServiceOption{GeckoDriver(*geckoDriverPath)},
+		path:            *firefoxBinarySelenium3,
+	})
+}
+
 func runFirefoxTests(t *testing.T, seleniumPath string, c config) {
 	c.browser = "firefox"
 
@@ -132,13 +156,22 @@ func runFirefoxTests(t *testing.T, seleniumPath string, c config) {
 			t.Skipf("Skipping Firefox tests because binary %q not found", c.path)
 		}
 	}
-	var opts []ServiceOption
+
+	// Selenium 3.0.1 does not support Firefox capabilities.
+	// https://github.com/SeleniumHQ/selenium/issues/3055
+	if c.seleniumVersion.Major == 3 {
+		t.Log("Working around https://github.com/SeleniumHQ/selenium/issues/3055 by setting PATH")
+		if err := os.Setenv("PATH", filepath.Dir(c.path)+":"+os.Getenv("PATH")); err != nil {
+			t.Fatalf("Error setting PATH to include %q: %v", c.path, err)
+		}
+	}
+
 	if *startFrameBuffer {
-		opts = append(opts, StartFrameBuffer())
+		c.serviceOptions = append(c.serviceOptions, StartFrameBuffer())
 	}
 	if testing.Verbose() {
 		SetDebug(true)
-		opts = append(opts, Output(os.Stderr))
+		c.serviceOptions = append(c.serviceOptions, Output(os.Stderr))
 	}
 
 	port, err := pickUnusedPort()
@@ -146,7 +179,7 @@ func runFirefoxTests(t *testing.T, seleniumPath string, c config) {
 		t.Fatalf("pickUnusedPort() returned error: %v", err)
 	}
 
-	s, err := NewSeleniumService(*selenium2Path, port, opts...)
+	s, err := NewSeleniumService(seleniumPath, port, c.serviceOptions...)
 	if err != nil {
 		t.Fatalf("Error starting the Selenium server: %v", err)
 	}
@@ -193,7 +226,7 @@ func TestDocker(t *testing.T) {
 	}
 }
 
-func newTestCapabilities(c config) Capabilities {
+func newTestCapabilities(t *testing.T, c config) Capabilities {
 	caps := Capabilities{
 		"browserName": c.browser,
 	}
@@ -229,13 +262,19 @@ func newTestCapabilities(c config) Capabilities {
 				Level: firefox.Trace,
 			}
 		}
-		caps.AddFirefox(f)
+		if c.seleniumVersion.Major == 3 {
+			// Selenium 3.0.1 does not support Firefox capabilities.
+			// https://github.com/SeleniumHQ/selenium/issues/3055
+			t.Log("Working around https://github.com/SeleniumHQ/selenium/issues/3055 by not setting Firefox capabilities")
+		} else {
+			caps.AddFirefox(f)
+		}
 	}
 	return caps
 }
 
 func newRemote(t *testing.T, c config) WebDriver {
-	caps := newTestCapabilities(c)
+	caps := newTestCapabilities(t, c)
 	wd, err := NewRemote(caps, c.addr)
 	if err != nil {
 		t.Fatalf("NewRemote(%+v, %q) returned error: %v", caps, c.addr, err)
@@ -310,7 +349,7 @@ func testStatus(t *testing.T, c config) {
 func testNewSession(t *testing.T, c config) {
 	// Bypass NewRemote which itself calls NewSession internally.
 	wd := &remoteWD{
-		capabilities: newTestCapabilities(c),
+		capabilities: newTestCapabilities(t, c),
 		urlPrefix:    c.addr,
 	}
 	defer func() {
@@ -345,24 +384,19 @@ func testNewSession(t *testing.T, c config) {
 func testExtendedErrorMessage(t *testing.T, c config) {
 	// Bypass NewRemote which itself calls NewSession internally.
 	wd := &remoteWD{
-		capabilities: newTestCapabilities(c),
+		capabilities: newTestCapabilities(t, c),
 		urlPrefix:    c.addr,
 	}
-	err := wd.Close()
-	if err == nil {
-		t.Error("wd.Close() returned nil, expected error")
+
+	var want string
+	switch {
+	case c.browser == "firefox" && c.seleniumVersion.Major == 2:
+		want = "unknown error:"
+	default:
+		want = "invalid session ID:"
 	}
-	switch c.browser {
-	case "firefox":
-		want := "unknown error:"
-		if !strings.HasPrefix(err.Error(), want) {
-			t.Fatalf("Got error %q, expected error to start with %q", err, want)
-		}
-	case "chrome":
-		want := "unknown error - 6: no such session"
-		if !strings.HasPrefix(err.Error(), want) {
-			t.Fatalf("Got error %q, expected error to start with %q", err, want)
-		}
+	if err := wd.Close(); err == nil || !strings.HasPrefix(err.Error(), want) {
+		t.Fatalf("Got error %q, expected error to start with %q", err, want)
 	}
 }
 
@@ -375,7 +409,7 @@ func testCapabilities(t *testing.T, c config) {
 		t.Fatal(err)
 	}
 
-	if caps["browserName"] != c.browser {
+	if strings.ToLower(caps["browserName"].(string)) != c.browser {
 		t.Fatalf("bad browser name - %s (should be %s)", caps["browserName"], c.browser)
 	}
 }
@@ -690,26 +724,44 @@ func testAddCookie(t *testing.T, c config) {
 	if err := wd.Get(serverURL); err != nil {
 		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
 	}
-	cookie := &Cookie{
+	want := &Cookie{
 		Name:   "the nameless cookie",
 		Value:  "I have nothing",
 		Expiry: math.MaxUint32,
 	}
-	if err := wd.AddCookie(cookie); err != nil {
+	if err := wd.AddCookie(want); err != nil {
 		t.Fatal(err)
 	}
+
+	if c.browser == "firefox" && c.seleniumVersion.Major == 3 {
+		// Geckodriver does not return the valid expiration date for the cookie.
+		// https://github.com/mozilla/geckodriver/issues/463
+		t.Log("Working around https://github.com/mozilla/geckodriver/issues/463")
+		want.Expiry = 0
+	}
+
+	// These fields are added implicitly by the browser.
+	want.Path = "/"
+	want.Domain = "127.0.0.1"
 
 	cookies, err := wd.GetCookies()
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, c := range cookies {
-		if (c.Name == cookie.Name) && (c.Value == cookie.Value) && (c.Expiry == math.MaxUint32) {
-			return
+	var got *Cookie
+	for _, cookie := range cookies {
+		if cookie.Name == want.Name {
+			got = &cookie
+			break
 		}
 	}
+	if got == nil {
+		t.Fatalf("wd.GetCookies() = %v, missing cookie %q", cookies, want.Name)
+	}
 
-	t.Fatal("Can't find new cookie")
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("Cookie %q = %+v, want %+v", want.Name, got, want)
+	}
 }
 
 func testDeleteCookie(t *testing.T, c config) {
@@ -917,8 +969,14 @@ func testScreenshot(t *testing.T, c config) {
 }
 
 func testLog(t *testing.T, c config) {
-	if c.browser == "htmlunit" {
+	switch {
+	case c.browser == "htmlunit":
 		t.Skip("Skipping on htmlunit")
+	case c.browser == "firefox" && c.seleniumVersion.Major == 3:
+		// Log is not supported on Firefox with Selenium 3.
+		// https://github.com/w3c/webdriver/issues/406
+		// https://github.com/mozilla/geckodriver/issues/284
+		t.Skip("The log interface is not supported on Firefox, since it is not yet part of the W3C spec.")
 	}
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
@@ -1036,6 +1094,13 @@ func testResizeWindow(t *testing.T, c config) {
 }
 
 func testKeyDownUp(t *testing.T, c config) {
+	if c.browser == "firefox" && c.seleniumVersion.Major == 3 {
+		// Marionette: https://bugzilla.mozilla.org/show_bug.cgi?id=1292178
+		// GeckoDriver: https://github.com/mozilla/geckodriver/issues/159
+		// Selenium 3: https://github.com/SeleniumHQ/selenium/issues/2285
+		t.Skip("The action interface is not yet supported on Firefox and Selenium 3")
+	}
+
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
@@ -1076,10 +1141,15 @@ func testCSSProperty(t *testing.T, c config) {
 	if err != nil {
 		t.Fatalf(`e.CSSProperty("color") returned error: %v`, err)
 	}
-	wantColor := "rgba(0, 0, 238, 1)"
-	if color != wantColor {
-		t.Fatalf(`e.CSSProperty("color") = %q, want %q`, color, wantColor)
+
+	// Later versions of Firefox return the "rgb" version.
+	wantColors := []string{"rgba(0, 0, 238, 1)", "rgb(0, 0, 238)"}
+	for _, wantColor := range wantColors {
+		if color == wantColor {
+			return
+		}
 	}
+	t.Fatalf(`e.CSSProperty("color") = %q, want one of %q`, color, wantColors)
 }
 
 var homePage = `

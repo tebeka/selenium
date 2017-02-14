@@ -18,6 +18,7 @@ import (
 
 // Errors returned by Selenium server.
 var remoteErrors = map[int]string{
+	6:  "invalid session ID",
 	7:  "no such element",
 	8:  "no such frame",
 	9:  "unknown command",
@@ -54,8 +55,9 @@ const (
 type remoteWD struct {
 	id, urlPrefix string
 	capabilities  Capabilities
-	// FIXME
-	// profile             BrowserProfile
+
+	w3cCompatible bool
+	browser       string
 }
 
 var httpClient *http.Client
@@ -101,9 +103,26 @@ func (wd *remoteWD) requestURL(template string, args ...interface{}) string {
 
 type serverReply struct {
 	SessionID *string // SessionID can be nil.
-	Status    int
-	State     string
 	Value     json.RawMessage
+
+	// The following fields were used prior to Selenium 3.0 for error state and
+	// in ChromeDriver for additional information.
+	Status int
+	State  string
+
+	Error
+}
+
+// Error contains information about a failure of a command.
+type Error struct {
+	Err        string `json:"error"`
+	Message    string `json:"message"`
+	Stacktrace string `json:"stacktrace"`
+}
+
+// Error implements the error interface.
+func (e *Error) Error() string {
+	return fmt.Sprintf("%s: %s", e.Err, e.Message)
 }
 
 func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, error) {
@@ -148,6 +167,11 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, error) {
 			return nil, fmt.Errorf("bad server reply status: %s", response.Status)
 		}
 		return nil, err
+	}
+
+	// Handle the W3C-compliant error format.
+	if reply.Err != "" {
+		return nil, &reply.Error
 	}
 
 	if reply.Status != Success {
@@ -266,29 +290,49 @@ func (wd *remoteWD) Status() (*Status, error) {
 }
 
 func (wd *remoteWD) NewSession() (string, error) {
-	message := map[string]interface{}{
-		"sessionId":           nil,
-		"desiredCapabilities": wd.capabilities,
-	}
-	data, err := json.Marshal(message)
-	if err != nil {
-		return "", nil
-	}
+	// Detect whether the remote end complies with the W3C specification:
+	// non-compliant implementations use the top-level 'desiredCapabilities' JSON
+	// key, whereas the specification mandates the 'capabilities' key.
+	//
+	// However, Selenium 3 currently does not implement this part of the specification.
+	// https://github.com/SeleniumHQ/selenium/issues/2827
+	for _, s := range []struct {
+		w3cCompatible bool
+		params        map[string]interface{}
+	}{
+		{true, map[string]interface{}{
+			"capabilities": map[string]interface{}{
+				"desiredCapabilities": wd.capabilities,
+			},
+		}},
+		{false, map[string]interface{}{
+			"desiredCapabilities": wd.capabilities,
+		}},
+	} {
+		data, err := json.Marshal(s.params)
+		if err != nil {
+			return "", err
+		}
 
-	url := wd.requestURL("/session")
-	response, err := wd.execute("POST", url, data)
-	if err != nil {
-		return "", err
+		response, err := wd.execute("POST", wd.requestURL("/session"), data)
+		if err != nil {
+			if s.w3cCompatible {
+				continue
+			}
+			return "", err
+		}
+
+		reply := new(serverReply)
+		if err := json.Unmarshal(response, reply); err != nil {
+			return "", err
+		}
+
+		wd.id = *reply.SessionID
+		wd.w3cCompatible = s.w3cCompatible
+
+		return wd.id, nil
 	}
-
-	reply := new(serverReply)
-	if err := json.Unmarshal(response, reply); err != nil {
-		return "", err
-	}
-
-	wd.id = *reply.SessionID
-
-	return wd.id, nil
+	panic("unreachable")
 }
 
 // SessionId returns the current session ID
@@ -658,6 +702,12 @@ func (wd *remoteWD) SendModifier(modifier string, isDown bool) error {
 }
 
 func (wd *remoteWD) KeyDown(keys string) error {
+	// TODO(minusnine): The W3C specification has changed this protocol, but
+	// neither Firefox nor Chrome have implemented it yet.
+	//
+	// Marionette: https://bugzilla.mozilla.org/show_bug.cgi?id=1292178
+	// GeckoDriver: https://github.com/mozilla/geckodriver/issues/159
+	// Selenium 3: https://github.com/SeleniumHQ/selenium/issues/2285
 	return wd.voidCommand("/session/%s/keys", processKeyString(keys))
 }
 
