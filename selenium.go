@@ -2,6 +2,8 @@ package selenium
 
 import (
 	"time"
+
+	"github.com/tebeka/selenium/chrome"
 )
 
 // Version specifies the semantic version (SemVer) of this driver.
@@ -90,6 +92,11 @@ const (
 // Capabilities configures both the WebDriver process and the target browsers,
 // with standard and browser-specific options.
 type Capabilities map[string]interface{}
+
+// AddChrome adds Chrome-specific capabilities.
+func (c Capabilities) AddChrome(f chrome.Capabilities) {
+	c[chrome.CapabilitiesKey] = f
+}
 
 // Proxy specifies configuration for proxies in the browser. Set the key
 // "proxy" in Capabilities to an instance of this type.

@@ -194,7 +194,7 @@ func newRemote(t *testing.T, c config) WebDriver {
 		if *runningUnderDocker {
 			chrCaps.Args = []string{"--no-sandbox"}
 		}
-		caps[chrome.CapabilitiesKey] = chrCaps
+		caps.AddChrome(chrCaps)
 	}
 
 	wd, err := NewRemote(caps, c.addr)
