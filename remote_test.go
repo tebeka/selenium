@@ -14,13 +14,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/blang/semver"
 	"github.com/tebeka/selenium/chrome"
 	"github.com/tebeka/selenium/firefox"
 )
 
 var (
-	seleniumPath     = flag.String("selenium_path", "vendor/selenium-server-standalone-2.53.1.jar", "The path to the Selenium server JAR. If empty or the file is not present, Firefox tests will not be run.")
-	firefoxBinary    = flag.String("firefox_binary", "vendor/firefox-47/firefox", "The name of the Firefox binary or the path to it. If the name does not contain directory separators, the PATH will be searched.")
+	selenium2Path          = flag.String("selenium2_path", "vendor/selenium-server-standalone-2.53.1.jar", "The path to the Selenium 2 server JAR. If empty or the file is not present, Firefox tests on Selenium 2 will not be run.")
+	firefoxBinarySelenium2 = flag.String("firefox_binary_for_selenium2", "vendor/firefox-47/firefox", "The name of the Firefox binary for Selenium 2 tests or the path to it. If the name does not contain directory separators, the PATH will be searched.")
+
 	chromeDriverPath = flag.String("chrome_driver_path", "vendor/chromedriver-linux64-2.27", "The path to the ChromeDriver binary. If empty of the file is not present, Chrome tests will not be run.")
 	chromeBinary     = flag.String("chrome_binary", "chromium", "The name of the Chrome binary or the path to it. If name is not an exact path, the PATH will be searched.")
 
@@ -59,6 +61,7 @@ func pickUnusedPort() (int, error) {
 
 type config struct {
 	addr, browser, path string
+	seleniumVersion     semver.Version
 }
 
 func TestChrome(t *testing.T) {
@@ -106,25 +109,29 @@ func TestChrome(t *testing.T) {
 	}
 }
 
-func TestFirefox(t *testing.T) {
+func TestFirefoxSelenium2(t *testing.T) {
 	if *useDocker {
-		t.Skip("Skipping Firefox tests because they will be run under a Docker container")
+		t.Skip("Skipping tests because they will be run under a Docker container")
 	}
+	if _, err := os.Stat(*selenium2Path); err != nil {
+		t.Skipf("Skipping Firefox tests using Selenium 2 because Selenium WebDriver JAR not found at path %q", *selenium2Path)
+	}
+	runFirefoxTests(t, *selenium2Path, config{
+		seleniumVersion: semver.MustParse("2.0.0"),
+		path:            *firefoxBinarySelenium2,
+	})
+}
 
-	c := config{
-		browser: "firefox",
-	}
-	if s, err := os.Stat(*firefoxBinary); err == nil && s.Mode().IsRegular() {
-		c.path = *firefoxBinary
-	} else if _, err := exec.LookPath(*firefoxBinary); err == nil {
-		c.browser = *firefoxBinary
-	} else {
-		t.Skipf("Skipping Firefox tests because binary %q not found", *firefoxBinary)
-	}
-	if _, err := os.Stat(*seleniumPath); err != nil {
-		t.Skipf("Skipping Firefox tests because Selenium WebDriver JAR not found at path %q", *seleniumPath)
-	}
+func runFirefoxTests(t *testing.T, seleniumPath string, c config) {
+	c.browser = "firefox"
 
+	if s, err := os.Stat(c.path); err != nil || !s.Mode().IsRegular() {
+		if path, err := exec.LookPath(c.path); err == nil {
+			c.path = path
+		} else {
+			t.Skipf("Skipping Firefox tests because binary %q not found", c.path)
+		}
+	}
 	var opts []ServiceOption
 	if *startFrameBuffer {
 		opts = append(opts, StartFrameBuffer())
@@ -139,7 +146,7 @@ func TestFirefox(t *testing.T) {
 		t.Fatalf("pickUnusedPort() returned error: %v", err)
 	}
 
-	s, err := NewSeleniumService(*seleniumPath, port, opts...)
+	s, err := NewSeleniumService(*selenium2Path, port, opts...)
 	if err != nil {
 		t.Fatalf("Error starting the Selenium server: %v", err)
 	}
