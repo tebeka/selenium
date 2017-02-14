@@ -10,9 +10,9 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"mime"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 )
 
@@ -65,13 +65,6 @@ func GetHTTPClient() *http.Client {
 	return httpClient
 }
 
-func isMimeType(response *http.Response, mtype string) bool {
-	if ctype, ok := response.Header["Content-Type"]; ok {
-		return strings.HasPrefix(ctype[0], mtype)
-	}
-	return false
-}
-
 func newRequest(method string, url string, data []byte) (*http.Request, error) {
 	request, err := http.NewRequest(method, url, bytes.NewBuffer(data))
 	if err != nil {
@@ -80,28 +73,6 @@ func newRequest(method string, url string, data []byte) (*http.Request, error) {
 	request.Header.Add("Accept", JSONType)
 
 	return request, nil
-}
-
-func cleanNils(buf []byte) {
-	for i, b := range buf {
-		if b == 0 {
-			buf[i] = ' '
-		}
-	}
-}
-
-func extractMessage(iVal interface{}) (msg string, ok bool) {
-	val := map[string]interface{}{}
-
-	val, ok = iVal.(map[string]interface{})
-	if !ok {
-		return
-	}
-	if _, ok = val["message"]; ok {
-		msg, ok = val["message"].(string)
-	}
-
-	return
 }
 
 func isRedirect(response *http.Response) bool {
@@ -132,7 +103,7 @@ type serverReply struct {
 	SessionID *string // SessionID can be nil.
 	Status    int
 	State     string
-	Value     interface{}
+	Value     json.RawMessage
 }
 
 func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, error) {
@@ -148,66 +119,52 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, error) {
 	}
 
 	buf, err := ioutil.ReadAll(response.Body)
-	// Are we in debug mode, and did we read the response Body successfully?
-	if debugFlag && err == nil {
-		// Pretty print the JSON response
-		var prettyBuf bytes.Buffer
-		if err = json.Indent(&prettyBuf, buf, "", "    "); err == nil && prettyBuf.Len() > 0 {
-			buf = prettyBuf.Bytes()
-		}
-	}
-
-	debugLog("<- %s [%s]\n%s", response.Status, response.Header["Content-Type"], buf)
-	if err != nil {
-		buf = []byte(response.Status)
-	}
-
-	if err != nil {
-		return nil, fmt.Errorf("%s", (string(buf)))
-	}
-
-	cleanNils(buf)
-	if response.StatusCode >= 400 {
-		reply := new(serverReply)
-		if err := json.Unmarshal(buf, reply); err != nil {
-			return nil, fmt.Errorf("Bad server reply status: %s", response.Status)
-		}
-
-		message, ok := remoteErrors[reply.Status]
-		if !ok {
-			message = fmt.Sprintf("unknown error - %d", reply.Status)
-		}
-
-		// TODO(minusnine): Add a test for this concatenation. Some clients
-		// inspect the string for the value of remoteErrors[reply.Status].
-		// Consider exposing these better.
-		if moreDetailsMessage, ok := extractMessage(reply.Value); ok {
-			message = fmt.Sprintf("%s: %s", message, moreDetailsMessage)
-		}
-
-		return nil, errors.New(message)
-	}
-
-	// Some bug(?) in Selenium gets us nil values in output, json.Unmarshal is
-	// not happy about that.
-	if isMimeType(response, JSONType) {
-		reply := new(serverReply)
-		if err := json.Unmarshal(buf, reply); err != nil {
-			return nil, err
-		}
-
-		if reply.Status != Success {
-			message, ok := remoteErrors[reply.Status]
-			if !ok {
-				message = fmt.Sprintf("unknown error - %d", reply.Status)
+	if debugFlag {
+		if err == nil {
+			// Pretty print the JSON response
+			var prettyBuf bytes.Buffer
+			if err = json.Indent(&prettyBuf, buf, "", "    "); err == nil && prettyBuf.Len() > 0 {
+				buf = prettyBuf.Bytes()
 			}
-			return nil, errors.New(message)
 		}
-
-		return buf, err
+		debugLog("<- %s [%s]\n%s", response.Status, response.Header["Content-Type"], buf)
+	}
+	if err != nil {
+		return nil, errors.New(response.Status)
 	}
 
-	// Nothing was returned, this is OK for some commands.
+	fullCType := response.Header.Get("Content-Type")
+	cType, _, err := mime.ParseMediaType(fullCType)
+	if err != nil {
+		return nil, fmt.Errorf("got content type header %q, expected %q", fullCType, JSONType)
+	}
+	if cType != JSONType {
+		return nil, fmt.Errorf("got content type %q, expected %q", cType, JSONType)
+	}
+
+	reply := new(serverReply)
+	if err := json.Unmarshal(buf, reply); err != nil {
+		if response.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("bad server reply status: %s", response.Status)
+		}
+		return nil, err
+	}
+
+	if reply.Status != Success {
+		shortMsg, ok := remoteErrors[reply.Status]
+		if !ok {
+			shortMsg = fmt.Sprintf("unknown error - %d", reply.Status)
+		}
+
+		longMsg := new(struct {
+			Message string
+		})
+		if err := json.Unmarshal(reply.Value, longMsg); err != nil {
+			return nil, errors.New(shortMsg)
+		}
+		return nil, fmt.Errorf("%s: %s", shortMsg, longMsg.Message)
+	}
+
 	return buf, nil
 }
 
@@ -408,6 +365,9 @@ func (wd *remoteWD) ActivateEngine(engine string) error {
 }
 
 func (wd *remoteWD) Quit() error {
+	if wd.id == "" {
+		return nil
+	}
 	_, err := wd.execute("DELETE", wd.requestURL("/session/%s", wd.id), nil)
 	if err == nil {
 		wd.id = ""

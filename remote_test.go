@@ -186,7 +186,7 @@ func TestDocker(t *testing.T) {
 	}
 }
 
-func newRemote(t *testing.T, c config) WebDriver {
+func newTestCapabilities(c config) Capabilities {
 	caps := Capabilities{
 		"browserName": c.browser,
 	}
@@ -224,7 +224,11 @@ func newRemote(t *testing.T, c config) WebDriver {
 		}
 		caps.AddFirefox(f)
 	}
+	return caps
+}
 
+func newRemote(t *testing.T, c config) WebDriver {
+	caps := newTestCapabilities(c)
 	wd, err := NewRemote(caps, c.addr)
 	if err != nil {
 		t.Fatalf("NewRemote(%+v, %q) returned error: %v", caps, c.addr, err)
@@ -247,6 +251,7 @@ func runTest(f func(*testing.T, config), c config) func(*testing.T) {
 func runTests(t *testing.T, c config) {
 	t.Run("Status", runTest(testStatus, c))
 	t.Run("NewSession", runTest(testNewSession, c))
+	t.Run("ExtendedErrorMessage", runTest(testExtendedErrorMessage, c))
 	t.Run("Capabilities", runTest(testCapabilities, c))
 	t.Run("SetAsyncScriptTimeout", runTest(testSetAsyncScriptTimeout, c))
 	t.Run("SetImplicitWaitTimeout", runTest(testSetImplicitWaitTimeout, c))
@@ -296,25 +301,61 @@ func testStatus(t *testing.T, c config) {
 }
 
 func testNewSession(t *testing.T, c config) {
-	wd := newRemote(t, c)
-	quitRemote(t, wd)
+	// Bypass NewRemote which itself calls NewSession internally.
+	wd := &remoteWD{
+		capabilities: newTestCapabilities(c),
+		urlPrefix:    c.addr,
+	}
+	defer func() {
+		if err := wd.Quit(); err != nil {
+			t.Errorf("wd.Quit() returned error: %v", err)
+		}
+	}()
 
 	sid, err := wd.NewSession()
 	if err != nil {
 		t.Fatalf("error in new session - %s", err)
 	}
-	defer wd.Quit()
+	defer func() {
+		if err := wd.Close(); err != nil {
+			t.Errorf("wd.Close() returned error: %v", err)
+		}
+	}()
 
 	if len(sid) == 0 {
 		t.Fatal("Empty session id")
 	}
 
-	if wd.(*remoteWD).id != sid {
+	if wd.id != sid {
 		t.Fatal("Session id mismatch")
 	}
 
 	if wd.SessionID() != sid {
 		t.Fatalf("Got session id mismatch %s != %s", sid, wd.SessionID())
+	}
+}
+
+func testExtendedErrorMessage(t *testing.T, c config) {
+	// Bypass NewRemote which itself calls NewSession internally.
+	wd := &remoteWD{
+		capabilities: newTestCapabilities(c),
+		urlPrefix:    c.addr,
+	}
+	err := wd.Close()
+	if err == nil {
+		t.Error("wd.Close() returned nil, expected error")
+	}
+	switch c.browser {
+	case "firefox":
+		want := "unknown error:"
+		if !strings.HasPrefix(err.Error(), want) {
+			t.Fatalf("Got error %q, expected error to start with %q", err, want)
+		}
+	case "chrome":
+		want := "unknown error - 6: no such session"
+		if !strings.HasPrefix(err.Error(), want) {
+			t.Fatalf("Got error %q, expected error to start with %q", err, want)
+		}
 	}
 }
 
