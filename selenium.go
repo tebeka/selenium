@@ -293,6 +293,9 @@ type WebDriver interface {
 
 	// GetCookies returns all of the cookies in the browser's jar.
 	GetCookies() ([]Cookie, error)
+	// GetCookie returns the named cookie in the jar, if present. This method is
+	// only implemented for Firefox.
+	GetCookie(name string) (Cookie, error)
 	// AddCookie adds a cookie to the browser's jar.
 	AddCookie(cookie *Cookie) error
 	// DeleteAllCookies deletes all of the cookies in the browser's jar.

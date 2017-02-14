@@ -612,22 +612,55 @@ func (wd *remoteWD) ActiveElement() (WebElement, error) {
 	return wd.DecodeElement(response)
 }
 
+// ChromeDriver returns the expiration date as a float. Handle both formats
+// via a type switch.
+type cookie struct {
+	Name   string      `json:"name"`
+	Value  string      `json:"value"`
+	Path   string      `json:"path"`
+	Domain string      `json:"domain"`
+	Secure bool        `json:"secure"`
+	Expiry interface{} `json:"expiry"`
+}
+
+func (c cookie) sanitize() Cookie {
+	sanitized := Cookie{
+		Name:   c.Name,
+		Value:  c.Value,
+		Path:   c.Path,
+		Domain: c.Domain,
+		Secure: c.Secure,
+	}
+	switch expiry := c.Expiry.(type) {
+	case int:
+		if expiry > 0 {
+			sanitized.Expiry = uint(expiry)
+		}
+	case float64:
+		sanitized.Expiry = uint(expiry)
+	}
+	return sanitized
+}
+
+func (wd *remoteWD) GetCookie(name string) (Cookie, error) {
+	url := wd.requestURL("/session/%s/cookie/%s", wd.id, name)
+	data, err := wd.execute("GET", url, nil)
+	if err != nil {
+		return Cookie{}, err
+	}
+
+	reply := new(struct{ Value cookie })
+	if err := json.Unmarshal(data, reply); err != nil {
+		return Cookie{}, err
+	}
+	return reply.Value.sanitize(), nil
+}
+
 func (wd *remoteWD) GetCookies() ([]Cookie, error) {
 	url := wd.requestURL("/session/%s/cookie", wd.id)
 	data, err := wd.execute("GET", url, nil)
 	if err != nil {
 		return nil, err
-	}
-
-	// ChromeDriver returns the expiration date as a float. Handle both formats
-	// via a type switch.
-	type cookie struct {
-		Name   string      `json:"name"`
-		Value  string      `json:"value"`
-		Path   string      `json:"path"`
-		Domain string      `json:"domain"`
-		Secure bool        `json:"secure"`
-		Expiry interface{} `json:"expiry"`
 	}
 
 	reply := new(struct{ Value []cookie })

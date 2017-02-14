@@ -313,6 +313,7 @@ func runTests(t *testing.T, c config) {
 	t.Run("SendKeys", runTest(testSendKeys, c))
 	t.Run("Click", runTest(testClick, c))
 	t.Run("GetCookies", runTest(testGetCookies, c))
+	t.Run("GetCookie", runTest(testGetCookie, c))
 	t.Run("AddCookie", runTest(testAddCookie, c))
 	t.Run("DeleteCookie", runTest(testDeleteCookie, c))
 	t.Run("Location", runTest(testLocation, c))
@@ -690,6 +691,38 @@ func testClick(t *testing.T, c config) {
 
 	if !strings.Contains(source, searchContents) {
 		t.Fatalf("Can't find %q on page after searching for %q", searchContents, query)
+	}
+}
+
+func testGetCookie(t *testing.T, c config) {
+	if c.browser == "chrome" {
+		t.Skip("ChromeDriver does not implement GetCookie")
+	}
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
+
+	if err := wd.Get(serverURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
+	cookies, err := wd.GetCookies()
+	if err != nil {
+		t.Fatalf("wd.GetCookies() returned error: %v", err)
+	}
+
+	if len(cookies) == 0 {
+		t.Fatal("wd.GetCookies() returned no cookies")
+	}
+
+	if len(cookies[0].Name) == 0 {
+		t.Fatalf("Empty cookie name: %+v", cookies[0])
+	}
+
+	got, err := wd.GetCookie(cookies[0].Name)
+	if err != nil {
+		t.Fatalf("wd.GetCookie(%q) returned error: %v", cookies[0].Name, err)
+	}
+	if !reflect.DeepEqual(got, cookies[0]) {
+		t.Fatalf("wd.GetCookie(%q) = %+v, want %+v", cookies[0].Name, cookies[0], got)
 	}
 }
 

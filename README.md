@@ -81,6 +81,11 @@ one.
 The Geckodriver team recommends using the newest available Firefox version, as
 the integration is actively being developed.
 
+### ChromeDriver
+
+ChromeDriver has not yet implemented the nascent W3C standard. So far, this
+only means that GetCookie is not available for Chrome.
+
 ## Hacking
 
 Patches are encouraged through GitHub pull requests. Please ensure that a test
