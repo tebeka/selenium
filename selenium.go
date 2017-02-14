@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/tebeka/selenium/chrome"
+	"github.com/tebeka/selenium/firefox"
 )
 
 // Version specifies the semantic version (SemVer) of this driver.
@@ -96,6 +97,11 @@ type Capabilities map[string]interface{}
 // AddChrome adds Chrome-specific capabilities.
 func (c Capabilities) AddChrome(f chrome.Capabilities) {
 	c[chrome.CapabilitiesKey] = f
+}
+
+// AddFirefox adds Firefox-specific capabilities.
+func (c Capabilities) AddFirefox(f firefox.Capabilities) {
+	c[firefox.CapabilitiesKey] = f
 }
 
 // Proxy specifies configuration for proxies in the browser. Set the key

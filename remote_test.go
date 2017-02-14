@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/tebeka/selenium/chrome"
+	"github.com/tebeka/selenium/firefox"
 )
 
 var (
@@ -110,9 +111,14 @@ func TestFirefox(t *testing.T) {
 		t.Skip("Skipping Firefox tests because they will be run under a Docker container")
 	}
 
-	_, statErr := os.Stat(*firefoxBinary)
-	_, lookupErr := exec.LookPath(*firefoxBinary)
-	if statErr != nil && lookupErr != nil {
+	c := config{
+		browser: "firefox",
+	}
+	if s, err := os.Stat(*firefoxBinary); err == nil && s.Mode().IsRegular() {
+		c.path = *firefoxBinary
+	} else if _, err := exec.LookPath(*firefoxBinary); err == nil {
+		c.browser = *firefoxBinary
+	} else {
 		t.Skipf("Skipping Firefox tests because binary %q not found", *firefoxBinary)
 	}
 	if _, err := os.Stat(*seleniumPath); err != nil {
@@ -137,11 +143,9 @@ func TestFirefox(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error starting the Selenium server: %v", err)
 	}
+	c.addr = fmt.Sprintf("http://127.0.0.1:%d/wd/hub", port)
 
-	runTests(t, config{
-		addr:    fmt.Sprintf("http://127.0.0.1:%d/wd/hub", port),
-		browser: *firefoxBinary,
-	})
+	runTests(t, c)
 
 	if err := s.Stop(); err != nil {
 		t.Fatalf("Error stopping the Selenium service: %v", err)
@@ -195,11 +199,24 @@ func newRemote(t *testing.T, c config) WebDriver {
 			chrCaps.Args = []string{"--no-sandbox"}
 		}
 		caps.AddChrome(chrCaps)
+	case "firefox":
+		f := firefox.Capabilities{}
+		if c.path != "" {
+			// Selenium 2 uses this option to specify the path to the Firefox binary.
+			caps["firefox_binary"] = c.path
+			f.Binary = c.path
+		}
+		if testing.Verbose() {
+			f.Log = &firefox.Log{
+				Level: firefox.Trace,
+			}
+		}
+		caps.AddFirefox(f)
 	}
 
 	wd, err := NewRemote(caps, c.addr)
 	if err != nil {
-		t.Fatalf("NewRemote(%v, %q) returned error: %v", caps, c.addr, err)
+		t.Fatalf("NewRemote(%+v, %q) returned error: %v", caps, c.addr, err)
 	}
 	return wd
 }
