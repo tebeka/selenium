@@ -249,9 +249,16 @@ func (wd *remoteWD) stringCommand(urlTemplate string) (string, error) {
 	return *reply.Value, nil
 }
 
-func (wd *remoteWD) voidCommand(urlTemplate string, data []byte) error {
-	url := wd.requestURL(urlTemplate, wd.id)
-	_, err := wd.execute("POST", url, data)
+func (wd *remoteWD) voidCommand(urlTemplate string, params interface{}) error {
+	var data []byte
+	if params != nil {
+		var err error
+		data, err = json.Marshal(params)
+		if err != nil {
+			return err
+		}
+	}
+	_, err := wd.execute("POST", wd.requestURL(urlTemplate, wd.id), data)
 	return err
 }
 
@@ -359,43 +366,22 @@ func (wd *remoteWD) Capabilities() (Capabilities, error) {
 }
 
 func (wd *remoteWD) SetAsyncScriptTimeout(timeout time.Duration) error {
-	params := map[string]uint{
+	return wd.voidCommand("/session/%s/timeouts/async_script", map[string]uint{
 		"ms": uint(timeout / time.Millisecond),
-	}
-
-	data, err := json.Marshal(params)
-	if err != nil {
-		return err
-	}
-
-	return wd.voidCommand("/session/%s/timeouts/async_script", data)
+	})
 }
 
 func (wd *remoteWD) SetImplicitWaitTimeout(timeout time.Duration) error {
-	params := map[string]uint{
+	return wd.voidCommand("/session/%s/timeouts/implicit_wait", map[string]uint{
 		"ms": uint(timeout / time.Millisecond),
-	}
-
-	data, err := json.Marshal(params)
-	if err != nil {
-		return err
-	}
-
-	return wd.voidCommand("/session/%s/timeouts/implicit_wait", data)
+	})
 }
 
 func (wd *remoteWD) SetPageLoadTimeout(timeout time.Duration) error {
-	params := map[string]interface{}{
+	return wd.voidCommand("/session/%s/timeouts", map[string]interface{}{
 		"ms":   uint(timeout / time.Millisecond),
 		"type": "page load",
-	}
-
-	data, err := json.Marshal(params)
-	if err != nil {
-		return err
-	}
-
-	return wd.voidCommand("/session/%s/timeouts", data)
+	})
 }
 
 func (wd *remoteWD) AvailableEngines() ([]string, error) {
@@ -415,16 +401,9 @@ func (wd *remoteWD) DeactivateEngine() error {
 }
 
 func (wd *remoteWD) ActivateEngine(engine string) error {
-	params := map[string]string{
+	return wd.voidCommand("/session/%s/ime/activate", map[string]string{
 		"engine": engine,
-	}
-
-	data, err := json.Marshal(params)
-	if err != nil {
-		return err
-	}
-
-	return wd.voidCommand("/session/%s/ime/activate", data)
+	})
 }
 
 func (wd *remoteWD) Quit() error {
@@ -557,15 +536,9 @@ func (wd *remoteWD) Close() error {
 }
 
 func (wd *remoteWD) SwitchWindow(name string) error {
-	params := map[string]string{
+	return wd.voidCommand("/session/%s/window", map[string]string{
 		"name": name,
-	}
-	data, err := json.Marshal(params)
-	if err != nil {
-		return err
-	}
-
-	return wd.voidCommand("/session/%s/window", data)
+	})
 }
 
 func (wd *remoteWD) CloseWindow(name string) error {
@@ -621,12 +594,7 @@ func (wd *remoteWD) SwitchFrame(frame string) error {
 	if len(frame) == 0 {
 		params["id"] = nil
 	}
-
-	data, err := json.Marshal(params)
-	if err != nil {
-		return err
-	}
-	return wd.voidCommand("/session/%s/frame", data)
+	return wd.voidCommand("/session/%s/frame", params)
 }
 
 func (wd *remoteWD) ActiveElement() (WebElement, error) {
@@ -686,15 +654,9 @@ func (wd *remoteWD) GetCookies() ([]Cookie, error) {
 }
 
 func (wd *remoteWD) AddCookie(cookie *Cookie) error {
-	params := map[string]*Cookie{
+	return wd.voidCommand("/session/%s/cookie", map[string]*Cookie{
 		"cookie": cookie,
-	}
-	data, err := json.Marshal(params)
-	if err != nil {
-		return err
-	}
-
-	return wd.voidCommand("/session/%s/cookie", data)
+	})
 }
 
 func (wd *remoteWD) DeleteAllCookies() error {
@@ -710,14 +672,9 @@ func (wd *remoteWD) DeleteCookie(name string) error {
 }
 
 func (wd *remoteWD) Click(button int) error {
-	params := map[string]int{
+	return wd.voidCommand("/session/%s/click", map[string]int{
 		"button": button,
-	}
-	data, err := json.Marshal(params)
-	if err != nil {
-		return err
-	}
-	return wd.voidCommand("/session/%s/click", data)
+	})
 }
 
 func (wd *remoteWD) DoubleClick() error {
@@ -733,26 +690,14 @@ func (wd *remoteWD) ButtonUp() error {
 }
 
 func (wd *remoteWD) SendModifier(modifier string, isDown bool) error {
-	params := map[string]interface{}{
+	return wd.voidCommand("/session/%s/modifier", map[string]interface{}{
 		"value":  modifier,
 		"isdown": isDown,
-	}
-
-	data, err := json.Marshal(params)
-	if err != nil {
-		return err
-	}
-
-	return wd.voidCommand("/session/%s/modifier", data)
+	})
 }
 
 func (wd *remoteWD) KeyDown(keys string) error {
-	data, err := processKeyString(keys)
-	if err != nil {
-		return err
-	}
-
-	return wd.voidCommand("/session/%s/keys", data)
+	return wd.voidCommand("/session/%s/keys", processKeyString(keys))
 }
 
 func (wd *remoteWD) KeyUp(keys string) error {
@@ -871,26 +816,16 @@ func (elem *remoteWE) Click() error {
 }
 
 func (elem *remoteWE) SendKeys(keys string) error {
-	data, err := processKeyString(keys)
-	if err != nil {
-		return err
-	}
-
 	urlTemplate := fmt.Sprintf("/session/%%s/element/%s/value", elem.id)
-	return elem.parent.voidCommand(urlTemplate, data)
+	return elem.parent.voidCommand(urlTemplate, processKeyString(keys))
 }
 
-func processKeyString(keys string) ([]byte, error) {
+func processKeyString(keys string) interface{} {
 	chars := make([]string, len(keys))
 	for i, c := range keys {
 		chars[i] = string(c)
 	}
-
-	data, err := json.Marshal(map[string][]string{"value": chars})
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
+	return map[string][]string{"value": chars}
 }
 
 func (elem *remoteWE) TagName() (string, error) {
@@ -914,15 +849,11 @@ func (elem *remoteWE) Clear() error {
 }
 
 func (elem *remoteWE) MoveTo(xOffset, yOffset int) error {
-	data, err := json.Marshal(map[string]interface{}{
+	return elem.parent.voidCommand("/session/%s/moveto", map[string]interface{}{
 		"element": elem.id,
 		"xoffset": xOffset,
 		"yoffset": yOffset,
 	})
-	if err != nil {
-		return err
-	}
-	return elem.parent.voidCommand("/session/%s/moveto", data)
 }
 
 func (elem *remoteWE) FindElement(by, value string) (WebElement, error) {
