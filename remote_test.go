@@ -632,8 +632,7 @@ func testGetCookies(t *testing.T, c config) {
 
 func testAddCookie(t *testing.T, c config) {
 	if c.browser == "htmlunit" {
-		t.Log("Skipping on htmlunit")
-		return
+		t.Skip("Skipping on htmlunit")
 	}
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
@@ -763,8 +762,7 @@ func testSize(t *testing.T, c config) {
 
 func testExecuteScript(t *testing.T, c config) {
 	if c.browser == "htmlunit" {
-		t.Log("Skipping on htmlunit")
-		return
+		t.Skip("Skipping on htmlunit")
 	}
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
@@ -788,8 +786,7 @@ func testExecuteScript(t *testing.T, c config) {
 
 func testExecuteScriptWithNilArgs(t *testing.T, c config) {
 	if c.browser == "htmlunit" {
-		t.Log("Skipping on htmlunit")
-		return
+		t.Skip("Skipping on htmlunit")
 	}
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
@@ -806,7 +803,7 @@ func testExecuteScriptWithNilArgs(t *testing.T, c config) {
 
 func testExecuteScriptOnElement(t *testing.T, c config) {
 	if c.browser == "htmlunit" {
-		t.Log("Skipping on htmlunit")
+		t.Skip("Skipping on htmlunit")
 		return
 	}
 	wd := newRemote(t, c)
@@ -851,8 +848,7 @@ func testExecuteScriptOnElement(t *testing.T, c config) {
 
 func testScreenshot(t *testing.T, c config) {
 	if c.browser == "htmlunit" {
-		t.Log("Skipping on htmlunit")
-		return
+		t.Skip("Skipping on htmlunit")
 	}
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
@@ -872,8 +868,7 @@ func testScreenshot(t *testing.T, c config) {
 
 func testLog(t *testing.T, c config) {
 	if c.browser == "htmlunit" {
-		t.Log("Skipping on htmlunit")
-		return
+		t.Skip("Skipping on htmlunit")
 	}
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
