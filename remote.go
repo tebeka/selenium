@@ -42,8 +42,9 @@ var remoteErrors = map[int]string{
 const (
 	// Success is status code that indicates the method was successful.
 	Success = 0
-	// DefaultExecutor is the default executor URL.
-	DefaultExecutor = "http://127.0.0.1:4444/wd/hub"
+	// DefaultURLPrefix is the default HTTP endpoint that offers the WebDriver
+	// API.
+	DefaultURLPrefix = "http://127.0.0.1:4444/wd/hub"
 	// JSONType is JSON content type.
 	JSONType = "application/json"
 	// MaxRedirects is the maximum number of redirects to follow.
@@ -51,8 +52,8 @@ const (
 )
 
 type remoteWD struct {
-	id, executor string
-	capabilities Capabilities
+	id, urlPrefix string
+	capabilities  Capabilities
 	// FIXME
 	// profile             BrowserProfile
 }
@@ -124,7 +125,7 @@ func normalizeURL(n string, base string) (string, error) {
 }
 
 func (wd *remoteWD) requestURL(template string, args ...interface{}) string {
-	return wd.executor + fmt.Sprintf(template, args...)
+	return wd.urlPrefix + fmt.Sprintf(template, args...)
 }
 
 type serverReply struct {
@@ -211,17 +212,17 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, error) {
 }
 
 // NewRemote creates new remote client, this will also start a new session.
-// capabilities - the desired capabilities, see http://goo.gl/SNlAk executor -
+// capabilities - the desired capabilities, see http://goo.gl/SNlAk urlPrefix -
 // the URL to the Selenium server, *must* be prefixed with protocol
 // (http,https...).
 //
 // Empty string means DefaultExecutor.
-func NewRemote(capabilities Capabilities, executor string) (WebDriver, error) {
-	if len(executor) == 0 {
-		executor = DefaultExecutor
+func NewRemote(capabilities Capabilities, urlPrefix string) (WebDriver, error) {
+	if len(urlPrefix) == 0 {
+		urlPrefix = DefaultURLPrefix
 	}
 
-	wd := &remoteWD{executor: executor, capabilities: capabilities}
+	wd := &remoteWD{urlPrefix: urlPrefix, capabilities: capabilities}
 	// FIXME: Handle profile
 
 	if _, err := wd.NewSession(); err != nil {
