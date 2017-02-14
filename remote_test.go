@@ -20,8 +20,8 @@ import (
 
 var (
 	seleniumPath     = flag.String("selenium_path", "vendor/selenium-server-standalone-2.53.1.jar", "The path to the Selenium server JAR. If empty or the file is not present, Firefox tests will not be run.")
-	firefoxBinary    = flag.String("firefox_binary", "firefox", "The name of the Firefox binary or the path to it. If the name does not contain directory separators, the PATH will be searched.")
-	chromeDriverPath = flag.String("chrome_driver_path", "vendor/chromedriver-linux64-2.26", "The path to the ChromeDriver binary. If empty of the file is not present, Chrome tests will not be run.")
+	firefoxBinary    = flag.String("firefox_binary", "vendor/firefox-47/firefox", "The name of the Firefox binary or the path to it. If the name does not contain directory separators, the PATH will be searched.")
+	chromeDriverPath = flag.String("chrome_driver_path", "vendor/chromedriver-linux64-2.27", "The path to the ChromeDriver binary. If empty of the file is not present, Chrome tests will not be run.")
 	chromeBinary     = flag.String("chrome_binary", "chromium", "The name of the Chrome binary or the path to it. If name is not an exact path, the PATH will be searched.")
 
 	useDocker          = flag.Bool("docker", false, "If set, run the tests in a Docker container.")
@@ -194,9 +194,20 @@ func newRemote(t *testing.T, c config) WebDriver {
 	case "chrome":
 		chrCaps := chrome.Capabilities{
 			Path: c.path,
-		}
-		if *runningUnderDocker {
-			chrCaps.Args = []string{"--no-sandbox"}
+			Args: []string{
+				// This flag is needed to test against Chrome binaries that are not the
+				// default installation. The sandbox requires a setuid binary.
+				"--no-sandbox",
+				// This flag is needed for Chrome versions > 56. However, this flag is
+				// deprecated in Chrome 57+. Therefore, this API currently cannot
+				// support Chrome 57+.
+				//
+				// https://bugs.chromium.org/p/chromedriver/issues/detail?id=1625
+				//
+				// TODO(minusnine): Standardize on the Chrome version to use for
+				// testing.
+				"--disable-extensions",
+			},
 		}
 		caps.AddChrome(chrCaps)
 	case "firefox":
