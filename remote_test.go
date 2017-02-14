@@ -556,7 +556,8 @@ func testSendKeys(t *testing.T, c config) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := input.SendKeys("golang\n"); err != nil {
+	const query = "golang"
+	if err := input.SendKeys(query + EnterKey); err != nil {
 		t.Fatal(err)
 	}
 
@@ -564,15 +565,15 @@ func testSendKeys(t *testing.T, c config) {
 
 	source, err := wd.PageSource()
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("wd.PageSource() returned error: %v", err)
 	}
 
-	if !strings.Contains(source, "The Go Programming Language") {
-		t.Fatal("Can't find Go")
+	if !strings.Contains(source, searchContents) {
+		t.Fatalf("Can't find %q on page after searching for %q", searchContents, query)
 	}
 
-	if !strings.Contains(source, "golang") {
-		t.Fatal("Can't find search query in source")
+	if !strings.Contains(source, query) {
+		t.Fatalf("Can't find search query %q in source", query)
 	}
 }
 
@@ -587,7 +588,8 @@ func testClick(t *testing.T, c config) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = input.SendKeys("golang"); err != nil {
+	const query = "golang"
+	if err = input.SendKeys(query); err != nil {
 		t.Fatal(err)
 	}
 
@@ -604,8 +606,8 @@ func testClick(t *testing.T, c config) {
 		t.Fatal(err)
 	}
 
-	if !strings.Contains(source, "The Go Programming Language") {
-		t.Fatal("Can't find Go")
+	if !strings.Contains(source, searchContents) {
+		t.Fatalf("Can't find %q on page after searching for %q", searchContents, query)
 	}
 }
 
@@ -804,7 +806,6 @@ func testExecuteScriptWithNilArgs(t *testing.T, c config) {
 func testExecuteScriptOnElement(t *testing.T, c config) {
 	if c.browser == "htmlunit" {
 		t.Skip("Skipping on htmlunit")
-		return
 	}
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
@@ -818,7 +819,8 @@ func testExecuteScriptOnElement(t *testing.T, c config) {
 		t.Fatal(err)
 	}
 
-	if err := input.SendKeys("golang"); err != nil {
+	const query = "golang"
+	if err := input.SendKeys(query); err != nil {
 		t.Fatal(err)
 	}
 
@@ -841,8 +843,8 @@ func testExecuteScriptOnElement(t *testing.T, c config) {
 		t.Fatal(err)
 	}
 
-	if !strings.Contains(source, "The Go Programming Language") {
-		t.Fatal("Can't find Go")
+	if !strings.Contains(source, searchContents) {
+		t.Fatalf("Can't find %q on page after searching for %q", searchContents, query)
 	}
 }
 
@@ -1059,6 +1061,8 @@ var otherPage = `
 </html>
 `
 
+const searchContents = "The Go Proramming Language"
+
 var searchPage = `
 <html>
 <head>
@@ -1067,7 +1071,7 @@ var searchPage = `
 <body>
 	You searched for "%s". I'll pretend I've found:
 	<p>
-	"The Go Programming Language"
+	"` + searchContents + `"
 	</p>
 </body>
 </html>
