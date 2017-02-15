@@ -214,8 +214,57 @@ func runFirefoxTests(t *testing.T, webDriverPath string, c config) {
 
 	runTests(t, c)
 
+	// Firefox-specific tests.
+	t.Run("Preferences", runTest(testFirefoxPreferences, c))
+
 	if err := s.Stop(); err != nil {
 		t.Fatalf("Error stopping the Selenium service: %v", err)
+	}
+}
+
+func testFirefoxPreferences(t *testing.T, c config) {
+	if c.seleniumVersion.Major == 2 {
+		t.Skip("This test is known to fail for Selenium 2 and Firefox 47.")
+	}
+	if c.seleniumVersion.Major == 3 {
+		// Selenium 3.0.1 does not support Firefox capabilities.
+		// https://github.com/SeleniumHQ/selenium/issues/3055
+		t.Skip("Skipping as Selenium 3.0.1 does not support Firefox capabilities. https://github.com/SeleniumHQ/selenium/issues/3055")
+	}
+	caps := newTestCapabilities(t, c)
+	f := caps[firefox.CapabilitiesKey].(firefox.Capabilities)
+	if f.Prefs == nil {
+		f.Prefs = make(map[string]interface{})
+	}
+	f.Prefs["browser.startup.homepage"] = serverURL
+	f.Prefs["browser.startup.page"] = 1
+	caps.AddFirefox(f)
+
+	wd := &remoteWD{
+		capabilities: caps,
+		urlPrefix:    c.addr,
+	}
+	defer func() {
+		if err := wd.Quit(); err != nil {
+			t.Errorf("wd.Quit() returned error: %v", err)
+		}
+	}()
+
+	if _, err := wd.NewSession(); err != nil {
+		t.Fatalf("error in new session - %s", err)
+	}
+	defer func() {
+		if err := wd.Close(); err != nil {
+			t.Errorf("wd.Close() returned error: %v", err)
+		}
+	}()
+
+	u, err := wd.CurrentURL()
+	if err != nil {
+		t.Fatalf("wd.Current() returned error: %v", err)
+	}
+	if u != serverURL+"/" {
+		t.Fatalf("wd.Current() = %q, want %q", u, serverURL+"/")
 	}
 }
 
