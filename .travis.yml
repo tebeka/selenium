@@ -1,9 +1,17 @@
 language: go
 go:
-    - 1.7.x
+    - 1.8.x
 
 jdk:
-    - openjdk7
+    - openjdk8
+
+# Needed to update java8 to a more recent version.
+# https://github.com/travis-ci/travis-ci/issues/3259#issuecomment-130860338
+addons:
+  apt:
+    packages:
+      - oracle-java8-installer
+      - oracle-java8-set-default
 
 before_script:
     - "export DISPLAY=:99.0"

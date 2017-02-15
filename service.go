@@ -69,6 +69,16 @@ func Output(w io.Writer) ServiceOption {
 	}
 }
 
+// GeckoDriver sets the path to the geckodriver binary. Unlike other drivers,
+// Selenium Server does not support specifying the geckodriver path. This
+// ServiceOption is only useful when calling NewSeleniumService.
+func GeckoDriver(path string) ServiceOption {
+	return func(s *Service) error {
+		s.geckoDriverPath = path
+		return nil
+	}
+}
+
 // Service controls a locally-running Selenium subprocess.
 type Service struct {
 	addr            string
@@ -77,6 +87,8 @@ type Service struct {
 
 	display, xauthPath string
 	xvfb               *FrameBuffer
+
+	geckoDriverPath string
 
 	output io.Writer
 }
@@ -88,7 +100,6 @@ func NewSeleniumService(jarPath string, port int, opts ...ServiceOption) (*Servi
 	if err != nil {
 		return nil, err
 	}
-	s.shutdownURLPath = "/selenium-server/driver/?cmd=shutDownSeleniumServer"
 	return s, nil
 }
 
@@ -121,6 +132,9 @@ func newService(cmd *exec.Cmd, port int, opts ...ServiceOption) (*Service, error
 	if s.xauthPath != "" {
 		cmd.Env = append(cmd.Env, "XAUTHORITY="+s.xauthPath)
 	}
+	if s.geckoDriverPath != "" {
+		cmd.Args = append([]string{"java", "-Dwebdriver.gecko.driver=" + s.geckoDriverPath}, cmd.Args[1:]...)
+	}
 	if err := cmd.Start(); err != nil {
 		return nil, err
 	}
@@ -131,7 +145,9 @@ func newService(cmd *exec.Cmd, port int, opts ...ServiceOption) (*Service, error
 		if err == nil {
 			resp.Body.Close()
 			switch resp.StatusCode {
-			case http.StatusForbidden, http.StatusBadRequest:
+			// Selenium <3 returned Forbidden and BadRequest. ChromeDriver and
+			// Selenium 3 return OK.
+			case http.StatusForbidden, http.StatusBadRequest, http.StatusOK:
 				s.cmd = cmd
 				return s, nil
 			}
@@ -143,12 +159,20 @@ func newService(cmd *exec.Cmd, port int, opts ...ServiceOption) (*Service, error
 // Stop shuts down the WebDriver service, and the X virtual frame buffer
 // if one was started.
 func (s *Service) Stop() error {
-	resp, err := http.Get(s.addr + s.shutdownURLPath)
-	if err != nil {
-		return err
+	// Selenium 3 stopped supporting the shutdown URL by default.
+	// https://github.com/SeleniumHQ/selenium/issues/2852
+	if s.shutdownURLPath == "" {
+		if err := s.cmd.Process.Kill(); err != nil {
+			return err
+		}
+	} else {
+		resp, err := http.Get(s.addr + s.shutdownURLPath)
+		if err != nil {
+			return err
+		}
+		resp.Body.Close()
 	}
-	resp.Body.Close()
-	if err := s.cmd.Wait(); err != nil {
+	if err := s.cmd.Wait(); err != nil && err.Error() != "signal: killed" {
 		return err
 	}
 	if s.xvfb != nil {

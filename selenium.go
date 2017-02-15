@@ -2,6 +2,9 @@ package selenium
 
 import (
 	"time"
+
+	"github.com/tebeka/selenium/chrome"
+	"github.com/tebeka/selenium/firefox"
 )
 
 // Version specifies the semantic version (SemVer) of this driver.
@@ -90,6 +93,16 @@ const (
 // Capabilities configures both the WebDriver process and the target browsers,
 // with standard and browser-specific options.
 type Capabilities map[string]interface{}
+
+// AddChrome adds Chrome-specific capabilities.
+func (c Capabilities) AddChrome(f chrome.Capabilities) {
+	c[chrome.CapabilitiesKey] = f
+}
+
+// AddFirefox adds Firefox-specific capabilities.
+func (c Capabilities) AddFirefox(f firefox.Capabilities) {
+	c[firefox.CapabilitiesKey] = f
+}
 
 // Proxy specifies configuration for proxies in the browser. Set the key
 // "proxy" in Capabilities to an instance of this type.
@@ -280,6 +293,9 @@ type WebDriver interface {
 
 	// GetCookies returns all of the cookies in the browser's jar.
 	GetCookies() ([]Cookie, error)
+	// GetCookie returns the named cookie in the jar, if present. This method is
+	// only implemented for Firefox.
+	GetCookie(name string) (Cookie, error)
 	// AddCookie adds a cookie to the browser's jar.
 	AddCookie(cookie *Cookie) error
 	// DeleteAllCookies deletes all of the cookies in the browser's jar.

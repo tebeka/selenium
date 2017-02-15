@@ -4,7 +4,6 @@
 go get -d -v
 pushd vendor
 go get -d -v
-go run init.go
+go run init.go --alsologtostderr --download_browsers
 popd
-# Travis has firefox already installed.
-go test -test.v -test.run=TestFirefox --start_frame_buffer=false
+go test -test.v --start_frame_buffer=false --test.run=TestFirefox

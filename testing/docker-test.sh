@@ -4,6 +4,6 @@
 go get -d -v
 pushd vendor
 go get -d -v
-go run init.go
+go run init.go --alsologtostderr --download_browsers
 popd
 go test -test.v --running_under_docker

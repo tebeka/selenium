@@ -10,14 +10,15 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"mime"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 )
 
 // Errors returned by Selenium server.
 var remoteErrors = map[int]string{
+	6:  "invalid session ID",
 	7:  "no such element",
 	8:  "no such frame",
 	9:  "unknown command",
@@ -42,8 +43,9 @@ var remoteErrors = map[int]string{
 const (
 	// Success is status code that indicates the method was successful.
 	Success = 0
-	// DefaultExecutor is the default executor URL.
-	DefaultExecutor = "http://127.0.0.1:4444/wd/hub"
+	// DefaultURLPrefix is the default HTTP endpoint that offers the WebDriver
+	// API.
+	DefaultURLPrefix = "http://127.0.0.1:4444/wd/hub"
 	// JSONType is JSON content type.
 	JSONType = "application/json"
 	// MaxRedirects is the maximum number of redirects to follow.
@@ -51,10 +53,11 @@ const (
 )
 
 type remoteWD struct {
-	id, executor string
-	capabilities Capabilities
-	// FIXME
-	// profile             BrowserProfile
+	id, urlPrefix string
+	capabilities  Capabilities
+
+	w3cCompatible bool
+	browser       string
 }
 
 var httpClient *http.Client
@@ -62,13 +65,6 @@ var httpClient *http.Client
 // GetHTTPClient returns the default HTTP client.
 func GetHTTPClient() *http.Client {
 	return httpClient
-}
-
-func isMimeType(response *http.Response, mtype string) bool {
-	if ctype, ok := response.Header["Content-Type"]; ok {
-		return strings.HasPrefix(ctype[0], mtype)
-	}
-	return false
 }
 
 func newRequest(method string, url string, data []byte) (*http.Request, error) {
@@ -79,28 +75,6 @@ func newRequest(method string, url string, data []byte) (*http.Request, error) {
 	request.Header.Add("Accept", JSONType)
 
 	return request, nil
-}
-
-func cleanNils(buf []byte) {
-	for i, b := range buf {
-		if b == 0 {
-			buf[i] = ' '
-		}
-	}
-}
-
-func extractMessage(iVal interface{}) (msg string, ok bool) {
-	val := map[string]interface{}{}
-
-	val, ok = iVal.(map[string]interface{})
-	if !ok {
-		return
-	}
-	if _, ok = val["message"]; ok {
-		msg, ok = val["message"].(string)
-	}
-
-	return
 }
 
 func isRedirect(response *http.Response) bool {
@@ -124,14 +98,31 @@ func normalizeURL(n string, base string) (string, error) {
 }
 
 func (wd *remoteWD) requestURL(template string, args ...interface{}) string {
-	return wd.executor + fmt.Sprintf(template, args...)
+	return wd.urlPrefix + fmt.Sprintf(template, args...)
 }
 
 type serverReply struct {
 	SessionID *string // SessionID can be nil.
-	Status    int
-	State     string
-	Value     interface{}
+	Value     json.RawMessage
+
+	// The following fields were used prior to Selenium 3.0 for error state and
+	// in ChromeDriver for additional information.
+	Status int
+	State  string
+
+	Error
+}
+
+// Error contains information about a failure of a command.
+type Error struct {
+	Err        string `json:"error"`
+	Message    string `json:"message"`
+	Stacktrace string `json:"stacktrace"`
+}
+
+// Error implements the error interface.
+func (e *Error) Error() string {
+	return fmt.Sprintf("%s: %s", e.Err, e.Message)
 }
 
 func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, error) {
@@ -147,81 +138,72 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, error) {
 	}
 
 	buf, err := ioutil.ReadAll(response.Body)
-	// Are we in debug mode, and did we read the response Body successfully?
-	if debugFlag && err == nil {
-		// Pretty print the JSON response
-		var prettyBuf bytes.Buffer
-		if err = json.Indent(&prettyBuf, buf, "", "    "); err == nil && prettyBuf.Len() > 0 {
-			buf = prettyBuf.Bytes()
-		}
-	}
-
-	debugLog("<- %s [%s]\n%s", response.Status, response.Header["Content-Type"], buf)
-	if err != nil {
-		buf = []byte(response.Status)
-	}
-
-	if err != nil {
-		return nil, fmt.Errorf("%s", (string(buf)))
-	}
-
-	cleanNils(buf)
-	if response.StatusCode >= 400 {
-		reply := new(serverReply)
-		if err := json.Unmarshal(buf, reply); err != nil {
-			return nil, fmt.Errorf("Bad server reply status: %s", response.Status)
-		}
-
-		message, ok := remoteErrors[reply.Status]
-		if !ok {
-			message = fmt.Sprintf("unknown error - %d", reply.Status)
-		}
-
-		// TODO(minusnine): Add a test for this concatenation. Some clients
-		// inspect the string for the value of remoteErrors[reply.Status].
-		// Consider exposing these better.
-		if moreDetailsMessage, ok := extractMessage(reply.Value); ok {
-			message = fmt.Sprintf("%s: %s", message, moreDetailsMessage)
-		}
-
-		return nil, errors.New(message)
-	}
-
-	// Some bug(?) in Selenium gets us nil values in output, json.Unmarshal is
-	// not happy about that.
-	if isMimeType(response, JSONType) {
-		reply := new(serverReply)
-		if err := json.Unmarshal(buf, reply); err != nil {
-			return nil, err
-		}
-
-		if reply.Status != Success {
-			message, ok := remoteErrors[reply.Status]
-			if !ok {
-				message = fmt.Sprintf("unknown error - %d", reply.Status)
+	if debugFlag {
+		if err == nil {
+			// Pretty print the JSON response
+			var prettyBuf bytes.Buffer
+			if err = json.Indent(&prettyBuf, buf, "", "    "); err == nil && prettyBuf.Len() > 0 {
+				buf = prettyBuf.Bytes()
 			}
-			return nil, errors.New(message)
 		}
-
-		return buf, err
+		debugLog("<- %s [%s]\n%s", response.Status, response.Header["Content-Type"], buf)
+	}
+	if err != nil {
+		return nil, errors.New(response.Status)
 	}
 
-	// Nothing was returned, this is OK for some commands.
+	fullCType := response.Header.Get("Content-Type")
+	cType, _, err := mime.ParseMediaType(fullCType)
+	if err != nil {
+		return nil, fmt.Errorf("got content type header %q, expected %q", fullCType, JSONType)
+	}
+	if cType != JSONType {
+		return nil, fmt.Errorf("got content type %q, expected %q", cType, JSONType)
+	}
+
+	reply := new(serverReply)
+	if err := json.Unmarshal(buf, reply); err != nil {
+		if response.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("bad server reply status: %s", response.Status)
+		}
+		return nil, err
+	}
+
+	// Handle the W3C-compliant error format.
+	if reply.Err != "" {
+		return nil, &reply.Error
+	}
+
+	if reply.Status != Success {
+		shortMsg, ok := remoteErrors[reply.Status]
+		if !ok {
+			shortMsg = fmt.Sprintf("unknown error - %d", reply.Status)
+		}
+
+		longMsg := new(struct {
+			Message string
+		})
+		if err := json.Unmarshal(reply.Value, longMsg); err != nil {
+			return nil, errors.New(shortMsg)
+		}
+		return nil, fmt.Errorf("%s: %s", shortMsg, longMsg.Message)
+	}
+
 	return buf, nil
 }
 
 // NewRemote creates new remote client, this will also start a new session.
-// capabilities - the desired capabilities, see http://goo.gl/SNlAk executor -
+// capabilities - the desired capabilities, see http://goo.gl/SNlAk urlPrefix -
 // the URL to the Selenium server, *must* be prefixed with protocol
 // (http,https...).
 //
 // Empty string means DefaultExecutor.
-func NewRemote(capabilities Capabilities, executor string) (WebDriver, error) {
-	if len(executor) == 0 {
-		executor = DefaultExecutor
+func NewRemote(capabilities Capabilities, urlPrefix string) (WebDriver, error) {
+	if len(urlPrefix) == 0 {
+		urlPrefix = DefaultURLPrefix
 	}
 
-	wd := &remoteWD{executor: executor, capabilities: capabilities}
+	wd := &remoteWD{urlPrefix: urlPrefix, capabilities: capabilities}
 	// FIXME: Handle profile
 
 	if _, err := wd.NewSession(); err != nil {
@@ -249,9 +231,16 @@ func (wd *remoteWD) stringCommand(urlTemplate string) (string, error) {
 	return *reply.Value, nil
 }
 
-func (wd *remoteWD) voidCommand(urlTemplate string, data []byte) error {
-	url := wd.requestURL(urlTemplate, wd.id)
-	_, err := wd.execute("POST", url, data)
+func (wd *remoteWD) voidCommand(urlTemplate string, params interface{}) error {
+	var data []byte
+	if params != nil {
+		var err error
+		data, err = json.Marshal(params)
+		if err != nil {
+			return err
+		}
+	}
+	_, err := wd.execute("POST", wd.requestURL(urlTemplate, wd.id), data)
 	return err
 }
 
@@ -301,29 +290,49 @@ func (wd *remoteWD) Status() (*Status, error) {
 }
 
 func (wd *remoteWD) NewSession() (string, error) {
-	message := map[string]interface{}{
-		"sessionId":           nil,
-		"desiredCapabilities": wd.capabilities,
-	}
-	data, err := json.Marshal(message)
-	if err != nil {
-		return "", nil
-	}
+	// Detect whether the remote end complies with the W3C specification:
+	// non-compliant implementations use the top-level 'desiredCapabilities' JSON
+	// key, whereas the specification mandates the 'capabilities' key.
+	//
+	// However, Selenium 3 currently does not implement this part of the specification.
+	// https://github.com/SeleniumHQ/selenium/issues/2827
+	for _, s := range []struct {
+		w3cCompatible bool
+		params        map[string]interface{}
+	}{
+		{true, map[string]interface{}{
+			"capabilities": map[string]interface{}{
+				"desiredCapabilities": wd.capabilities,
+			},
+		}},
+		{false, map[string]interface{}{
+			"desiredCapabilities": wd.capabilities,
+		}},
+	} {
+		data, err := json.Marshal(s.params)
+		if err != nil {
+			return "", err
+		}
 
-	url := wd.requestURL("/session")
-	response, err := wd.execute("POST", url, data)
-	if err != nil {
-		return "", err
+		response, err := wd.execute("POST", wd.requestURL("/session"), data)
+		if err != nil {
+			if s.w3cCompatible {
+				continue
+			}
+			return "", err
+		}
+
+		reply := new(serverReply)
+		if err := json.Unmarshal(response, reply); err != nil {
+			return "", err
+		}
+
+		wd.id = *reply.SessionID
+		wd.w3cCompatible = s.w3cCompatible
+
+		return wd.id, nil
 	}
-
-	reply := new(serverReply)
-	if err := json.Unmarshal(response, reply); err != nil {
-		return "", err
-	}
-
-	wd.id = *reply.SessionID
-
-	return wd.id, nil
+	panic("unreachable")
 }
 
 // SessionId returns the current session ID
@@ -359,43 +368,22 @@ func (wd *remoteWD) Capabilities() (Capabilities, error) {
 }
 
 func (wd *remoteWD) SetAsyncScriptTimeout(timeout time.Duration) error {
-	params := map[string]uint{
+	return wd.voidCommand("/session/%s/timeouts/async_script", map[string]uint{
 		"ms": uint(timeout / time.Millisecond),
-	}
-
-	data, err := json.Marshal(params)
-	if err != nil {
-		return err
-	}
-
-	return wd.voidCommand("/session/%s/timeouts/async_script", data)
+	})
 }
 
 func (wd *remoteWD) SetImplicitWaitTimeout(timeout time.Duration) error {
-	params := map[string]uint{
+	return wd.voidCommand("/session/%s/timeouts/implicit_wait", map[string]uint{
 		"ms": uint(timeout / time.Millisecond),
-	}
-
-	data, err := json.Marshal(params)
-	if err != nil {
-		return err
-	}
-
-	return wd.voidCommand("/session/%s/timeouts/implicit_wait", data)
+	})
 }
 
 func (wd *remoteWD) SetPageLoadTimeout(timeout time.Duration) error {
-	params := map[string]interface{}{
+	return wd.voidCommand("/session/%s/timeouts", map[string]interface{}{
 		"ms":   uint(timeout / time.Millisecond),
 		"type": "page load",
-	}
-
-	data, err := json.Marshal(params)
-	if err != nil {
-		return err
-	}
-
-	return wd.voidCommand("/session/%s/timeouts", data)
+	})
 }
 
 func (wd *remoteWD) AvailableEngines() ([]string, error) {
@@ -415,19 +403,15 @@ func (wd *remoteWD) DeactivateEngine() error {
 }
 
 func (wd *remoteWD) ActivateEngine(engine string) error {
-	params := map[string]string{
+	return wd.voidCommand("/session/%s/ime/activate", map[string]string{
 		"engine": engine,
-	}
-
-	data, err := json.Marshal(params)
-	if err != nil {
-		return err
-	}
-
-	return wd.voidCommand("/session/%s/ime/activate", data)
+	})
 }
 
 func (wd *remoteWD) Quit() error {
+	if wd.id == "" {
+		return nil
+	}
 	_, err := wd.execute("DELETE", wd.requestURL("/session/%s", wd.id), nil)
 	if err == nil {
 		wd.id = ""
@@ -557,15 +541,9 @@ func (wd *remoteWD) Close() error {
 }
 
 func (wd *remoteWD) SwitchWindow(name string) error {
-	params := map[string]string{
+	return wd.voidCommand("/session/%s/window", map[string]string{
 		"name": name,
-	}
-	data, err := json.Marshal(params)
-	if err != nil {
-		return err
-	}
-
-	return wd.voidCommand("/session/%s/window", data)
+	})
 }
 
 func (wd *remoteWD) CloseWindow(name string) error {
@@ -621,12 +599,7 @@ func (wd *remoteWD) SwitchFrame(frame string) error {
 	if len(frame) == 0 {
 		params["id"] = nil
 	}
-
-	data, err := json.Marshal(params)
-	if err != nil {
-		return err
-	}
-	return wd.voidCommand("/session/%s/frame", data)
+	return wd.voidCommand("/session/%s/frame", params)
 }
 
 func (wd *remoteWD) ActiveElement() (WebElement, error) {
@@ -639,22 +612,55 @@ func (wd *remoteWD) ActiveElement() (WebElement, error) {
 	return wd.DecodeElement(response)
 }
 
+// ChromeDriver returns the expiration date as a float. Handle both formats
+// via a type switch.
+type cookie struct {
+	Name   string      `json:"name"`
+	Value  string      `json:"value"`
+	Path   string      `json:"path"`
+	Domain string      `json:"domain"`
+	Secure bool        `json:"secure"`
+	Expiry interface{} `json:"expiry"`
+}
+
+func (c cookie) sanitize() Cookie {
+	sanitized := Cookie{
+		Name:   c.Name,
+		Value:  c.Value,
+		Path:   c.Path,
+		Domain: c.Domain,
+		Secure: c.Secure,
+	}
+	switch expiry := c.Expiry.(type) {
+	case int:
+		if expiry > 0 {
+			sanitized.Expiry = uint(expiry)
+		}
+	case float64:
+		sanitized.Expiry = uint(expiry)
+	}
+	return sanitized
+}
+
+func (wd *remoteWD) GetCookie(name string) (Cookie, error) {
+	url := wd.requestURL("/session/%s/cookie/%s", wd.id, name)
+	data, err := wd.execute("GET", url, nil)
+	if err != nil {
+		return Cookie{}, err
+	}
+
+	reply := new(struct{ Value cookie })
+	if err := json.Unmarshal(data, reply); err != nil {
+		return Cookie{}, err
+	}
+	return reply.Value.sanitize(), nil
+}
+
 func (wd *remoteWD) GetCookies() ([]Cookie, error) {
 	url := wd.requestURL("/session/%s/cookie", wd.id)
 	data, err := wd.execute("GET", url, nil)
 	if err != nil {
 		return nil, err
-	}
-
-	// ChromeDriver returns the expiration date as a float. Handle both formats
-	// via a type switch.
-	type cookie struct {
-		Name   string      `json:"name"`
-		Value  string      `json:"value"`
-		Path   string      `json:"path"`
-		Domain string      `json:"domain"`
-		Secure bool        `json:"secure"`
-		Expiry interface{} `json:"expiry"`
 	}
 
 	reply := new(struct{ Value []cookie })
@@ -686,15 +692,9 @@ func (wd *remoteWD) GetCookies() ([]Cookie, error) {
 }
 
 func (wd *remoteWD) AddCookie(cookie *Cookie) error {
-	params := map[string]*Cookie{
+	return wd.voidCommand("/session/%s/cookie", map[string]*Cookie{
 		"cookie": cookie,
-	}
-	data, err := json.Marshal(params)
-	if err != nil {
-		return err
-	}
-
-	return wd.voidCommand("/session/%s/cookie", data)
+	})
 }
 
 func (wd *remoteWD) DeleteAllCookies() error {
@@ -710,14 +710,9 @@ func (wd *remoteWD) DeleteCookie(name string) error {
 }
 
 func (wd *remoteWD) Click(button int) error {
-	params := map[string]int{
+	return wd.voidCommand("/session/%s/click", map[string]int{
 		"button": button,
-	}
-	data, err := json.Marshal(params)
-	if err != nil {
-		return err
-	}
-	return wd.voidCommand("/session/%s/click", data)
+	})
 }
 
 func (wd *remoteWD) DoubleClick() error {
@@ -733,26 +728,20 @@ func (wd *remoteWD) ButtonUp() error {
 }
 
 func (wd *remoteWD) SendModifier(modifier string, isDown bool) error {
-	params := map[string]interface{}{
+	return wd.voidCommand("/session/%s/modifier", map[string]interface{}{
 		"value":  modifier,
 		"isdown": isDown,
-	}
-
-	data, err := json.Marshal(params)
-	if err != nil {
-		return err
-	}
-
-	return wd.voidCommand("/session/%s/modifier", data)
+	})
 }
 
 func (wd *remoteWD) KeyDown(keys string) error {
-	data, err := processKeyString(keys)
-	if err != nil {
-		return err
-	}
-
-	return wd.voidCommand("/session/%s/keys", data)
+	// TODO(minusnine): The W3C specification has changed this protocol, but
+	// neither Firefox nor Chrome have implemented it yet.
+	//
+	// Marionette: https://bugzilla.mozilla.org/show_bug.cgi?id=1292178
+	// GeckoDriver: https://github.com/mozilla/geckodriver/issues/159
+	// Selenium 3: https://github.com/SeleniumHQ/selenium/issues/2285
+	return wd.voidCommand("/session/%s/keys", processKeyString(keys))
 }
 
 func (wd *remoteWD) KeyUp(keys string) error {
@@ -871,26 +860,16 @@ func (elem *remoteWE) Click() error {
 }
 
 func (elem *remoteWE) SendKeys(keys string) error {
-	data, err := processKeyString(keys)
-	if err != nil {
-		return err
-	}
-
 	urlTemplate := fmt.Sprintf("/session/%%s/element/%s/value", elem.id)
-	return elem.parent.voidCommand(urlTemplate, data)
+	return elem.parent.voidCommand(urlTemplate, processKeyString(keys))
 }
 
-func processKeyString(keys string) ([]byte, error) {
+func processKeyString(keys string) interface{} {
 	chars := make([]string, len(keys))
 	for i, c := range keys {
 		chars[i] = string(c)
 	}
-
-	data, err := json.Marshal(map[string][]string{"value": chars})
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
+	return map[string][]string{"value": chars}
 }
 
 func (elem *remoteWE) TagName() (string, error) {
@@ -914,15 +893,11 @@ func (elem *remoteWE) Clear() error {
 }
 
 func (elem *remoteWE) MoveTo(xOffset, yOffset int) error {
-	data, err := json.Marshal(map[string]interface{}{
+	return elem.parent.voidCommand("/session/%s/moveto", map[string]interface{}{
 		"element": elem.id,
 		"xoffset": xOffset,
 		"yoffset": yOffset,
 	})
-	if err != nil {
-		return err
-	}
-	return elem.parent.voidCommand("/session/%s/moveto", data)
 }
 
 func (elem *remoteWE) FindElement(by, value string) (WebElement, error) {
