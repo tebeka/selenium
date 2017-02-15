@@ -69,9 +69,10 @@ func Output(w io.Writer) ServiceOption {
 	}
 }
 
-// GeckoDriver sets the path to the geckodriver binary. Unlike other drivers,
-// Selenium Server does not support specifying the geckodriver path. This
-// ServiceOption is only useful when calling NewSeleniumService.
+// GeckoDriver sets the path to the geckodriver binary for the Selenium Server.
+// Unlike other drivers, Selenium Server does not support specifying the
+// geckodriver path at runtime. This ServiceOption is only useful when calling
+// NewSeleniumService.
 func GeckoDriver(path string) ServiceOption {
 	return func(s *Service) error {
 		s.geckoDriverPath = path
@@ -81,6 +82,7 @@ func GeckoDriver(path string) ServiceOption {
 
 // Service controls a locally-running Selenium subprocess.
 type Service struct {
+	port            int
 	addr            string
 	cmd             *exec.Cmd
 	shutdownURLPath string
@@ -100,6 +102,12 @@ func NewSeleniumService(jarPath string, port int, opts ...ServiceOption) (*Servi
 	if err != nil {
 		return nil, err
 	}
+	if s.geckoDriverPath != "" {
+		s.cmd.Args = append([]string{"java", "-Dwebdriver.gecko.driver=" + s.geckoDriverPath}, cmd.Args[1:]...)
+	}
+	if err := s.start(port); err != nil {
+		return nil, err
+	}
 	return s, nil
 }
 
@@ -111,11 +119,30 @@ func NewChromeDriverService(path string, port int, opts ...ServiceOption) (*Serv
 		return nil, err
 	}
 	s.shutdownURLPath = "/wd/hub/shutdown"
+	if err := s.start(port); err != nil {
+		return nil, err
+	}
+	return s, nil
+}
+
+// NewGeckoDriverService starts a GeckoDriver instance in the background.
+func NewGeckoDriverService(path string, port int, opts ...ServiceOption) (*Service, error) {
+	cmd := exec.Command(path, "--port", strconv.Itoa(port))
+	s, err := newService(cmd, port, opts...)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.start(port); err != nil {
+		return nil, err
+	}
 	return s, nil
 }
 
 func newService(cmd *exec.Cmd, port int, opts ...ServiceOption) (*Service, error) {
-	s := &Service{addr: fmt.Sprintf("http://localhost:%d", port)}
+	s := &Service{
+		port: port,
+		addr: fmt.Sprintf("http://localhost:%d", port),
+	}
 	for _, opt := range opts {
 		if err := opt(s); err != nil {
 			return nil, err
@@ -132,28 +159,29 @@ func newService(cmd *exec.Cmd, port int, opts ...ServiceOption) (*Service, error
 	if s.xauthPath != "" {
 		cmd.Env = append(cmd.Env, "XAUTHORITY="+s.xauthPath)
 	}
-	if s.geckoDriverPath != "" {
-		cmd.Args = append([]string{"java", "-Dwebdriver.gecko.driver=" + s.geckoDriverPath}, cmd.Args[1:]...)
-	}
-	if err := cmd.Start(); err != nil {
-		return nil, err
+	s.cmd = cmd
+	return s, nil
+}
+
+func (s *Service) start(port int) error {
+	if err := s.cmd.Start(); err != nil {
+		return err
 	}
 
 	for i := 0; i < 30; i++ {
 		time.Sleep(time.Second)
-		resp, err := http.Get(s.addr)
+		resp, err := http.Get(s.addr + "/status")
 		if err == nil {
 			resp.Body.Close()
 			switch resp.StatusCode {
 			// Selenium <3 returned Forbidden and BadRequest. ChromeDriver and
 			// Selenium 3 return OK.
 			case http.StatusForbidden, http.StatusBadRequest, http.StatusOK:
-				s.cmd = cmd
-				return s, nil
+				return nil
 			}
 		}
 	}
-	return nil, fmt.Errorf("server did not respond on port %d", port)
+	return fmt.Errorf("server did not respond on port %d", port)
 }
 
 // Stop shuts down the WebDriver service, and the X virtual frame buffer

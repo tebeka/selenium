@@ -24,9 +24,10 @@ var (
 	selenium2Path          = flag.String("selenium2_path", "vendor/selenium-server-standalone-2.53.1.jar", "The path to the Selenium 2 server JAR. If empty or the file is not present, Firefox tests on Selenium 2 will not be run.")
 	firefoxBinarySelenium2 = flag.String("firefox_binary_for_selenium2", "vendor/firefox-47/firefox", "The name of the Firefox binary for Selenium 2 tests or the path to it. If the name does not contain directory separators, the PATH will be searched.")
 
-	selenium3Path          = flag.String("selenium3_path", "vendor/selenium-server-standalone-3.0.1.jar", "The path to the Selenium 3 server JAR. If empty or the file is not present, Firefox tests using Selenium 3 will not be run.")
-	firefoxBinarySelenium3 = flag.String("firefox_binary_for_selenium3", "vendor/firefox-nightly/firefox", "The name of the Firefox binary for Selenium 3 tests or the path to it. If the name does not contain directory separators, the PATH will be searched.")
-	geckoDriverPath        = flag.String("geckodriver_path", "vendor/geckodriver-v0.14.0-linux64", "The path to the geckodriver binary. If empty of the file is not present, the Geckodriver tests will not be run.")
+	selenium3Path             = flag.String("selenium3_path", "vendor/selenium-server-standalone-3.0.1.jar", "The path to the Selenium 3 server JAR. If empty or the file is not present, Firefox tests using Selenium 3 will not be run.")
+	firefoxBinarySelenium3    = flag.String("firefox_binary_for_selenium3", "vendor/firefox-nightly/firefox", "The name of the Firefox binary for Selenium 3 tests or the path to it. If the name does not contain directory separators, the PATH will be searched.")
+	geckoDriverPath           = flag.String("geckodriver_path", "vendor/geckodriver-v0.14.0-linux64", "The path to the geckodriver binary. If empty of the file is not present, the Geckodriver tests will not be run.")
+	runDirectGeckoDriverTests = flag.Bool("run_direct_geckodriver_tests", false, "If true, also run tests directly against GeckoDriver, without Selenium 3")
 
 	chromeDriverPath = flag.String("chrome_driver_path", "vendor/chromedriver-linux64-2.27", "The path to the ChromeDriver binary. If empty of the file is not present, Chrome tests will not be run.")
 	chromeBinary     = flag.String("chrome_binary", "chromium", "The name of the Chrome binary or the path to it. If name is not an exact path, the PATH will be searched.")
@@ -146,7 +147,23 @@ func TestFirefoxSelenium3(t *testing.T) {
 	})
 }
 
-func runFirefoxTests(t *testing.T, seleniumPath string, c config) {
+func TestFirefoxGeckoDriver(t *testing.T) {
+	if !*runDirectGeckoDriverTests {
+		t.Skip("Skipping tests because --run_direct_geckodriver_tests (experimental) is not set")
+	}
+	if *useDocker {
+		t.Skip("Skipping tests because they will be run under a Docker container")
+	}
+	if _, err := os.Stat(*geckoDriverPath); err != nil {
+		t.Skipf("Skipping Firefox tests on Selenium 3 because geckodriver binary %q not found", *geckoDriverPath)
+	}
+
+	runFirefoxTests(t, *geckoDriverPath, config{
+		path: *firefoxBinarySelenium3,
+	})
+}
+
+func runFirefoxTests(t *testing.T, webDriverPath string, c config) {
 	c.browser = "firefox"
 
 	if s, err := os.Stat(c.path); err != nil || !s.Mode().IsRegular() {
@@ -179,11 +196,21 @@ func runFirefoxTests(t *testing.T, seleniumPath string, c config) {
 		t.Fatalf("pickUnusedPort() returned error: %v", err)
 	}
 
-	s, err := NewSeleniumService(seleniumPath, port, c.serviceOptions...)
-	if err != nil {
-		t.Fatalf("Error starting the Selenium server: %v", err)
+	var s *Service
+	if c.seleniumVersion.Major == 0 {
+		s, err = NewGeckoDriverService(webDriverPath, port, c.serviceOptions...)
+	} else {
+		s, err = NewSeleniumService(webDriverPath, port, c.serviceOptions...)
 	}
-	c.addr = fmt.Sprintf("http://127.0.0.1:%d/wd/hub", port)
+	if err != nil {
+		t.Fatalf("Error starting the WebDriver server with binary %q: %v", c.path, err)
+	}
+
+	if c.seleniumVersion.Major == 0 {
+		c.addr = fmt.Sprintf("http://127.0.0.1:%d", port)
+	} else {
+		c.addr = fmt.Sprintf("http://127.0.0.1:%d/wd/hub", port)
+	}
 
 	runTests(t, c)
 
