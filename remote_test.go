@@ -579,22 +579,43 @@ func testFindElement(t *testing.T, c config) {
 	if err := wd.Get(serverURL); err != nil {
 		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
 	}
-	elem, err := wd.FindElement(ByName, "q")
-	if err != nil {
-		t.Fatal(err)
-	}
+	for _, tc := range []struct {
+		by, query string
+		wantError bool
+	}{
+		{ByName, "q", false},
+		{ByXPATH, "//div[contains(@class,'word')]/a", false},
 
-	we, ok := elem.(*remoteWE)
-	if !ok {
-		t.Fatal("Can't convert to *remoteWE")
-	}
+		// This XPath expression returns an attribute, not an element. It
+		// correctly returns an error in Selenium 2 and Firefox 47, but fails
+		// to return an error with Selenium 3 and Firefox 54.
+		// https://github.com/mozilla/geckodriver/issues/476
+		// {ByXPATH, "//div[contains(@class,'word')]/a/@href", true},
+	} {
+		elem, err := wd.FindElement(tc.by, tc.query)
+		if !tc.wantError && err != nil {
+			t.Errorf("wd.FindElement(%q, %q) returned error: %v", tc.by, tc.query, err)
+			continue
+		} else if tc.wantError && err == nil {
+			t.Errorf("wd.FindElement(%q, %q) = %v, want error", tc.by, tc.query, elem)
+		}
 
-	if len(we.id) == 0 {
-		t.Fatal("Empty element")
-	}
+		we, ok := elem.(*remoteWE)
+		if !ok {
+			t.Errorf("wd.FindElement(%q, %q) = %v, can't convert to *remoteWE", tc.by, tc.query, elem)
+			continue
+		}
 
-	if we.parent != wd {
-		t.Fatal("Bad parent")
+		if len(we.id) == 0 {
+			t.Errorf("wd.FindElement(%q, %q) = %v, id empty", tc.by, tc.query, elem)
+			continue
+		}
+
+		if we.parent != wd {
+			t.Errorf("wd.FindElement(%q, %q) = %v, bad parent: %v", tc.by, tc.query, elem, we.parent)
+		}
+
+		t.Log(we.TagName())
 	}
 }
 
@@ -1197,6 +1218,15 @@ var homePage = `
 		<input id="chuk" type="checkbox" /> A checkbox.
 	</form>
 	Link to the <a href="/other">other page</a>.
+
+	<div class="box">
+	  <div class="word">
+		    <a href="I_NEED_THIS_VALUE">foo</a>
+		</div>
+	</div>
+	<div class="box">
+		...
+	</div>
 </body>
 </html>
 `

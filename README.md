@@ -77,6 +77,8 @@ one.
    implement this support](https://github.com/mozilla/geckodriver/issues/159).
    Then, [Selenium 3 doesn't implement this support for
    Firefox](https://github.com/SeleniumHQ/selenium/issues/2285).
+5. [FindElement(s) can return
+   non-elements](https://github.com/mozilla/geckodriver/issues/476).
 
 The Geckodriver team recommends using the newest available Firefox version, as
 the integration is actively being developed.
@@ -84,7 +86,7 @@ the integration is actively being developed.
 ### ChromeDriver
 
 ChromeDriver has not yet implemented the nascent W3C standard. So far, this
-only means that GetCookie is not available for Chrome.
+only means that `GetCookie` is not available for Chrome.
 
 ## Hacking
 
