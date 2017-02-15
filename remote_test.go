@@ -7,10 +7,12 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -460,6 +462,7 @@ func runTests(t *testing.T, c config) {
 	t.Run("ResizeWindow", runTest(testResizeWindow, c))
 	t.Run("KeyDownUp", runTest(testKeyDownUp, c))
 	t.Run("CSSProperty", runTest(testCSSProperty, c))
+	t.Run("Proxy", runTest(testProxy, c))
 }
 
 func testStatus(t *testing.T, c config) {
@@ -725,7 +728,7 @@ func testFindElement(t *testing.T, c config) {
 
 		we, ok := elem.(*remoteWE)
 		if !ok {
-			t.Errorf("wd.FindElement(%q, %q) = %T, want a *remoteWE", tc.by, tc.query)
+			t.Errorf("wd.FindElement(%q, %q) = %T, want a *remoteWE", tc.by, tc.query, elem)
 			continue
 		}
 
@@ -1336,6 +1339,85 @@ func testCSSProperty(t *testing.T, c config) {
 		}
 	}
 	t.Fatalf(`e.CSSProperty("color") = %q, want one of %q`, color, wantColors)
+}
+
+func testProxy(t *testing.T, c config) {
+	const pageContents = "You are viewing a proxied page"
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		fmt.Fprintf(w, pageContents)
+	}))
+	defer s.Close()
+
+	u, err := url.Parse(s.URL)
+	if err != nil {
+		t.Fatalf("url.Parse(%q) returned error: %v", s.URL, err)
+	}
+
+	caps := newTestCapabilities(t, c)
+	proxy := Proxy{Type: Manual}
+	switch c.browser {
+	case "firefox":
+		switch c.seleniumVersion.Major {
+		case 0: // Geckodriver.
+			host, port, err := net.SplitHostPort(u.Host)
+			if err != nil {
+				t.Fatalf("net.SplitHostPort(%q) returned error: %v", u.Host, err)
+			}
+			p, err := strconv.Atoi(port)
+			if err != nil {
+				t.Fatalf("strconv.Atoi(%q) returned error: %v", port, err)
+			}
+			proxy.HTTP = host
+			proxy.HTTPPort = p
+		case 2:
+			proxy.HTTP = u.Host
+		case 3:
+			// When the Proxy object is passed through Selenium 3 to GeckoDriver, it
+			// adds a whole bunch of "null" values for empty entities. GeckoDriver
+			// does not interpret this well.
+			// https://github.com/mozilla/geckodriver/issues/490
+			t.Skip("Skipping test due to https://github.com/mozilla/geckodriver/issues/490")
+		}
+		// By default, Firefox explicitly does not use a proxy for connection to
+		// localhost and 127.0.0.1. Clear this preference to reach our test proxy.
+		ff := caps[firefox.CapabilitiesKey].(firefox.Capabilities)
+		if ff.Prefs == nil {
+			ff.Prefs = make(map[string]interface{})
+		}
+		ff.Prefs["network.proxy.no_proxies_on"] = ""
+		caps[firefox.CapabilitiesKey] = ff
+	case "chrome":
+		proxy.HTTP = u.Host
+	}
+	caps.AddProxy(proxy)
+
+	wd := &remoteWD{
+		capabilities: caps,
+		urlPrefix:    c.addr,
+	}
+	defer func() {
+		if err := wd.Quit(); err != nil {
+			t.Fatalf("wd.Quit() returned error: %v", err)
+		}
+	}()
+	if _, err := wd.NewSession(); err != nil {
+		t.Fatalf("wd.NewSession() returned error: %v", err)
+	}
+
+	if err := wd.Get(serverURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
+	source, err := wd.PageSource()
+	if err != nil {
+		t.Fatalf("wd.PageSource() returned error: %v", err)
+	}
+
+	if !strings.Contains(source, pageContents) {
+		if strings.Contains(source, "Go Selenium Test Suite") {
+			t.Fatal("Got non-proxied page.")
+		}
+		t.Fatalf("Got page: %s\n\nExpected: %q", source, pageContents)
+	}
 }
 
 var homePage = `

@@ -75,6 +75,9 @@ one.
    implement this support](https://github.com/mozilla/geckodriver/issues/159).
    Then, [Selenium 3 doesn't implement this support for
    Firefox](https://github.com/SeleniumHQ/selenium/issues/2285).
+4. [The Proxy object is
+   misinterpreted](https://github.com/mozilla/geckodriver/issues/490) by
+   Geckodriver when passed through by Selenium 3.
 
 The Geckodriver team recommends using the newest available Firefox version, as
 the integration is actively being developed.
