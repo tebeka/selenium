@@ -27,7 +27,7 @@ var (
 	selenium3Path             = flag.String("selenium3_path", "vendor/selenium-server-standalone-3.0.1.jar", "The path to the Selenium 3 server JAR. If empty or the file is not present, Firefox tests using Selenium 3 will not be run.")
 	firefoxBinarySelenium3    = flag.String("firefox_binary_for_selenium3", "vendor/firefox-nightly/firefox", "The name of the Firefox binary for Selenium 3 tests or the path to it. If the name does not contain directory separators, the PATH will be searched.")
 	geckoDriverPath           = flag.String("geckodriver_path", "vendor/geckodriver-v0.14.0-linux64", "The path to the geckodriver binary. If empty of the file is not present, the Geckodriver tests will not be run.")
-	runDirectGeckoDriverTests = flag.Bool("run_direct_geckodriver_tests", false, "If true, also run tests directly against GeckoDriver, without Selenium 3")
+	runDirectGeckoDriverTests = flag.Bool("run_direct_geckodriver_tests", false, "EXPERIMENTAL. If true, also run tests directly against GeckoDriver, without Selenium 3.")
 
 	chromeDriverPath = flag.String("chrome_driver_path", "vendor/chromedriver-linux64-2.27", "The path to the ChromeDriver binary. If empty of the file is not present, Chrome tests will not be run.")
 	chromeBinary     = flag.String("chrome_binary", "chromium", "The name of the Chrome binary or the path to it. If name is not an exact path, the PATH will be searched.")
@@ -216,6 +216,7 @@ func runFirefoxTests(t *testing.T, webDriverPath string, c config) {
 
 	// Firefox-specific tests.
 	t.Run("Preferences", runTest(testFirefoxPreferences, c))
+	t.Run("Profile", runTest(testFirefoxProfile, c))
 
 	if err := s.Stop(); err != nil {
 		t.Fatalf("Error stopping the Selenium service: %v", err)
@@ -265,6 +266,52 @@ func testFirefoxPreferences(t *testing.T, c config) {
 	}
 	if u != serverURL+"/" {
 		t.Fatalf("wd.Current() = %q, want %q", u, serverURL+"/")
+	}
+}
+
+func testFirefoxProfile(t *testing.T, c config) {
+	if c.seleniumVersion.Major == 2 {
+		t.Skip("This test is known to fail for Selenium 2 and Firefox 47.")
+	}
+	if c.seleniumVersion.Major == 3 {
+		// Selenium 3.0.1 does not support Firefox capabilities.
+		// https://github.com/SeleniumHQ/selenium/issues/3055
+		t.Skip("Skipping as Selenium 3.0.1 does not support Firefox capabilities. https://github.com/SeleniumHQ/selenium/issues/3055")
+	}
+	caps := newTestCapabilities(t, c)
+	f := caps[firefox.CapabilitiesKey].(firefox.Capabilities)
+	const path = "testing/firefox-profile"
+	if err := f.SetProfile(path); err != nil {
+		t.Fatalf("f.SetProfile(%q) returned error: %v", path, err)
+	}
+	caps.AddFirefox(f)
+
+	wd := &remoteWD{
+		capabilities: caps,
+		urlPrefix:    c.addr,
+	}
+	defer func() {
+		if err := wd.Quit(); err != nil {
+			t.Errorf("wd.Quit() returned error: %v", err)
+		}
+	}()
+
+	if _, err := wd.NewSession(); err != nil {
+		t.Fatalf("wd.NewSession() returned error: %v", err)
+	}
+	defer func() {
+		if err := wd.Close(); err != nil {
+			t.Errorf("wd.Close() returned error: %v", err)
+		}
+	}()
+
+	u, err := wd.CurrentURL()
+	if err != nil {
+		t.Fatalf("wd.Current() returned error: %v", err)
+	}
+	const wantURL = "about:config"
+	if u != wantURL {
+		t.Fatalf("wd.Current() = %q, want %q", u, wantURL)
 	}
 }
 
