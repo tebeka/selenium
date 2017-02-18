@@ -790,26 +790,36 @@ func testClick(t *testing.T, c config) {
 	if err := wd.Get(serverURL); err != nil {
 		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
 	}
-	input, err := wd.FindElement(ByName, "q")
+	const searchBoxName = "q"
+	input, err := wd.FindElement(ByName, searchBoxName)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("wd.FindElement(%q, %q) returned error: %v", ByName, searchBoxName, err)
 	}
 	const query = "golang"
 	if err = input.SendKeys(query); err != nil {
-		t.Fatal(err)
+		t.Fatalf("input.SendKeys(%q) returned error: %v", query, err)
 	}
 
-	button, err := wd.FindElement(ByID, "submit")
+	const buttonID = "submit"
+	button, err := wd.FindElement(ByID, buttonID)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("wd.FindElement(%q, %q) returned error: %v", ByID, buttonID, err)
+	}
+	if err := wd.SetPageLoadTimeout(2 * time.Second); err != nil {
+		t.Fatalf("wd.SetImplicitWaitTimeout() returned error: %v", err)
 	}
 	if err = button.Click(); err != nil {
-		t.Fatal(err)
+		t.Fatalf("wd.Click() returned error: %v", err)
 	}
 
+	// The page load timeout for Firefox and Selenium 3 seems to not work for
+	// clicking form buttons. Sleep a bit to reduce impact of a flaky test.
+	if c.browser == "firefox" && c.seleniumVersion.Major == 3 {
+		time.Sleep(2 * time.Second)
+	}
 	source, err := wd.PageSource()
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("wd.PageSource() returned error: %v", err)
 	}
 
 	if !strings.Contains(source, searchContents) {
