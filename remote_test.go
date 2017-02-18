@@ -24,9 +24,10 @@ var (
 	selenium2Path          = flag.String("selenium2_path", "vendor/selenium-server-standalone-2.53.1.jar", "The path to the Selenium 2 server JAR. If empty or the file is not present, Firefox tests on Selenium 2 will not be run.")
 	firefoxBinarySelenium2 = flag.String("firefox_binary_for_selenium2", "vendor/firefox-47/firefox", "The name of the Firefox binary for Selenium 2 tests or the path to it. If the name does not contain directory separators, the PATH will be searched.")
 
-	selenium3Path          = flag.String("selenium3_path", "vendor/selenium-server-standalone-3.0.1.jar", "The path to the Selenium 3 server JAR. If empty or the file is not present, Firefox tests using Selenium 3 will not be run.")
-	firefoxBinarySelenium3 = flag.String("firefox_binary_for_selenium3", "vendor/firefox-nightly/firefox", "The name of the Firefox binary for Selenium 3 tests or the path to it. If the name does not contain directory separators, the PATH will be searched.")
-	geckoDriverPath        = flag.String("geckodriver_path", "vendor/geckodriver-v0.14.0-linux64", "The path to the geckodriver binary. If empty of the file is not present, the Geckodriver tests will not be run.")
+	selenium3Path             = flag.String("selenium3_path", "vendor/selenium-server-standalone-3.0.1.jar", "The path to the Selenium 3 server JAR. If empty or the file is not present, Firefox tests using Selenium 3 will not be run.")
+	firefoxBinarySelenium3    = flag.String("firefox_binary_for_selenium3", "vendor/firefox-nightly/firefox", "The name of the Firefox binary for Selenium 3 tests or the path to it. If the name does not contain directory separators, the PATH will be searched.")
+	geckoDriverPath           = flag.String("geckodriver_path", "vendor/geckodriver-v0.14.0-linux64", "The path to the geckodriver binary. If empty of the file is not present, the Geckodriver tests will not be run.")
+	runDirectGeckoDriverTests = flag.Bool("run_direct_geckodriver_tests", false, "EXPERIMENTAL. If true, also run tests directly against GeckoDriver, without Selenium 3.")
 
 	chromeDriverPath = flag.String("chrome_driver_path", "vendor/chromedriver-linux64-2.27", "The path to the ChromeDriver binary. If empty of the file is not present, Chrome tests will not be run.")
 	chromeBinary     = flag.String("chrome_binary", "chromium", "The name of the Chrome binary or the path to it. If name is not an exact path, the PATH will be searched.")
@@ -146,7 +147,23 @@ func TestFirefoxSelenium3(t *testing.T) {
 	})
 }
 
-func runFirefoxTests(t *testing.T, seleniumPath string, c config) {
+func TestFirefoxGeckoDriver(t *testing.T) {
+	if !*runDirectGeckoDriverTests {
+		t.Skip("Skipping tests because --run_direct_geckodriver_tests (experimental) is not set")
+	}
+	if *useDocker {
+		t.Skip("Skipping tests because they will be run under a Docker container")
+	}
+	if _, err := os.Stat(*geckoDriverPath); err != nil {
+		t.Skipf("Skipping Firefox tests on Selenium 3 because geckodriver binary %q not found", *geckoDriverPath)
+	}
+
+	runFirefoxTests(t, *geckoDriverPath, config{
+		path: *firefoxBinarySelenium3,
+	})
+}
+
+func runFirefoxTests(t *testing.T, webDriverPath string, c config) {
 	c.browser = "firefox"
 
 	if s, err := os.Stat(c.path); err != nil || !s.Mode().IsRegular() {
@@ -179,16 +196,122 @@ func runFirefoxTests(t *testing.T, seleniumPath string, c config) {
 		t.Fatalf("pickUnusedPort() returned error: %v", err)
 	}
 
-	s, err := NewSeleniumService(seleniumPath, port, c.serviceOptions...)
-	if err != nil {
-		t.Fatalf("Error starting the Selenium server: %v", err)
+	var s *Service
+	if c.seleniumVersion.Major == 0 {
+		s, err = NewGeckoDriverService(webDriverPath, port, c.serviceOptions...)
+	} else {
+		s, err = NewSeleniumService(webDriverPath, port, c.serviceOptions...)
 	}
-	c.addr = fmt.Sprintf("http://127.0.0.1:%d/wd/hub", port)
+	if err != nil {
+		t.Fatalf("Error starting the WebDriver server with binary %q: %v", c.path, err)
+	}
+
+	if c.seleniumVersion.Major == 0 {
+		c.addr = fmt.Sprintf("http://127.0.0.1:%d", port)
+	} else {
+		c.addr = fmt.Sprintf("http://127.0.0.1:%d/wd/hub", port)
+	}
 
 	runTests(t, c)
 
+	// Firefox-specific tests.
+	t.Run("Preferences", runTest(testFirefoxPreferences, c))
+	t.Run("Profile", runTest(testFirefoxProfile, c))
+
 	if err := s.Stop(); err != nil {
 		t.Fatalf("Error stopping the Selenium service: %v", err)
+	}
+}
+
+func testFirefoxPreferences(t *testing.T, c config) {
+	if c.seleniumVersion.Major == 2 {
+		t.Skip("This test is known to fail for Selenium 2 and Firefox 47.")
+	}
+	if c.seleniumVersion.Major == 3 {
+		// Selenium 3.0.1 does not support Firefox capabilities.
+		// https://github.com/SeleniumHQ/selenium/issues/3055
+		t.Skip("Skipping as Selenium 3.0.1 does not support Firefox capabilities. https://github.com/SeleniumHQ/selenium/issues/3055")
+	}
+	caps := newTestCapabilities(t, c)
+	f := caps[firefox.CapabilitiesKey].(firefox.Capabilities)
+	if f.Prefs == nil {
+		f.Prefs = make(map[string]interface{})
+	}
+	f.Prefs["browser.startup.homepage"] = serverURL
+	f.Prefs["browser.startup.page"] = 1
+	caps.AddFirefox(f)
+
+	wd := &remoteWD{
+		capabilities: caps,
+		urlPrefix:    c.addr,
+	}
+	defer func() {
+		if err := wd.Quit(); err != nil {
+			t.Errorf("wd.Quit() returned error: %v", err)
+		}
+	}()
+
+	if _, err := wd.NewSession(); err != nil {
+		t.Fatalf("error in new session - %s", err)
+	}
+	defer func() {
+		if err := wd.Close(); err != nil {
+			t.Errorf("wd.Close() returned error: %v", err)
+		}
+	}()
+
+	u, err := wd.CurrentURL()
+	if err != nil {
+		t.Fatalf("wd.Current() returned error: %v", err)
+	}
+	if u != serverURL+"/" {
+		t.Fatalf("wd.Current() = %q, want %q", u, serverURL+"/")
+	}
+}
+
+func testFirefoxProfile(t *testing.T, c config) {
+	if c.seleniumVersion.Major == 2 {
+		t.Skip("This test is known to fail for Selenium 2 and Firefox 47.")
+	}
+	if c.seleniumVersion.Major == 3 {
+		// Selenium 3.0.1 does not support Firefox capabilities.
+		// https://github.com/SeleniumHQ/selenium/issues/3055
+		t.Skip("Skipping as Selenium 3.0.1 does not support Firefox capabilities. https://github.com/SeleniumHQ/selenium/issues/3055")
+	}
+	caps := newTestCapabilities(t, c)
+	f := caps[firefox.CapabilitiesKey].(firefox.Capabilities)
+	const path = "testing/firefox-profile"
+	if err := f.SetProfile(path); err != nil {
+		t.Fatalf("f.SetProfile(%q) returned error: %v", path, err)
+	}
+	caps.AddFirefox(f)
+
+	wd := &remoteWD{
+		capabilities: caps,
+		urlPrefix:    c.addr,
+	}
+	defer func() {
+		if err := wd.Quit(); err != nil {
+			t.Errorf("wd.Quit() returned error: %v", err)
+		}
+	}()
+
+	if _, err := wd.NewSession(); err != nil {
+		t.Fatalf("wd.NewSession() returned error: %v", err)
+	}
+	defer func() {
+		if err := wd.Close(); err != nil {
+			t.Errorf("wd.Close() returned error: %v", err)
+		}
+	}()
+
+	u, err := wd.CurrentURL()
+	if err != nil {
+		t.Fatalf("wd.Current() returned error: %v", err)
+	}
+	const wantURL = "about:config"
+	if u != wantURL {
+		t.Fatalf("wd.Current() = %q, want %q", u, wantURL)
 	}
 }
 
@@ -667,26 +790,36 @@ func testClick(t *testing.T, c config) {
 	if err := wd.Get(serverURL); err != nil {
 		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
 	}
-	input, err := wd.FindElement(ByName, "q")
+	const searchBoxName = "q"
+	input, err := wd.FindElement(ByName, searchBoxName)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("wd.FindElement(%q, %q) returned error: %v", ByName, searchBoxName, err)
 	}
 	const query = "golang"
 	if err = input.SendKeys(query); err != nil {
-		t.Fatal(err)
+		t.Fatalf("input.SendKeys(%q) returned error: %v", query, err)
 	}
 
-	button, err := wd.FindElement(ByID, "submit")
+	const buttonID = "submit"
+	button, err := wd.FindElement(ByID, buttonID)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("wd.FindElement(%q, %q) returned error: %v", ByID, buttonID, err)
+	}
+	if err := wd.SetPageLoadTimeout(2 * time.Second); err != nil {
+		t.Fatalf("wd.SetImplicitWaitTimeout() returned error: %v", err)
 	}
 	if err = button.Click(); err != nil {
-		t.Fatal(err)
+		t.Fatalf("wd.Click() returned error: %v", err)
 	}
 
+	// The page load timeout for Firefox and Selenium 3 seems to not work for
+	// clicking form buttons. Sleep a bit to reduce impact of a flaky test.
+	if c.browser == "firefox" && c.seleniumVersion.Major == 3 {
+		time.Sleep(2 * time.Second)
+	}
 	source, err := wd.PageSource()
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("wd.PageSource() returned error: %v", err)
 	}
 
 	if !strings.Contains(source, searchContents) {

@@ -193,19 +193,17 @@ func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, error) {
 }
 
 // NewRemote creates new remote client, this will also start a new session.
-// capabilities - the desired capabilities, see http://goo.gl/SNlAk urlPrefix -
-// the URL to the Selenium server, *must* be prefixed with protocol
-// (http,https...).
+// capabilities provides the desired capabilities. urlPrefix is the URL to the
+// Selenium server, must be prefixed with protocol (http, https, ...).
 //
-// Empty string means DefaultExecutor.
+// Providing an empty string for urlPrefix causes the DefaultURLPrefix to be
+// used.
 func NewRemote(capabilities Capabilities, urlPrefix string) (WebDriver, error) {
 	if len(urlPrefix) == 0 {
 		urlPrefix = DefaultURLPrefix
 	}
 
 	wd := &remoteWD{urlPrefix: urlPrefix, capabilities: capabilities}
-	// FIXME: Handle profile
-
 	if _, err := wd.NewSession(); err != nil {
 		return nil, err
 	}
@@ -296,19 +294,25 @@ func (wd *remoteWD) NewSession() (string, error) {
 	//
 	// However, Selenium 3 currently does not implement this part of the specification.
 	// https://github.com/SeleniumHQ/selenium/issues/2827
-	for _, s := range []struct {
-		w3cCompatible bool
-		params        map[string]interface{}
+	attempts := []struct {
+		params map[string]interface{}
 	}{
-		{true, map[string]interface{}{
+		{map[string]interface{}{
+			"capabilities": map[string]interface{}{
+				"desiredCapabilities": wd.capabilities,
+			},
+			"desiredCapabilities": wd.capabilities,
+		}},
+		{map[string]interface{}{
 			"capabilities": map[string]interface{}{
 				"desiredCapabilities": wd.capabilities,
 			},
 		}},
-		{false, map[string]interface{}{
+		{map[string]interface{}{
 			"desiredCapabilities": wd.capabilities,
-		}},
-	} {
+		}}}
+
+	for i, s := range attempts {
 		data, err := json.Marshal(s.params)
 		if err != nil {
 			return "", err
@@ -316,19 +320,18 @@ func (wd *remoteWD) NewSession() (string, error) {
 
 		response, err := wd.execute("POST", wd.requestURL("/session"), data)
 		if err != nil {
-			if s.w3cCompatible {
-				continue
-			}
 			return "", err
 		}
 
 		reply := new(serverReply)
 		if err := json.Unmarshal(response, reply); err != nil {
+			if i < len(attempts) {
+				continue
+			}
 			return "", err
 		}
 
 		wd.id = *reply.SessionID
-		wd.w3cCompatible = s.w3cCompatible
 
 		return wd.id, nil
 	}
