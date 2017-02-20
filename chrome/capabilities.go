@@ -1,6 +1,22 @@
 // Package chrome provides Chrome-specific options for WebDriver.
 package chrome
 
+import (
+	"bufio"
+	"bytes"
+	"crypto"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha1"
+	"crypto/x509"
+	"encoding/base64"
+	"encoding/binary"
+	"io"
+	"os"
+
+	"github.com/tebeka/selenium/internal/zip"
+)
+
 const CapabilitiesKey = "chromeOptions"
 
 // Capabilities defines the Chrome-specific desired capabilities when using
@@ -45,6 +61,9 @@ type Capabilities struct {
 	// this list.
 	WindowTypes []string `json:"windowTypes,omitempty"`
 }
+
+// TODO(minusnine): https://bugs.chromium.org/p/chromedriver/issues/detail?id=1625
+// mentions "experimental options". Implement that.
 
 // MobileEmulation provides options for mobile emulation. Only
 // DeviceName or both of DeviceMetrics and UserAgent may be set at once.
@@ -97,4 +116,115 @@ type PerfLoggingPreferences struct {
 	BufferUsageReportingIntervalMillis uint `json:"bufferUsageReportingInterval,omitempty"`
 }
 
-// TODO(minusnine): Add a method to add an extension given a path to a .crx file.
+// AddExtension adds an extension for the browser to load at startup. The path
+// parameter should be a path to an extension file (which typically has a
+// `.crx` file extension. Note that the contents of the file will be loaded
+// into memory, as required by the protocol.
+func (c *Capabilities) AddExtension(path string) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	return c.addExtension(f)
+}
+
+// addExtension reads a Chrome extension's data from r, base64-encodes it, and
+// attaches it to the Capabilities instance.
+func (c *Capabilities) addExtension(r io.Reader) error {
+	var buf bytes.Buffer
+	encoder := base64.NewEncoder(base64.StdEncoding, &buf)
+	if _, err := io.Copy(encoder, bufio.NewReader(r)); err != nil {
+		return err
+	}
+	encoder.Close()
+	c.Extensions = append(c.Extensions, buf.String())
+	return nil
+}
+
+// AddUnpackedExtension creates a packaged Chrome extension with the files
+// below the provided directory path and causes the browser to load that
+// extension at startup.
+func (c *Capabilities) AddUnpackedExtension(basePath string) error {
+	buf, _, err := NewExtension(basePath)
+	if err != nil {
+		return err
+	}
+	return c.addExtension(bytes.NewBuffer(buf))
+}
+
+// NewExtension creates the payload of a Chrome extension file which is signed
+// using the returned private key.
+func NewExtension(basePath string) ([]byte, *rsa.PrivateKey, error) {
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return nil, nil, err
+	}
+	data, err := NewExtensionWithKey(basePath, key)
+	if err != nil {
+		return nil, nil, err
+	}
+	return data, key, nil
+}
+
+// NewExtensionWithKey creates the payload of a Chrome extension file which is
+// signed by the provided private key.
+func NewExtensionWithKey(basePath string, key *rsa.PrivateKey) ([]byte, error) {
+	zip, err := zip.New(basePath)
+	if err != nil {
+		return nil, err
+	}
+
+	h := sha1.New()
+	if _, err := io.Copy(h, bytes.NewReader(zip.Bytes())); err != nil {
+		return nil, err
+	}
+	hashed := h.Sum(nil)
+
+	signature, err := rsa.SignPKCS1v15(rand.Reader, key, crypto.SHA1, hashed[:])
+	if err != nil {
+		return nil, err
+	}
+
+	pubKey, err := x509.MarshalPKIXPublicKey(key.Public())
+	if err != nil {
+		return nil, err
+	}
+
+	// This format is documented at https://developer.chrome.com/extensions/crx .
+	buf := new(bytes.Buffer)
+	if _, err := buf.Write([]byte("Cr24")); err != nil { // Magic number.
+		return nil, err
+	}
+
+	// Version.
+	if err := binary.Write(buf, binary.LittleEndian, uint32(2)); err != nil {
+		return nil, err
+	}
+
+	// Public key length.
+	if err := binary.Write(buf, binary.LittleEndian, uint32(len(pubKey))); err != nil {
+		return nil, err
+	}
+	// Signature length.
+	if err := binary.Write(buf, binary.LittleEndian, uint32(len(signature))); err != nil {
+		return nil, err
+	}
+
+	// Public key payload.
+	if err := binary.Write(buf, binary.LittleEndian, pubKey); err != nil {
+		return nil, err
+	}
+
+	// Signature payload.
+	if err := binary.Write(buf, binary.LittleEndian, signature); err != nil {
+		return nil, err
+	}
+
+	// Zipped extension directory payload.
+	if err := binary.Write(buf, binary.LittleEndian, zip.Bytes()); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
