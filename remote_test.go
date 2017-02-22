@@ -733,22 +733,36 @@ func testFindElement(t *testing.T, c config) {
 	if err := wd.Get(serverURL); err != nil {
 		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
 	}
-	elem, err := wd.FindElement(ByName, "q")
-	if err != nil {
-		t.Fatal(err)
-	}
 
-	we, ok := elem.(*remoteWE)
-	if !ok {
-		t.Fatal("Can't convert to *remoteWE")
-	}
+	for _, tc := range []struct {
+		by, query string
+	}{
+		{ByName, "q"},
+		{ByCSSSelector, "input[name=q]"},
+		{ByXPATH, "/html/body/form/input[1]"},
+		{ByLinkText, "тест"},
+	} {
+		elem, err := wd.FindElement(tc.by, tc.query)
+		if err != nil {
+			t.Errorf("wd.FindElement(%q, %q) returned error: %v", tc.by, tc.query, err)
+			continue
+		}
 
-	if len(we.id) == 0 {
-		t.Fatal("Empty element")
-	}
+		we, ok := elem.(*remoteWE)
+		if !ok {
+			t.Errorf("wd.FindElement(%q, %q) = %T, want a *remoteWE", tc.by, tc.query)
+			continue
+		}
 
-	if we.parent != wd {
-		t.Fatal("Bad parent")
+		if len(we.id) == 0 {
+			t.Errorf("wd.FindElement(%q, %q) returned an empty element", tc.by, tc.query)
+			continue
+		}
+
+		if we.parent != wd {
+			t.Errorf("wd.FindElement(%q, %q) returned the wrong parent", tc.by, tc.query)
+			continue
+		}
 	}
 }
 
@@ -1361,6 +1375,8 @@ var homePage = `
 		<input id="chuk" type="checkbox" /> A checkbox.
 	</form>
 	Link to the <a href="/other">other page</a>.
+
+	<a href="/log">тест</a>
 </body>
 </html>
 `
