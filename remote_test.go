@@ -104,15 +104,55 @@ func TestChrome(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error starting the ChromeDriver server: %v", err)
 	}
-
-	runTests(t, config{
+	c := config{
 		addr:    fmt.Sprintf("http://127.0.0.1:%d/wd/hub", port),
 		browser: "chrome",
 		path:    *chromeBinary,
-	})
+	}
+
+	runTests(t, c)
+
+	// Chrome-specific tests.
+	t.Run("Extension", runTest(testChromeExtension, c))
 
 	if err := s.Stop(); err != nil {
 		t.Fatalf("Error stopping the ChromeDriver service: %v", err)
+	}
+
+}
+
+func testChromeExtension(t *testing.T, c config) {
+	caps := newTestCapabilities(t, c)
+	co := caps[chrome.CapabilitiesKey].(chrome.Capabilities)
+	const path = "testing/chrome-extension/css_page_red"
+	if err := co.AddUnpackedExtension(path); err != nil {
+		t.Fatalf("co.AddExtension(%q) returned error: %v", path, err)
+	}
+	caps[chrome.CapabilitiesKey] = co
+
+	wd, err := NewRemote(caps, c.addr)
+	if err != nil {
+		t.Fatalf("NewRemote(_, _) returned error: %v", err)
+	}
+	defer wd.Quit()
+
+	if err := wd.Get(serverURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
+	e, err := wd.FindElement(ByCSSSelector, "body")
+	if err != nil {
+		t.Fatalf("error finding other page link: %v", err)
+	}
+
+	const property = "background-color"
+	color, err := e.CSSProperty(property)
+	if err != nil {
+		t.Fatalf(`e.CSSProperty(%q) returned error: %v`, property, err)
+	}
+
+	const wantColor = "rgba(255, 0, 0, 1)"
+	if color != wantColor {
+		t.Fatalf("body background has color %q, want %q", color, wantColor)
 	}
 }
 
@@ -361,15 +401,6 @@ func newTestCapabilities(t *testing.T, c config) Capabilities {
 				// This flag is needed to test against Chrome binaries that are not the
 				// default installation. The sandbox requires a setuid binary.
 				"--no-sandbox",
-				// This flag is needed for Chrome versions > 56. However, this flag is
-				// deprecated in Chrome 57+. Therefore, this API currently cannot
-				// support Chrome 57+.
-				//
-				// https://bugs.chromium.org/p/chromedriver/issues/detail?id=1625
-				//
-				// TODO(minusnine): Standardize on the Chrome version to use for
-				// testing.
-				"--disable-extensions",
 			},
 		}
 		caps.AddChrome(chrCaps)

@@ -57,7 +57,7 @@ one.
 [api]: https://www.w3.org/TR/webdriver/
 [sauce]: http://saucelabs.com/docs/quickstart
 
-### Known issues
+## Known issues
 
 ### Selenium 2
 
@@ -83,8 +83,15 @@ the integration is actively being developed.
 
 ### ChromeDriver
 
-ChromeDriver has not yet implemented the nascent W3C standard. So far, this
-only means that GetCookie is not available for Chrome.
+1. ChromeDriver has not yet implemented the nascent W3C standard. So far, this
+	 only means that GetCookie is not available for Chrome.
+2. The current version of ChromeDriver, 2.27, only supports up to Chrome v56.
+3. The Chrome flag `--disable_extensions` [is needed for Chrome versions >
+	 56](https://bugs.chromium.org/p/chromedriver/issues/detail?id=1625).
+	 However, this flag is deprecated in Chrome 57+. Therefore, this API
+	 currently cannot support Chrome 57+. However, this flag interferes with
+	 loading extensions, so the `chrome.Capabilities.AddExtension` method does
+	 not work with Chrome 57.
 
 ## Hacking
 
@@ -92,7 +99,7 @@ Patches are encouraged through GitHub pull requests. Please ensure that a test
 is added for anything more than a trivial change and that the existing tests
 pass.
 
-### Testing
+### Download Dependencies
 
 First, download the ChromeDriver binary, the Firefox binary and the Selenium
 WebDriver JARs:
@@ -107,7 +114,7 @@ init.go change.
 Ensure that the `chromium` binary is in your path. If the binary is named
 differently, run the tests with the flags `--chrome_binary=<binary name>`.
 
-#### Locally
+### Testing Locally
 
 Run the tests:
 
@@ -117,6 +124,9 @@ Run the tests:
     1. Chromium and ChromeDriver.
     2. A new version of Firefox and Selenium 3.
     3. An old version of Firefox and Selenium 2
+    4. A new version of Firefox directly against Geckodriver, if the
+       `--run_direct_deckodriver_tests` flag is provided. (This has
+       known-failing tests).
     
   There are subtests that are shared between both top-level tests.
 * To run only one of the top-level tests, pass
@@ -132,7 +142,7 @@ Run the tests:
 * Add the argument `-test.v` to see detailed output from Selenium and the
   browsers.
 
-#### With Docker
+### Testing With Docker
 
 You will need an installed and running Docker system.
 
