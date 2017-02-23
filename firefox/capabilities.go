@@ -62,6 +62,7 @@ func (c *Capabilities) SetProfile(basePath string) error {
 // LogLevel is an enum that defines logging levels for Firefox.
 type LogLevel string
 
+// Levels of logging that can be specified in the Log structure.
 const (
 	Trace  LogLevel = "trace"
 	Debug           = "debug"

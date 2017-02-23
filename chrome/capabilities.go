@@ -17,6 +17,8 @@ import (
 	"github.com/tebeka/selenium/internal/zip"
 )
 
+// CapabilitiesKey is the key in the top-level Capabilities map under which
+// ChromeDriver expects the Chrome-specific options to be set.
 const CapabilitiesKey = "chromeOptions"
 
 // Capabilities defines the Chrome-specific desired capabilities when using
