@@ -28,9 +28,9 @@ type file struct {
 
 var files = []file{
 	{
-		url:  "http://selenium-release.storage.googleapis.com/3.0/selenium-server-standalone-3.0.1.jar",
-		name: "selenium-server-standalone-3.0.1.jar",
-		hash: "1537b6d1b259191ed51586378791bc62b38b0cb18ae5ba1433009dc365e9f26b",
+		url:  "http://selenium-release.storage.googleapis.com/3.3/selenium-server-standalone-3.3.1.jar",
+		name: "selenium-server-standalone-3.3.1.jar",
+		hash: "94a0bd034636a2430d9d52b73b8e29e819af103ab84000de241ca83eb4e142f6",
 	},
 	{
 		url:  "http://selenium-release.storage.googleapis.com/2.53/selenium-server-standalone-2.53.1.jar",
@@ -50,10 +50,10 @@ var files = []file{
 		rename: []string{"chromedriver", "chromedriver-linux64-2.27"},
 	},
 	{
-		url:    "https://github.com/mozilla/geckodriver/releases/download/v0.14.0/geckodriver-v0.14.0-linux64.tar.gz",
-		name:   "geckodriver-v0.14.0-linux64.tar.gz",
-		hash:   "aaae25e9197360261f966f6129b47ebdf75ee9da63c74c9f39397b1100cd9653",
-		rename: []string{"geckodriver", "geckodriver-v0.14.0-linux64"},
+		url:    "https://github.com/mozilla/geckodriver/releases/download/v0.15.0/geckodriver-v0.15.0-linux64.tar.gz",
+		name:   "geckodriver-v0.15.0-linux64.tar.gz",
+		hash:   "6e24178195e6552375c3fd45dc50593e46fe2711e7907e84fecb4e3a5cb013ea",
+		rename: []string{"geckodriver", "geckodriver-v0.15.0-linux64"},
 	},
 	{
 		url:     "https://ftp.mozilla.org/pub/firefox/releases/47.0.2/linux-x86_64/en-US/firefox-47.0.2.tar.bz2",
@@ -64,9 +64,9 @@ var files = []file{
 	},
 	{
 		// This is a recent nightly. Update this path periodically.
-		url:     "https://archive.mozilla.org/pub/firefox/nightly/2017/02/2017-02-14-11-02-12-mozilla-central/firefox-54.0a1.en-US.linux-x86_64.tar.bz2",
+		url:     "https://archive.mozilla.org/pub/firefox/nightly/2017/03/2017-03-11-11-02-44-mozilla-central/firefox-55.0a1.en-US.linux-x86_64.tar.bz2",
 		name:    "firefox-54.0a1.en-US.linux-x86_64.tar.bz2",
-		hash:    "df3dcecbb630ca662851160b4d619a11c3ab52a8ceb238eb00e522248a3890ee",
+		hash:    "006a42297df774c4bd34bcf7f889ccdbc5ca3d2d443204915d4ad55ac3b5d01b",
 		browser: true,
 		rename:  []string{"firefox", "firefox-nightly"},
 	},
