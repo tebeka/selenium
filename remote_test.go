@@ -214,15 +214,6 @@ func runFirefoxTests(t *testing.T, webDriverPath string, c config) {
 		}
 	}
 
-	// Selenium 3.0.1 does not support Firefox capabilities.
-	// https://github.com/SeleniumHQ/selenium/issues/3055
-	if c.seleniumVersion.Major == 3 {
-		t.Log("Working around https://github.com/SeleniumHQ/selenium/issues/3055 by setting PATH")
-		if err := os.Setenv("PATH", filepath.Dir(c.path)+":"+os.Getenv("PATH")); err != nil {
-			t.Fatalf("Error setting PATH to include %q: %v", c.path, err)
-		}
-	}
-
 	if *startFrameBuffer {
 		c.serviceOptions = append(c.serviceOptions, StartFrameBuffer())
 	}
@@ -267,18 +258,13 @@ func testFirefoxPreferences(t *testing.T, c config) {
 	if c.seleniumVersion.Major == 2 {
 		t.Skip("This test is known to fail for Selenium 2 and Firefox 47.")
 	}
-	if c.seleniumVersion.Major == 3 {
-		// Selenium 3.0.1 does not support Firefox capabilities.
-		// https://github.com/SeleniumHQ/selenium/issues/3055
-		t.Skip("Skipping as Selenium 3.0.1 does not support Firefox capabilities. https://github.com/SeleniumHQ/selenium/issues/3055")
-	}
 	caps := newTestCapabilities(t, c)
 	f := caps[firefox.CapabilitiesKey].(firefox.Capabilities)
 	if f.Prefs == nil {
 		f.Prefs = make(map[string]interface{})
 	}
 	f.Prefs["browser.startup.homepage"] = serverURL
-	f.Prefs["browser.startup.page"] = 1
+	f.Prefs["browser.startup.page"] = "1"
 	caps.AddFirefox(f)
 
 	wd := &remoteWD{
@@ -312,11 +298,6 @@ func testFirefoxPreferences(t *testing.T, c config) {
 func testFirefoxProfile(t *testing.T, c config) {
 	if c.seleniumVersion.Major == 2 {
 		t.Skip("This test is known to fail for Selenium 2 and Firefox 47.")
-	}
-	if c.seleniumVersion.Major == 3 {
-		// Selenium 3.0.1 does not support Firefox capabilities.
-		// https://github.com/SeleniumHQ/selenium/issues/3055
-		t.Skip("Skipping as Selenium 3.0.1 does not support Firefox capabilities. https://github.com/SeleniumHQ/selenium/issues/3055")
 	}
 	caps := newTestCapabilities(t, c)
 	f := caps[firefox.CapabilitiesKey].(firefox.Capabilities)
@@ -416,13 +397,7 @@ func newTestCapabilities(t *testing.T, c config) Capabilities {
 				Level: firefox.Trace,
 			}
 		}
-		if c.seleniumVersion.Major == 3 {
-			// Selenium 3.0.1 does not support Firefox capabilities.
-			// https://github.com/SeleniumHQ/selenium/issues/3055
-			t.Log("Working around https://github.com/SeleniumHQ/selenium/issues/3055 by not setting Firefox capabilities")
-		} else {
-			caps.AddFirefox(f)
-		}
+		caps.AddFirefox(f)
 	}
 	return caps
 }

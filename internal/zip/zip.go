@@ -40,6 +40,10 @@ func New(basePath string) (*bytes.Buffer, error) {
 		// separator) so that the files are at the root of the zip file.
 		zipFI.Name = filePath[len(basePath)+1:]
 
+		// Without this, the Java zip reader throws a java.util.zip.ZipException:
+		// "only DEFLATED entries can have EXT descriptor".
+		zipFI.Method = zip.Deflate
+
 		w, err := w.CreateHeader(zipFI)
 		if err != nil {
 			return err
