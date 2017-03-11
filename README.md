@@ -67,20 +67,27 @@ one.
    cookie](https://github.com/mozilla/geckodriver/issues/463).
 2. [Selenium 3 NewSession does not implement the W3C-specified
    parameters](https://github.com/SeleniumHQ/selenium/issues/2827).
-3. [Marionnette does not implement the actions
-   API](https://bugzilla.mozilla.org/show_bug.cgi?id=1292178), which is needed
-   for keyboard and mouse actions, among others. Then, [Geckodriver doesn't
-   implement this support](https://github.com/mozilla/geckodriver/issues/159).
-   Then, [Selenium 3 doesn't implement this support for
-   Firefox](https://github.com/SeleniumHQ/selenium/issues/2285).
-4. [The Proxy object is
+3. [The Proxy object is
    misinterpreted](https://github.com/mozilla/geckodriver/issues/490) by
    Geckodriver when passed through by Selenium 3.
-5. [Maximizing the browser window
+4. [Maximizing the browser window
    hangs](https://github.com/mozilla/geckodriver/issues/703).
+5. [Geckodriver does not support the Log
+   API](https://github.com/mozilla/geckodriver/issues/284) because it [hasn't
+   been defined in the spec yet](https://github.com/w3c/webdriver/issues/406).
+
 
 The Geckodriver team recommends using the newest available Firefox version, as
 the integration is actively being developed.
+
+### Geckodriver (Standalone)
+
+The Geckodriver team are actively iterating on support for the W3C standard and
+routinely break the existing API. Support for the newest Geckodriver version
+within this API will likely lag for a time after its release; we expect the lag
+to only be several days to a small number of weeks.
+
+Using Geckodriver without Selenium usually has the above known issues as well.
 
 ### ChromeDriver
 

@@ -1,1 +1,1 @@
-user_pref("browser.startup.homepage_override.mstone", "54.0a1");
+user_pref("browser.startup.homepage_override.mstone", "ignore");

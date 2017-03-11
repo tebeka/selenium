@@ -159,6 +159,7 @@ const (
 
 // Status contains information returned by the Status method.
 type Status struct {
+	// The following fields are used by Selenium and ChromeDriver.
 	Java struct {
 		Version string
 	}
@@ -168,6 +169,11 @@ type Status struct {
 	OS struct {
 		Arch, Name, Version string
 	}
+
+	// The following fields are specified by the W3C WebDriver specification and
+	// are used by GeckoDriver.
+	Ready   bool
+	Message string
 }
 
 // Point is a 2D point.

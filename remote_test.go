@@ -26,10 +26,9 @@ var (
 	selenium2Path          = flag.String("selenium2_path", "vendor/selenium-server-standalone-2.53.1.jar", "The path to the Selenium 2 server JAR. If empty or the file is not present, Firefox tests on Selenium 2 will not be run.")
 	firefoxBinarySelenium2 = flag.String("firefox_binary_for_selenium2", "vendor/firefox-47/firefox", "The name of the Firefox binary for Selenium 2 tests or the path to it. If the name does not contain directory separators, the PATH will be searched.")
 
-	selenium3Path             = flag.String("selenium3_path", "vendor/selenium-server-standalone-3.4.jar", "The path to the Selenium 3 server JAR. If empty or the file is not present, Firefox tests using Selenium 3 will not be run.")
-	firefoxBinarySelenium3    = flag.String("firefox_binary_for_selenium3", "vendor/firefox-nightly/firefox", "The name of the Firefox binary for Selenium 3 tests or the path to it. If the name does not contain directory separators, the PATH will be searched.")
-	geckoDriverPath           = flag.String("geckodriver_path", "vendor/geckodriver-v0.16.1-linux64", "The path to the geckodriver binary. If empty of the file is not present, the Geckodriver tests will not be run.")
-	runDirectGeckoDriverTests = flag.Bool("run_direct_geckodriver_tests", false, "EXPERIMENTAL. If true, also run tests directly against GeckoDriver, without Selenium 3.")
+	selenium3Path          = flag.String("selenium3_path", "vendor/selenium-server-standalone-3.4.jar", "The path to the Selenium 3 server JAR. If empty or the file is not present, Firefox tests using Selenium 3 will not be run.")
+	firefoxBinarySelenium3 = flag.String("firefox_binary_for_selenium3", "vendor/firefox-nightly/firefox", "The name of the Firefox binary for Selenium 3 tests or the path to it. If the name does not contain directory separators, the PATH will be searched.")
+	geckoDriverPath        = flag.String("geckodriver_path", "vendor/geckodriver-v0.16.1-linux64", "The path to the geckodriver binary. If empty of the file is not present, the Geckodriver tests will not be run.")
 
 	chromeDriverPath = flag.String("chrome_driver_path", "vendor/chromedriver-linux64-2.29", "The path to the ChromeDriver binary. If empty of the file is not present, Chrome tests will not be run.")
 	chromeBinary     = flag.String("chrome_binary", "vendor/chrome-linux/chrome", "The name of the Chrome binary or the path to it. If name is not an exact path, the PATH will be searched.")
@@ -190,9 +189,6 @@ func TestFirefoxSelenium3(t *testing.T) {
 }
 
 func TestFirefoxGeckoDriver(t *testing.T) {
-	if !*runDirectGeckoDriverTests {
-		t.Skip("Skipping tests because --run_direct_geckodriver_tests (experimental) is not set")
-	}
 	if *useDocker {
 		t.Skip("Skipping tests because they will be run under a Docker container")
 	}
@@ -297,8 +293,8 @@ func testFirefoxPreferences(t *testing.T, c config) {
 		t.Skip("This test is known to fail for Selenium 2 and Firefox 47.")
 	}
 	caps := newTestCapabilities(t, c)
-	f := caps[firefox.CapabilitiesKey].(firefox.Capabilities)
-	if f.Prefs == nil {
+	f, ok := caps[firefox.CapabilitiesKey].(firefox.Capabilities)
+	if !ok || f.Prefs == nil {
 		f.Prefs = make(map[string]interface{})
 	}
 	f.Prefs["browser.startup.homepage"] = serverURL
@@ -411,8 +407,12 @@ func newTestCapabilities(t *testing.T, c config) Capabilities {
 		f := firefox.Capabilities{}
 		if c.path != "" {
 			// Selenium 2 uses this option to specify the path to the Firefox binary.
-			caps["firefox_binary"] = c.path
-			f.Binary = c.path
+			//caps["firefox_binary"] = c.path
+			p, err := filepath.Abs(c.path)
+			if err != nil {
+				panic(err)
+			}
+			f.Binary = p
 		}
 		if testing.Verbose() {
 			f.Log = &firefox.Log{
@@ -494,11 +494,11 @@ func testStatus(t *testing.T, c config) {
 
 	status, err := wd.Status()
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("wd.Status() returned error: %v", err)
 	}
 
-	if len(status.OS.Name) == 0 {
-		t.Fatal("No OS")
+	if len(status.OS.Name) == 0 && status.Message == "" {
+		t.Fatalf("OS.Name or Message not provided: %+v", status)
 	}
 }
 
@@ -543,6 +543,8 @@ func testExtendedErrorMessage(t *testing.T, c config) {
 	switch {
 	case c.browser == "firefox" && c.seleniumVersion.Major == 2:
 		want = "unknown error:"
+	case c.browser == "firefox" && c.seleniumVersion.Major == 0:
+		want = "unknown command"
 	default:
 		want = "invalid session ID:"
 	}
@@ -552,12 +554,15 @@ func testExtendedErrorMessage(t *testing.T, c config) {
 }
 
 func testCapabilities(t *testing.T, c config) {
+	if c.browser == "firefox" && c.seleniumVersion.Major == 0 {
+		t.Skip("This method is not supported by Geckodriver.")
+	}
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
 	caps, err := wd.Capabilities()
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("wd.Capabilities() returned error: %v", err)
 	}
 
 	if strings.ToLower(caps["browserName"].(string)) != c.browser {
@@ -938,16 +943,21 @@ func testAddCookie(t *testing.T, c config) {
 		t.Fatal(err)
 	}
 
-	if c.browser == "firefox" && c.seleniumVersion.Major == 3 {
+	// These fields are added implicitly by the browser.
+	want.Path = "/"
+	want.Domain = "127.0.0.1"
+
+	if c.browser == "firefox" && (c.seleniumVersion.Major == 3 || c.seleniumVersion.Major == 0) {
 		// Geckodriver does not return the valid expiration date for the cookie.
 		// https://github.com/mozilla/geckodriver/issues/463
 		t.Log("Working around https://github.com/mozilla/geckodriver/issues/463")
 		want.Expiry = 0
-	}
 
-	// These fields are added implicitly by the browser.
-	want.Path = "/"
-	want.Domain = "127.0.0.1"
+		// Firefox and Geckodriver now also returns an empty string for the path.
+		if c.seleniumVersion.Major == 0 {
+			want.Path = ""
+		}
+	}
 
 	cookies, err := wd.GetCookies()
 	if err != nil {
@@ -1180,7 +1190,7 @@ func testLog(t *testing.T, c config) {
 	switch {
 	case c.browser == "htmlunit":
 		t.Skip("Skipping on htmlunit")
-	case c.browser == "firefox" && c.seleniumVersion.Major == 3:
+	case c.browser == "firefox" && (c.seleniumVersion.Major == 3 || c.seleniumVersion.Major == 0):
 		// Log is not supported on Firefox with Selenium 3.
 		// https://github.com/w3c/webdriver/issues/406
 		// https://github.com/mozilla/geckodriver/issues/284
@@ -1276,7 +1286,7 @@ func testGetAttributeNotFound(t *testing.T, c config) {
 }
 
 func testMaximizeWindow(t *testing.T, c config) {
-	if c.seleniumVersion.Major == 3 && c.browser == "firefox" {
+	if c.browser == "firefox" {
 		t.Skip("Skipping test due to https://github.com/mozilla/geckodriver/issues/703")
 	}
 
