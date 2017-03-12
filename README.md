@@ -86,13 +86,6 @@ the integration is actively being developed.
 
 1. ChromeDriver has not yet implemented the nascent W3C standard. So far, this
 	 only means that GetCookie is not available for Chrome.
-2. The current version of ChromeDriver, 2.27, only supports up to Chrome v56.
-3. The Chrome flag `--disable_extensions` [is needed for Chrome versions >
-	 56](https://bugs.chromium.org/p/chromedriver/issues/detail?id=1625).
-	 However, this flag is deprecated in Chrome 57+. Therefore, this API
-	 currently cannot support Chrome 57+. However, this flag interferes with
-	 loading extensions, so the `chrome.Capabilities.AddExtension` method does
-	 not work with Chrome 57.
 
 ## Hacking
 

@@ -38,16 +38,10 @@ var files = []file{
 		hash: "1cce6d3a5ca5b2e32be18ca5107d4f21bddaa9a18700e3b117768f13040b7cf8",
 	},
 	{
-		url:    "https://chromedriver.storage.googleapis.com/2.26/chromedriver_linux64.zip",
-		name:   "chromedriver_2.26_linux64.zip",
-		hash:   "59e6b1b1656a20334d5731b3c5a7400f92a9c6f5043bb4ab67f1ccf1979ee486",
-		rename: []string{"chromedriver", "chromedriver-linux64-2.26"},
-	},
-	{
-		url:    "https://chromedriver.storage.googleapis.com/2.27/chromedriver_linux64.zip",
-		name:   "chromedriver_2.27_linux64.zip",
-		hash:   "9c88402f4d9dca822697c3aa4623285e3b5b83a12b1261421c9a50d1960eb137",
-		rename: []string{"chromedriver", "chromedriver-linux64-2.27"},
+		url:    "https://chromedriver.storage.googleapis.com/2.28/chromedriver_linux64.zip",
+		name:   "chromedriver_2.28_linux64.zip",
+		hash:   "8f5b0ab727c326a2f7887f08e4f577cb4452a9e5783d1938728946a8557a37bc",
+		rename: []string{"chromedriver", "chromedriver-linux64-2.28"},
 	},
 	{
 		url:    "https://github.com/mozilla/geckodriver/releases/download/v0.15.0/geckodriver-v0.15.0-linux64.tar.gz",
