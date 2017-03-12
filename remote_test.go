@@ -463,6 +463,7 @@ func runTests(t *testing.T, c config) {
 	t.Run("KeyDownUp", runTest(testKeyDownUp, c))
 	t.Run("CSSProperty", runTest(testCSSProperty, c))
 	t.Run("Proxy", runTest(testProxy, c))
+	t.Run("SwitchFrame", runTest(testSwitchFrame, c))
 }
 
 func testStatus(t *testing.T, c config) {
@@ -1420,6 +1421,63 @@ func testProxy(t *testing.T, c config) {
 	}
 }
 
+func testSwitchFrame(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
+
+	if err := wd.Get(serverURL + "/frame"); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
+
+	const (
+		iframeID      = "iframeID"
+		insideFrameID = "chuk"
+		outsideDivID  = "outsideOfFrame"
+	)
+
+	// Test with the ID of the iframe.
+	if err := wd.SwitchFrame(iframeID); err != nil {
+		t.Fatalf("wd.SwitchToFrame(%q) returned error: %v", iframeID, err)
+	}
+	if _, err := wd.FindElement(ByID, insideFrameID); err != nil {
+		t.Fatalf("After switching frames using an ID, wd.FindElement(ByID, %q) returned error: %v", insideFrameID, err)
+	}
+	if _, err := wd.FindElement(ByID, outsideDivID); err == nil {
+		t.Fatalf("After switching frames using an ID, wd.FindElement(ByID, %q) returned nil, expected an error", outsideDivID)
+	}
+
+	// Test with nil, to return to the top-level context.
+	if err := wd.SwitchFrame(nil); err != nil {
+		t.Fatalf("wd.SwitchToFrame(nil) returned error: %v", err)
+	}
+	if _, err := wd.FindElement(ByID, outsideDivID); err != nil {
+		t.Fatalf("After switching frames using nil, wd.FindElement(ByID, %q) returned error: %v", outsideDivID, err)
+	}
+
+	// Test with a WebElement.
+	iframe, err := wd.FindElement(ByID, iframeID)
+	if err != nil {
+		t.Fatalf("error finding iframe: %v", err)
+	}
+	if err := wd.SwitchFrame(iframe); err != nil {
+		t.Fatalf("wd.SwitchToFrame(nil) returned error: %v", err)
+	}
+	if _, err := wd.FindElement(ByID, insideFrameID); err != nil {
+		t.Fatalf("After switching frames using a WebElement, wd.FindElement(ByID, %q) returned error: %v", insideFrameID, err)
+	}
+	if _, err := wd.FindElement(ByID, outsideDivID); err == nil {
+		t.Fatalf("After switching frames using a WebElement, wd.FindElement(ByID, %q) returned nil, expected an error", outsideDivID)
+	}
+
+	// Test with the empty string, to return to the top-level context.
+	if err := wd.SwitchFrame(""); err != nil {
+		t.Fatalf(`wd.SwitchToFrame("") returned error: %v`, err)
+	}
+	if _, err := wd.FindElement(ByID, outsideDivID); err != nil {
+		t.Fatalf(`After switching frames using "", wd.FindElement(ByID, %q) returned error: %v`, outsideDivID, err)
+	}
+}
+
 var homePage = `
 <html>
 <head>
@@ -1480,6 +1538,20 @@ var logPage = `
 </html>
 `
 
+var framePage = `
+<html>
+<head>
+	<title>Go Selenium Test Suite - Frame Page</title>
+</head>
+<body>
+	This page contains a frame.
+
+	<iframe id="iframeID" name="iframeName" src="/"></iframe>
+	<div id="outsideOfFrame"></div>
+</body>
+</html>
+`
+
 func handler(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 	page, ok := map[string]string{
@@ -1487,6 +1559,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		"/other":  otherPage,
 		"/search": searchPage,
 		"/log":    logPage,
+		"/frame":  framePage,
 	}[path]
 	if !ok {
 		http.NotFound(w, r)

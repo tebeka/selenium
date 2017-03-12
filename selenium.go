@@ -271,8 +271,9 @@ type WebDriver interface {
 	// Close closes the current window.
 	Close() error
 	// SwitchFrame switches to the given frame. The frame parameter can be the
-	// frame's name or ID.
-	SwitchFrame(frame string) error
+	// frame's ID as a string, its WebElement instance as returned by
+	// GetElement, or nil to switch to the current top-level browsing context.
+	SwitchFrame(frame interface{}) error
 	// SwitchWindow switches the context to the specified window.
 	SwitchWindow(name string) error
 	// CloseWindow closes the specified window.

@@ -595,12 +595,19 @@ func (wd *remoteWD) ResizeWindow(name string, width, height int) error {
 	return err
 }
 
-func (wd *remoteWD) SwitchFrame(frame string) error {
-	params := map[string]interface{}{
-		"id": frame,
-	}
-	if len(frame) == 0 {
-		params["id"] = nil
+func (wd *remoteWD) SwitchFrame(frame interface{}) error {
+	params := map[string]interface{}{}
+	switch f := frame.(type) {
+	case WebElement, int, nil:
+		params["id"] = f
+	case string:
+		if f != "" {
+			params["id"] = f
+		} else {
+			params["id"] = nil
+		}
+	default:
+		return fmt.Errorf("invalid type %T", frame)
 	}
 	return wd.voidCommand("/session/%s/frame", params)
 }
