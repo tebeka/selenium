@@ -69,9 +69,7 @@ one.
    cookie](https://github.com/mozilla/geckodriver/issues/463).
 2. [Selenium 3 NewSession does not implement the W3C-specified
    parameters](https://github.com/SeleniumHQ/selenium/issues/2827).
-3. [Selenium 3 NewSession does not support Firefox
-   capabilities](https://github.com/SeleniumHQ/selenium/issues/3055).
-4. [Marionnette does not implement the actions
+3. [Marionnette does not implement the actions
    API](https://bugzilla.mozilla.org/show_bug.cgi?id=1292178), which is needed
    for keyboard and mouse actions, among others. Then, [Geckodriver doesn't
    implement this support](https://github.com/mozilla/geckodriver/issues/159).
