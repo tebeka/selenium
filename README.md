@@ -24,25 +24,9 @@ Run
 
     go get github.com/tebeka/selenium
 
-## Docs
+## Documentation
 
-Docs are at https://godoc.org/github.com/tebeka/selenium
-
-### AppEngine
-
-`GetHTTPClient` exposes the HTTP client used by the driver. You can access it to
-add the request context.
-
-    func myRequestHandler(w http.ResponseWriter, r *http.Request) {
-        selenium.GetHTTPClient().Transport = &urlfetch.Transport{
-            Context:  appengine.NewContext(r),
-            Deadline: 30 * time.Second,
-        }
-        ...
-    }
-
-Thanks to [bthomson](https://bitbucket.org/tebeka/selenium/issue/8) for this
-one.
+Documentation can be viewed at https://godoc.org/github.com/tebeka/selenium
 
 ## TODO
 
@@ -54,6 +38,17 @@ one.
 
 [api]: https://www.w3.org/TR/webdriver/
 [sauce]: http://saucelabs.com/docs/quickstart
+
+## AppEngine
+
+Selenium WebDriver and its dependencies can be run on Google's AppEngine
+Flexible Environment using custom images. It cannot be easily run on the
+Standard Environment.
+
+An example of how to package and run a Go-based WebDriver program on AppEngine
+Flexible Environment is found in the [examples
+subdirectory](examples/appengine); see [the
+documentation](examples/appengine/README.md).
 
 ## Known issues
 
