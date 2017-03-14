@@ -205,6 +205,42 @@ func TestFirefoxGeckoDriver(t *testing.T) {
 	})
 }
 
+func TestHTMLUnit(t *testing.T) {
+	if *useDocker {
+		t.Skip("Skipping tests because they will be run under a Docker container")
+	}
+	if _, err := os.Stat(*selenium3Path); err != nil {
+		t.Skipf("Skipping Firefox tests using Selenium 3 because Selenium WebDriver JAR not found at path %q", *selenium3Path)
+	}
+
+	if testing.Verbose() {
+		SetDebug(true)
+	}
+
+	c := config{
+		browser: "htmlunit",
+	}
+	if *startFrameBuffer {
+		c.serviceOptions = append(c.serviceOptions, StartFrameBuffer())
+	}
+
+	port, err := pickUnusedPort()
+	if err != nil {
+		t.Fatalf("pickUnusedPort() returned error: %v", err)
+	}
+	s, err := NewSeleniumService(*selenium3Path, port, c.serviceOptions...)
+	if err != nil {
+		t.Fatalf("Error starting the WebDriver server with binary %q: %v", *selenium3Path, err)
+	}
+	c.addr = fmt.Sprintf("http://127.0.0.1:%d/wd/hub", port)
+
+	runTests(t, c)
+
+	if err := s.Stop(); err != nil {
+		t.Fatalf("Error stopping the Selenium service: %v", err)
+	}
+}
+
 func runFirefoxTests(t *testing.T, webDriverPath string, c config) {
 	c.browser = "firefox"
 
@@ -236,7 +272,7 @@ func runFirefoxTests(t *testing.T, webDriverPath string, c config) {
 		s, err = NewSeleniumService(webDriverPath, port, c.serviceOptions...)
 	}
 	if err != nil {
-		t.Fatalf("Error starting the WebDriver server with binary %q: %v", c.path, err)
+		t.Fatalf("Error starting the WebDriver server with binary %q: %v", webDriverPath, err)
 	}
 
 	if c.seleniumVersion.Major == 0 {
@@ -400,6 +436,8 @@ func newTestCapabilities(t *testing.T, c config) Capabilities {
 			}
 		}
 		caps.AddFirefox(f)
+	case "htmlunit":
+		caps["javascriptEnabled"] = 1
 	}
 	return caps
 }
@@ -905,9 +943,6 @@ func testGetCookies(t *testing.T, c config) {
 }
 
 func testAddCookie(t *testing.T, c config) {
-	if c.browser == "htmlunit" {
-		t.Skip("Skipping on htmlunit")
-	}
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
@@ -918,6 +953,7 @@ func testAddCookie(t *testing.T, c config) {
 		Name:   "the nameless cookie",
 		Value:  "I have nothing",
 		Expiry: math.MaxUint32,
+		Domain: "127.0.0.1", // Unlike real browsers, htmlunit requires this to be set.
 	}
 	if err := wd.AddCookie(want); err != nil {
 		t.Fatal(err)
@@ -1053,12 +1089,12 @@ func testSize(t *testing.T, c config) {
 }
 
 func testExecuteScript(t *testing.T, c config) {
-	if c.browser == "htmlunit" {
-		t.Skip("Skipping on htmlunit")
-	}
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
+	if err := wd.Get(serverURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
 	script := "return arguments[0] + arguments[1]"
 	args := []interface{}{1, 2}
 	reply, err := wd.ExecuteScript(script, args)
@@ -1077,9 +1113,6 @@ func testExecuteScript(t *testing.T, c config) {
 }
 
 func testExecuteScriptWithNilArgs(t *testing.T, c config) {
-	if c.browser == "htmlunit" {
-		t.Skip("Skipping on htmlunit")
-	}
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
@@ -1094,9 +1127,6 @@ func testExecuteScriptWithNilArgs(t *testing.T, c config) {
 }
 
 func testExecuteScriptOnElement(t *testing.T, c config) {
-	if c.browser == "htmlunit" {
-		t.Skip("Skipping on htmlunit")
-	}
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
@@ -1315,6 +1345,9 @@ func testKeyDownUp(t *testing.T, c config) {
 }
 
 func testCSSProperty(t *testing.T, c config) {
+	if c.browser == "htmlunit" {
+		t.Skip("Skipping on htmlunit")
+	}
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
@@ -1332,7 +1365,7 @@ func testCSSProperty(t *testing.T, c config) {
 		t.Fatalf(`e.CSSProperty("color") returned error: %v`, err)
 	}
 
-	// Later versions of Firefox return the "rgb" version.
+	// Later versions of Firefox and HTMLUnit return the "rgb" version.
 	wantColors := []string{"rgba(0, 0, 238, 1)", "rgb(0, 0, 238)"}
 	for _, wantColor := range wantColors {
 		if color == wantColor {
@@ -1387,7 +1420,7 @@ func testProxy(t *testing.T, c config) {
 		}
 		ff.Prefs["network.proxy.no_proxies_on"] = ""
 		caps[firefox.CapabilitiesKey] = ff
-	case "chrome":
+	case "chrome", "htmlunit":
 		proxy.HTTP = u.Host
 	}
 	caps.AddProxy(proxy)

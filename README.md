@@ -46,10 +46,8 @@ one.
 
 ## TODO
 
-* Finish full [Selenium API][api].
-* [SauceLabs][sauce] integration
+* Finish full [WebDriver API][api].
 * Add usage examples
-* Support Firefox profiles
 * Test Chrome interaction on Travis. Currently, only Firefox is tested.
 * Any additional TODOs marked in the code.
 * Allow testing on Windows and OS X.
@@ -117,17 +115,18 @@ Run the tests:
 * There is one top-level test for each of:
     1. Chromium and ChromeDriver.
     2. A new version of Firefox and Selenium 3.
-    3. An old version of Firefox and Selenium 2
-    4. A new version of Firefox directly against Geckodriver, if the
+    3. An old version of Firefox and Selenium 2.
+    4. HTMLUnit, a Java-based lightweight headless browser implementation.
+    5. A new version of Firefox directly against Geckodriver, if the
        `--run_direct_deckodriver_tests` flag is provided. (This has
-       known-failing tests).
+       known-failing tests and is considered experimental).
     
   There are subtests that are shared between both top-level tests.
 * To run only one of the top-level tests, pass
-  `-test.run=TestFirefoxSelenium2`, `-test.run=TestFirefoxSelenium3`, or
-  `-test.run=TestChrome`. To run a specific subtest, pass
-  `-test.run=Test<Browser>/<subtest>` as appropriate. This flag supports
-  regular expressions.
+  `-test.run=TestFirefoxSelenium2`, `-test.run=TestFirefoxSelenium3`,
+  `-test.run=TestHTMLUnit` or `-test.run=TestChrome`. To run a specific
+  subtest, pass `-test.run=Test<Browser>/<subtest>` as appropriate. This flag
+  supports regular expressions.
 * If the Chrome or Firefox binaries, the Selenium JAR, the Geckodriver binary,
   or the ChromeDriver binary cannot be found, the corresponding tests will be
   skipped.
