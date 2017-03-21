@@ -1028,6 +1028,29 @@ func testClick(t *testing.T, c config) {
 		t.Fatalf("input.SendKeys(%q) returned error: %v", query, err)
 	}
 
+	const selectTag = "select"
+	sel, err := wd.FindElement(ByCSSSelector, selectTag)
+	if err != nil {
+		t.Fatalf("wd.FindElement(%q, %q) returned error: %v", ByCSSSelector, selectTag, err)
+	}
+	if err = sel.Click(); err != nil {
+		t.Fatalf("input.Click() returned error: %v", err)
+	}
+	time.Sleep(2 * time.Second)
+	option, err := sel.FindElement(ByID, "secondValue")
+	if err != nil {
+		t.Fatalf("input.FindElement(%q, %q) returned error: %v", ByID, "secondValue", err)
+	}
+	if err = option.Click(); err != nil {
+		t.Fatalf("option.Click() returned error: %v", err)
+	}
+	if c.browser == "firefox" {
+		// Click anywhere else to de-focus the drop-down menu.
+		if err = input.Click(); err != nil {
+			t.Fatalf("wd.Click() returned error: %v", err)
+		}
+	}
+
 	const buttonID = "submit"
 	button, err := wd.FindElement(ByID, buttonID)
 	if err != nil {
@@ -1771,6 +1794,10 @@ var homePage = `
 		<input name="q" autofocus />
 		<input type="submit" id="submit" /> <br />
 		<input id="chuk" type="checkbox" /> A checkbox.
+		<select name="s">
+			<option value="first_value">First Value</option>
+			<option id="secondValue" value="second_value">Second Value</option>
+		</select>
 	</form>
 	Link to the <a href="/other">other page</a>.
 
@@ -1802,6 +1829,7 @@ var searchPage = `
 	<p>
 	"` + searchContents + `"
 	</p>
+	Select value is: %s
 </body>
 </html>
 `
@@ -1867,7 +1895,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 	if path == "/search" {
 		r.ParseForm()
-		page = fmt.Sprintf(page, r.Form["q"][0])
+		page = fmt.Sprintf(page, r.Form["q"][0], r.Form["s"][0])
 	}
 	// Some cookies for the tests
 	for i := 0; i < 3; i++ {

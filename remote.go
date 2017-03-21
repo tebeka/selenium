@@ -633,10 +633,10 @@ func (wd *remoteWD) find(by, value, suffix, url string) ([]byte, error) {
 	if wd.w3cCompatible {
 		switch by {
 		case ByID:
-			by = "css selector"
+			by = ByCSSSelector
 			value = "#" + value
 		case ByName:
-			by = "css selector"
+			by = ByCSSSelector
 			value = fmt.Sprintf("input[name=%q]", value)
 		}
 	}
