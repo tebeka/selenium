@@ -2,28 +2,35 @@
 package main
 
 import (
+	"context"
+	"crypto/md5"
 	"crypto/sha256"
 	"encoding/hex"
 	"flag"
 	"fmt"
+	"hash"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 
+	"cloud.google.com/go/storage"
 	"github.com/golang/glog"
+	"google.golang.org/api/option"
 )
 
-// TODO(minusnine): download the Chrome binary.
-var downloadBrowser = flag.Bool("download_browsers", true, "If true, download the Firefox binary.")
+var downloadBrowsers = flag.Bool("download_browsers", true, "If true, download the Firefox and Chrome browsers.")
 
 type file struct {
-	url     string
-	name    string
-	hash    string
-	rename  []string
-	browser bool
+	url      string
+	name     string
+	hash     string
+	hashType string // default is sha256
+	rename   []string
+	browser  bool
 }
 
 var files = []file{
@@ -66,15 +73,60 @@ var files = []file{
 	},
 }
 
+func addChrome(ctx context.Context) error {
+	const (
+		// Bucket URL: https://console.cloud.google.com/storage/browser/chromium-browser-continuous/?pli=1
+		storageBktName = "chromium-browser-continuous"
+		prefixLinux64  = "Linux_x64"
+		lastChangeFile = "Linux_x64/LAST_CHANGE"
+		chromeFilename = "chrome-linux.zip"
+	)
+	gcsPath := fmt.Sprintf("gs://%s/", storageBktName)
+	client, err := storage.NewClient(ctx, option.WithHTTPClient(http.DefaultClient))
+	if err != nil {
+		return fmt.Errorf("cannot create a storage client for downloading the chrome browser: %v", err)
+	}
+	bkt := client.Bucket(storageBktName)
+	r, err := bkt.Object(lastChangeFile).NewReader(ctx)
+	if err != nil {
+		return fmt.Errorf("cannot create a reader for %s%s file: %v", gcsPath, lastChangeFile, err)
+	}
+	defer r.Close()
+	// Read the last change file content for the latest build directory name
+	data, err := ioutil.ReadAll(r)
+	if err != nil {
+		return fmt.Errorf("cannot read from %s%s file: %v", gcsPath, lastChangeFile, err)
+	}
+	latestChromeBuild := string(data)
+	latestChromePackage := path.Join(prefixLinux64, latestChromeBuild, chromeFilename)
+	cpAttrs, err := bkt.Object(latestChromePackage).Attrs(ctx)
+	if err != nil {
+		return fmt.Errorf("cannot get the chrome package %s%s attrs: %v", gcsPath, latestChromePackage, err)
+	}
+	files = append(files, file{
+		name:     chromeFilename,
+		browser:  true,
+		hash:     hex.EncodeToString(cpAttrs.MD5),
+		hashType: "md5",
+		url:      cpAttrs.MediaLink,
+	})
+	return nil
+}
+
 func main() {
 	flag.Parse()
-
+	ctx := context.Background()
+	if *downloadBrowsers {
+		if err := addChrome(ctx); err != nil {
+			glog.Errorf("unable to Download Google Chrome browser: %v", err)
+		}
+	}
 	for _, file := range files {
-		if file.browser && !*downloadBrowser {
+		if file.browser && !*downloadBrowsers {
 			glog.Infof("Skipping %q because --download_browser is not set.", file.name)
 			continue
 		}
-		if !fileSameHash(file.name, file.hash) {
+		if !fileSameHash(file) {
 			glog.Infof("Downloading %q from %q", file.name, file.url)
 			if err := downloadFile(file); err != nil {
 				glog.Exit(err.Error())
@@ -82,6 +134,7 @@ func main() {
 		} else {
 			glog.Infof("Skipping file %q which has already been downloaded.", file.name)
 		}
+
 		switch path.Ext(file.name) {
 		case ".zip":
 			glog.Infof("Unzipping %q", file.name)
@@ -125,24 +178,34 @@ func downloadFile(file file) (err error) {
 		return fmt.Errorf("%s: error downloading %q: %v", file.name, file.url, err)
 	}
 	defer resp.Body.Close()
-
-	hash := sha256.New()
-	tee := io.MultiWriter(f, hash)
-	if _, err := io.Copy(tee, resp.Body); err != nil {
+	var h hash.Hash
+	switch strings.ToLower(file.hashType) {
+	case "md5":
+		h = md5.New()
+	default:
+		h = sha256.New()
+	}
+	if _, err := io.Copy(io.MultiWriter(f, h), resp.Body); err != nil {
 		return fmt.Errorf("%s: error downloading %q: %v", file.name, file.url, err)
 	}
-	if h := hex.EncodeToString(hash.Sum(nil)); h != file.hash {
-		return fmt.Errorf("%s: got sha256 hash %q, want %q", file.name, h, file.hash)
+	if h := hex.EncodeToString(h.Sum(nil)); h != file.hash {
+		return fmt.Errorf("%s: got %s hash %q, want %q", file.name, file.hashType, h, file.hash)
 	}
 	return nil
 }
 
-func fileSameHash(fileName, wantHash string) bool {
-	if _, err := os.Stat(fileName); err != nil {
+func fileSameHash(file file) bool {
+	if _, err := os.Stat(file.name); err != nil {
 		return false
 	}
-	h := sha256.New()
-	f, err := os.Open(fileName)
+	var h hash.Hash
+	switch strings.ToLower(file.hashType) {
+	case "md5":
+		h = md5.New()
+	default:
+		h = sha256.New()
+	}
+	f, err := os.Open(file.name)
 	if err != nil {
 		return false
 	}
@@ -153,8 +216,8 @@ func fileSameHash(fileName, wantHash string) bool {
 	}
 
 	sum := hex.EncodeToString(h.Sum(nil))
-	if sum != wantHash {
-		glog.Warningf("File %q: got hash %q, expect hash %q", fileName, sum, wantHash)
+	if sum != file.hash {
+		glog.Warningf("File %q: got hash %q, expect hash %q", file.name, sum, file.hash)
 		return false
 	}
 	return true
