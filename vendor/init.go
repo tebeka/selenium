@@ -22,23 +22,13 @@ import (
 	"google.golang.org/api/option"
 )
 
-// consts for downloading Google chrome browser.
-const (
-	// Bucket URL: https://console.cloud.google.com/storage/browser/chromium-browser-continuous/?pli=1
-	storageBktName = "chromium-browser-continuous"
-	prefixLinux64  = "Linux_x64"
-	lastChangeFile = "Linux_x64/LAST_CHANGE"
-	chromeFilename = "chrome-linux.zip"
-)
-
-// TODO(minusnine): download the Chrome binary.
 var downloadBrowsers = flag.Bool("download_browsers", true, "If true, download the Firefox and Chrome browsers.")
 
 type file struct {
 	url      string
 	name     string
 	hash     string
-	hashtype string //default is sha256
+	hashType string // default is sha256
 	rename   []string
 	browser  bool
 }
@@ -83,51 +73,54 @@ var files = []file{
 	},
 }
 
-func addChrome() (err error) {
-	var chromeFile file
-	chromeFile.name = chromeFilename
-	chromeFile.browser = true
-	ctx := context.Background()
+func addChrome(ctx context.Context) error {
+	// Bucket URL: https://console.cloud.google.com/storage/browser/chromium-browser-continuous/?pli=1
+	storageBktName := "chromium-browser-continuous"
+	prefixLinux64 := "Linux_x64"
+	lastChangeFile := "Linux_x64/LAST_CHANGE"
+	chromeFilename := "chrome-linux.zip"
+	gcsPath := fmt.Sprintf("gs://%s/", storageBktName)
 	client, err := storage.NewClient(ctx, option.WithHTTPClient(http.DefaultClient))
 	if err != nil {
-		return fmt.Errorf("Cannot create a storage client for downloading the chrome browser: %s", err)
+		return fmt.Errorf("cannot create a storage client for downloading the chrome browser: %s", err)
 	}
-	BktHandle := client.Bucket(storageBktName)
-	lcFileObj := BktHandle.Object(lastChangeFile)
-	rc, err := lcFileObj.NewReader(ctx)
+	bkt := client.Bucket(storageBktName)
+	obj := bkt.Object(lastChangeFile)
+	r, err := obj.NewReader(ctx)
 	if err != nil {
-		return fmt.Errorf("Cannot create a reader for last_change file: %s", err)
+		return fmt.Errorf("cannot create a reader for %s%s file: %s", gcsPath, lastChangeFile, err)
 	}
-	defer rc.Close()
+	defer r.Close()
 	// Read the last change file content for the latest build directory name
-	data, err := ioutil.ReadAll(rc)
+	data, err := ioutil.ReadAll(r)
 	if err != nil {
-		return fmt.Errorf("Cannot read from LAST_CHANGE: %s", err)
+		return fmt.Errorf("cannot read from %s%s file: %s", gcsPath, lastChangeFile, err)
 	}
 	latestChromeBuild := string(data)
-	latestChromePackage := strings.Join([]string{prefixLinux64, latestChromeBuild, chromeFilename}, "/")
-	chromeObjHandler := BktHandle.Object(latestChromePackage)
+	latestChromePackage := path.Join(prefixLinux64, latestChromeBuild, chromeFilename)
+	chromeObjHandler := bkt.Object(latestChromePackage)
 	cpAttrs, err := chromeObjHandler.Attrs(ctx)
 	if err != nil {
-		return fmt.Errorf("Cannot get the chrome package attrs: %s", err)
+		return fmt.Errorf("cannot get the chrome package %s%s attrs: %s", gcsPath, latestChromePackage, err)
 	}
-	// 02x is needed as the returned []byte is not a valid utf8
-	chromeFile.hash = fmt.Sprintf("%02x", string(cpAttrs.MD5))
-	chromeFile.url = cpAttrs.MediaLink
-	chromeFile.hashtype = "md5"
-	files = append(files, chromeFile)
+	files = append(files, file{
+		name:     chromeFilename,
+		browser:  true,
+		hash:     hex.EncodeToString(cpAttrs.MD5),
+		hashType: "md5",
+		url:      cpAttrs.MediaLink,
+	})
 	return nil
 }
 
 func main() {
 	flag.Parse()
+	ctx := context.Background()
 	if *downloadBrowsers {
-		err := addChrome()
-		if err != nil {
-			glog.Infof("Unable to Download Google Chrome browser. Continuing...")
+		if err := addChrome(ctx); err != nil {
+			glog.Errorf("Unable to Download Google Chrome browser. Continuing...")
 		}
 	}
-
 	for _, file := range files {
 		if file.browser && !*downloadBrowsers {
 			glog.Infof("Skipping %q because --download_browser is not set.", file.name)
@@ -170,7 +163,6 @@ func main() {
 }
 
 func downloadFile(file file) (err error) {
-	var h hash.Hash
 	f, err := os.Create(file.name)
 	if err != nil {
 		return fmt.Errorf("error creating %q: %v", file.name, err)
@@ -186,8 +178,8 @@ func downloadFile(file file) (err error) {
 		return fmt.Errorf("%s: error downloading %q: %v", file.name, file.url, err)
 	}
 	defer resp.Body.Close()
-	htype := strings.ToLower(file.hashtype)
-	switch htype {
+	var h hash.Hash
+	switch strings.ToLower(file.hashType) {
 	case "md5":
 		h = md5.New()
 	default:
@@ -198,18 +190,17 @@ func downloadFile(file file) (err error) {
 		return fmt.Errorf("%s: error downloading %q: %v", file.name, file.url, err)
 	}
 	if h := hex.EncodeToString(h.Sum(nil)); h != file.hash {
-		return fmt.Errorf("%s: got %s hash %q, want %q", file.name, file.hashtype, h, file.hash)
+		return fmt.Errorf("%s: got %s hash %q, want %q", file.name, file.hashType, h, file.hash)
 	}
 	return nil
 }
 
 func fileSameHash(file file) bool {
-	var h hash.Hash
 	if _, err := os.Stat(file.name); err != nil {
 		return false
 	}
-	htype := strings.ToLower(file.hashtype)
-	switch htype {
+	var h hash.Hash
+	switch strings.ToLower(file.hashType) {
 	case "md5":
 		h = md5.New()
 	default:
