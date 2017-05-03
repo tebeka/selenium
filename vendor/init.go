@@ -74,34 +74,34 @@ var files = []file{
 }
 
 func addChrome(ctx context.Context) error {
-	// Bucket URL: https://console.cloud.google.com/storage/browser/chromium-browser-continuous/?pli=1
-	storageBktName := "chromium-browser-continuous"
-	prefixLinux64 := "Linux_x64"
-	lastChangeFile := "Linux_x64/LAST_CHANGE"
-	chromeFilename := "chrome-linux.zip"
+	const (
+		// Bucket URL: https://console.cloud.google.com/storage/browser/chromium-browser-continuous/?pli=1
+		storageBktName = "chromium-browser-continuous"
+		prefixLinux64  = "Linux_x64"
+		lastChangeFile = "Linux_x64/LAST_CHANGE"
+		chromeFilename = "chrome-linux.zip"
+	)
 	gcsPath := fmt.Sprintf("gs://%s/", storageBktName)
 	client, err := storage.NewClient(ctx, option.WithHTTPClient(http.DefaultClient))
 	if err != nil {
-		return fmt.Errorf("cannot create a storage client for downloading the chrome browser: %s", err)
+		return fmt.Errorf("cannot create a storage client for downloading the chrome browser: %v", err)
 	}
 	bkt := client.Bucket(storageBktName)
-	obj := bkt.Object(lastChangeFile)
-	r, err := obj.NewReader(ctx)
+	r, err := bkt.Object(lastChangeFile).NewReader(ctx)
 	if err != nil {
-		return fmt.Errorf("cannot create a reader for %s%s file: %s", gcsPath, lastChangeFile, err)
+		return fmt.Errorf("cannot create a reader for %s%s file: %v", gcsPath, lastChangeFile, err)
 	}
 	defer r.Close()
 	// Read the last change file content for the latest build directory name
 	data, err := ioutil.ReadAll(r)
 	if err != nil {
-		return fmt.Errorf("cannot read from %s%s file: %s", gcsPath, lastChangeFile, err)
+		return fmt.Errorf("cannot read from %s%s file: %v", gcsPath, lastChangeFile, err)
 	}
 	latestChromeBuild := string(data)
 	latestChromePackage := path.Join(prefixLinux64, latestChromeBuild, chromeFilename)
-	chromeObjHandler := bkt.Object(latestChromePackage)
-	cpAttrs, err := chromeObjHandler.Attrs(ctx)
+	cpAttrs, err := bkt.Object(latestChromePackage).Attrs(ctx)
 	if err != nil {
-		return fmt.Errorf("cannot get the chrome package %s%s attrs: %s", gcsPath, latestChromePackage, err)
+		return fmt.Errorf("cannot get the chrome package %s%s attrs: %v", gcsPath, latestChromePackage, err)
 	}
 	files = append(files, file{
 		name:     chromeFilename,
@@ -118,7 +118,7 @@ func main() {
 	ctx := context.Background()
 	if *downloadBrowsers {
 		if err := addChrome(ctx); err != nil {
-			glog.Errorf("Unable to Download Google Chrome browser. Continuing...")
+			glog.Errorf("unable to Download Google Chrome browser: %v", err)
 		}
 	}
 	for _, file := range files {
@@ -185,8 +185,7 @@ func downloadFile(file file) (err error) {
 	default:
 		h = sha256.New()
 	}
-	tee := io.MultiWriter(f, h)
-	if _, err := io.Copy(tee, resp.Body); err != nil {
+	if _, err := io.Copy(io.MultiWriter(f, h), resp.Body); err != nil {
 		return fmt.Errorf("%s: error downloading %q: %v", file.name, file.url, err)
 	}
 	if h := hex.EncodeToString(h.Sum(nil)); h != file.hash {
