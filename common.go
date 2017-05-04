@@ -19,19 +19,17 @@ func debugLog(format string, args ...interface{}) {
 	log.Printf(format+"\n", args...)
 }
 
-//logURL replaces existing password from the given URL
-func logURL(URL string) (string, error) {
+// filteredURL replaces existing password from the given URL.
+func filteredURL(u string) string {
 	// Hide password if set in URL
-	u, err := url.Parse(URL)
+	m, err := url.Parse(u)
 	if err != nil {
-		return "", err
+		return ""
 	}
-	if u.User != nil {
-		_, exists := u.User.Password()
-		if exists {
-			u.User = url.UserPassword(u.User.Username(),
-				"__password__")
+	if m.User != nil {
+		if _, ok := m.User.Password(); ok {
+			m.User = url.UserPassword(m.User.Username(), "__password__")
 		}
 	}
-	return u.String(), nil
+	return m.String()
 }
