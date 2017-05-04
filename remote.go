@@ -126,7 +126,7 @@ func (e *Error) Error() string {
 }
 
 func (wd *remoteWD) execute(method, url string, data []byte) ([]byte, error) {
-	debugLog("-> %s %s\n%s", method, url, data)
+	debugLog("-> %s %s\n%s", method, filteredURL(url), data)
 	request, err := newRequest(method, url, data)
 	if err != nil {
 		return nil, err
