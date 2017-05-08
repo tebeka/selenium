@@ -331,7 +331,17 @@ func (wd *remoteWD) NewSession() (string, error) {
 			return "", err
 		}
 
-		wd.id = *reply.SessionID
+		if reply.SessionID != nil {
+			wd.id = *reply.SessionID
+		} else if len(reply.Value) > 0 {
+			value := new(struct {
+				SessionID string
+			})
+			if err := json.Unmarshal(reply.Value, value); err != nil {
+				return "", fmt.Errorf("error unmarshalling value: %v", err)
+			}
+			wd.id = value.SessionID
+		}
 
 		return wd.id, nil
 	}
