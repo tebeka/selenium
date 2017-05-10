@@ -1089,6 +1089,9 @@ func testSize(t *testing.T, c config) {
 }
 
 func testExecuteScript(t *testing.T, c config) {
+	if c.browser == "htmlunit" {
+		t.Skip("Skipping on htmlunit: https://github.com/tebeka/selenium/issues/61")
+	}
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
@@ -1113,6 +1116,9 @@ func testExecuteScript(t *testing.T, c config) {
 }
 
 func testExecuteScriptWithNilArgs(t *testing.T, c config) {
+	if c.browser == "htmlunit" {
+		t.Skip("Skipping on htmlunit: https://github.com/tebeka/selenium/issues/61")
+	}
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
@@ -1127,6 +1133,9 @@ func testExecuteScriptWithNilArgs(t *testing.T, c config) {
 }
 
 func testExecuteScriptOnElement(t *testing.T, c config) {
+	if c.browser == "htmlunit" {
+		t.Skip("Skipping on htmlunit: https://github.com/tebeka/selenium/issues/61")
+	}
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 

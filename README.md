@@ -87,6 +87,12 @@ the integration is actively being developed.
 1. ChromeDriver has not yet implemented the nascent W3C standard. So far, this
 	 only means that GetCookie is not available for Chrome.
 
+### HTMLUnit
+
+1. [Enabling Javscript support in HTMLUnit using Selenium WebDriver 3.4 seems
+   broken](https://github.com/tebeka/selenium/issues/61), with the root cause
+   not yet diagnosed.
+
 ## Hacking
 
 Patches are encouraged through GitHub pull requests. Please ensure that a test
