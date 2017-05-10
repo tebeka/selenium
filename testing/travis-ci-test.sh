@@ -6,4 +6,4 @@ pushd vendor
 go get -d -v
 go run init.go --alsologtostderr --download_browsers
 popd
-go test -test.v --start_frame_buffer=false --test.run=TestFirefox
+go test -test.v --start_frame_buffer=false --test.run=TestFirefoxSelenium3
