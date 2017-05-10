@@ -318,11 +318,6 @@ func testFirefoxPreferences(t *testing.T, c config) {
 	if _, err := wd.NewSession(); err != nil {
 		t.Fatalf("error in new session - %s", err)
 	}
-	defer func() {
-		if err := wd.Close(); err != nil {
-			t.Errorf("wd.Close() returned error: %v", err)
-		}
-	}()
 
 	u, err := wd.CurrentURL()
 	if err != nil {
@@ -349,20 +344,9 @@ func testFirefoxProfile(t *testing.T, c config) {
 		capabilities: caps,
 		urlPrefix:    c.addr,
 	}
-	defer func() {
-		if err := wd.Quit(); err != nil {
-			t.Errorf("wd.Quit() returned error: %v", err)
-		}
-	}()
-
 	if _, err := wd.NewSession(); err != nil {
 		t.Fatalf("wd.NewSession() returned error: %v", err)
 	}
-	defer func() {
-		if err := wd.Close(); err != nil {
-			t.Errorf("wd.Close() returned error: %v", err)
-		}
-	}()
 
 	u, err := wd.CurrentURL()
 	if err != nil {
@@ -534,11 +518,6 @@ func testNewSession(t *testing.T, c config) {
 	if err != nil {
 		t.Fatalf("error in new session - %s", err)
 	}
-	defer func() {
-		if err := wd.Close(); err != nil {
-			t.Errorf("wd.Close() returned error: %v", err)
-		}
-	}()
 
 	if len(sid) == 0 {
 		t.Fatal("Empty session id")
