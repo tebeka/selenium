@@ -1288,6 +1288,10 @@ func testGetAttributeNotFound(t *testing.T, c config) {
 }
 
 func testMaximizeWindow(t *testing.T, c config) {
+	if c.seleniumVersion.Major == 3 && c.browser == "firefox" {
+		t.Skip("Skipping test due to https://github.com/mozilla/geckodriver/issues/703")
+	}
+
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 

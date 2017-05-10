@@ -76,6 +76,8 @@ one.
 4. [The Proxy object is
    misinterpreted](https://github.com/mozilla/geckodriver/issues/490) by
    Geckodriver when passed through by Selenium 3.
+5. [Maximizing the browser window
+   hangs](https://github.com/mozilla/geckodriver/issues/703).
 
 The Geckodriver team recommends using the newest available Firefox version, as
 the integration is actively being developed.
