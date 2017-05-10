@@ -76,6 +76,8 @@ one.
 4. [The Proxy object is
    misinterpreted](https://github.com/mozilla/geckodriver/issues/490) by
    Geckodriver when passed through by Selenium 3.
+5. [Maximizing the browser window
+   hangs](https://github.com/mozilla/geckodriver/issues/703).
 
 The Geckodriver team recommends using the newest available Firefox version, as
 the integration is actively being developed.
@@ -84,6 +86,12 @@ the integration is actively being developed.
 
 1. ChromeDriver has not yet implemented the nascent W3C standard. So far, this
 	 only means that GetCookie is not available for Chrome.
+
+### HTMLUnit
+
+1. [Enabling Javscript support in HTMLUnit using Selenium WebDriver 3.4 seems
+   broken](https://github.com/tebeka/selenium/issues/61), with the root cause
+   not yet diagnosed.
 
 ## Hacking
 

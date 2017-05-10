@@ -26,12 +26,12 @@ var (
 	selenium2Path          = flag.String("selenium2_path", "vendor/selenium-server-standalone-2.53.1.jar", "The path to the Selenium 2 server JAR. If empty or the file is not present, Firefox tests on Selenium 2 will not be run.")
 	firefoxBinarySelenium2 = flag.String("firefox_binary_for_selenium2", "vendor/firefox-47/firefox", "The name of the Firefox binary for Selenium 2 tests or the path to it. If the name does not contain directory separators, the PATH will be searched.")
 
-	selenium3Path             = flag.String("selenium3_path", "vendor/selenium-server-standalone-3.3.1.jar", "The path to the Selenium 3 server JAR. If empty or the file is not present, Firefox tests using Selenium 3 will not be run.")
+	selenium3Path             = flag.String("selenium3_path", "vendor/selenium-server-standalone-3.4.jar", "The path to the Selenium 3 server JAR. If empty or the file is not present, Firefox tests using Selenium 3 will not be run.")
 	firefoxBinarySelenium3    = flag.String("firefox_binary_for_selenium3", "vendor/firefox-nightly/firefox", "The name of the Firefox binary for Selenium 3 tests or the path to it. If the name does not contain directory separators, the PATH will be searched.")
-	geckoDriverPath           = flag.String("geckodriver_path", "vendor/geckodriver-v0.15.0-linux64", "The path to the geckodriver binary. If empty of the file is not present, the Geckodriver tests will not be run.")
+	geckoDriverPath           = flag.String("geckodriver_path", "vendor/geckodriver-v0.16.1-linux64", "The path to the geckodriver binary. If empty of the file is not present, the Geckodriver tests will not be run.")
 	runDirectGeckoDriverTests = flag.Bool("run_direct_geckodriver_tests", false, "EXPERIMENTAL. If true, also run tests directly against GeckoDriver, without Selenium 3.")
 
-	chromeDriverPath = flag.String("chrome_driver_path", "vendor/chromedriver-linux64-2.28", "The path to the ChromeDriver binary. If empty of the file is not present, Chrome tests will not be run.")
+	chromeDriverPath = flag.String("chrome_driver_path", "vendor/chromedriver-linux64-2.29", "The path to the ChromeDriver binary. If empty of the file is not present, Chrome tests will not be run.")
 	chromeBinary     = flag.String("chrome_binary", "chromium", "The name of the Chrome binary or the path to it. If name is not an exact path, the PATH will be searched.")
 
 	useDocker          = flag.Bool("docker", false, "If set, run the tests in a Docker container.")
@@ -318,11 +318,6 @@ func testFirefoxPreferences(t *testing.T, c config) {
 	if _, err := wd.NewSession(); err != nil {
 		t.Fatalf("error in new session - %s", err)
 	}
-	defer func() {
-		if err := wd.Close(); err != nil {
-			t.Errorf("wd.Close() returned error: %v", err)
-		}
-	}()
 
 	u, err := wd.CurrentURL()
 	if err != nil {
@@ -349,20 +344,9 @@ func testFirefoxProfile(t *testing.T, c config) {
 		capabilities: caps,
 		urlPrefix:    c.addr,
 	}
-	defer func() {
-		if err := wd.Quit(); err != nil {
-			t.Errorf("wd.Quit() returned error: %v", err)
-		}
-	}()
-
 	if _, err := wd.NewSession(); err != nil {
 		t.Fatalf("wd.NewSession() returned error: %v", err)
 	}
-	defer func() {
-		if err := wd.Close(); err != nil {
-			t.Errorf("wd.Close() returned error: %v", err)
-		}
-	}()
 
 	u, err := wd.CurrentURL()
 	if err != nil {
@@ -534,11 +518,6 @@ func testNewSession(t *testing.T, c config) {
 	if err != nil {
 		t.Fatalf("error in new session - %s", err)
 	}
-	defer func() {
-		if err := wd.Close(); err != nil {
-			t.Errorf("wd.Close() returned error: %v", err)
-		}
-	}()
 
 	if len(sid) == 0 {
 		t.Fatal("Empty session id")
@@ -1089,6 +1068,9 @@ func testSize(t *testing.T, c config) {
 }
 
 func testExecuteScript(t *testing.T, c config) {
+	if c.browser == "htmlunit" {
+		t.Skip("Skipping on htmlunit: https://github.com/tebeka/selenium/issues/61")
+	}
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
@@ -1113,6 +1095,9 @@ func testExecuteScript(t *testing.T, c config) {
 }
 
 func testExecuteScriptWithNilArgs(t *testing.T, c config) {
+	if c.browser == "htmlunit" {
+		t.Skip("Skipping on htmlunit: https://github.com/tebeka/selenium/issues/61")
+	}
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
@@ -1127,6 +1112,9 @@ func testExecuteScriptWithNilArgs(t *testing.T, c config) {
 }
 
 func testExecuteScriptOnElement(t *testing.T, c config) {
+	if c.browser == "htmlunit" {
+		t.Skip("Skipping on htmlunit: https://github.com/tebeka/selenium/issues/61")
+	}
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
@@ -1288,6 +1276,10 @@ func testGetAttributeNotFound(t *testing.T, c config) {
 }
 
 func testMaximizeWindow(t *testing.T, c config) {
+	if c.seleniumVersion.Major == 3 && c.browser == "firefox" {
+		t.Skip("Skipping test due to https://github.com/mozilla/geckodriver/issues/703")
+	}
+
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
