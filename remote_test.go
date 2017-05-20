@@ -32,7 +32,7 @@ var (
 	runDirectGeckoDriverTests = flag.Bool("run_direct_geckodriver_tests", false, "EXPERIMENTAL. If true, also run tests directly against GeckoDriver, without Selenium 3.")
 
 	chromeDriverPath = flag.String("chrome_driver_path", "vendor/chromedriver-linux64-2.29", "The path to the ChromeDriver binary. If empty of the file is not present, Chrome tests will not be run.")
-	chromeBinary     = flag.String("chrome_binary", "chromium", "The name of the Chrome binary or the path to it. If name is not an exact path, the PATH will be searched.")
+	chromeBinary     = flag.String("chrome_binary", "vendor/chrome-linux/chrome", "The name of the Chrome binary or the path to it. If name is not an exact path, the PATH will be searched.")
 
 	useDocker          = flag.Bool("docker", false, "If set, run the tests in a Docker container.")
 	runningUnderDocker = flag.Bool("running_under_docker", false, "This is set by the Docker test harness and should not be needed otherwise.")
