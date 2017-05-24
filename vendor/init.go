@@ -76,7 +76,7 @@ var files = []file{
 func addChrome(ctx context.Context) error {
 	const (
 		// Bucket URL: https://console.cloud.google.com/storage/browser/chromium-browser-continuous/?pli=1
-		storageBktName = "chromium-browser-continuous"
+		storageBktName = "chromium-browser-snapshots"
 		prefixLinux64  = "Linux_x64"
 		lastChangeFile = "Linux_x64/LAST_CHANGE"
 		chromeFilename = "chrome-linux.zip"
