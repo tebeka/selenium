@@ -486,6 +486,7 @@ func runTests(t *testing.T, c config) {
 	t.Run("CSSProperty", runTest(testCSSProperty, c))
 	t.Run("Proxy", runTest(testProxy, c))
 	t.Run("SwitchFrame", runTest(testSwitchFrame, c))
+	t.Run("ActiveElement", runTest(testActiveElement, c))
 }
 
 func testStatus(t *testing.T, c config) {
@@ -529,6 +530,10 @@ func testNewSession(t *testing.T, c config) {
 
 	if wd.SessionID() != sid {
 		t.Fatalf("Got session id mismatch %s != %s", sid, wd.SessionID())
+	}
+
+	if wd.browserVersion.Major == 0 {
+		t.Fatalf("wd.browserVersion.Major = %d, expected > 0", wd.browserVersion.Major)
 	}
 }
 
@@ -1293,6 +1298,31 @@ func testMaximizeWindow(t *testing.T, c config) {
 	}
 }
 
+func testActiveElement(t *testing.T, c config) {
+	if c.browser == "htmlunit" {
+		// TODO(minusnine): figure out why ActiveElement doesn't work in HTMLUnit.
+		t.Skip("ActiveElement does not work in HTMLUnit")
+	}
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
+
+	if err := wd.Get(serverURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
+
+	e, err := wd.ActiveElement()
+	if err != nil {
+		t.Fatalf("wd.ActiveElement() returned error: %v", err)
+	}
+	name, err := e.GetAttribute("name")
+	if err != nil {
+		t.Fatalf("wd.ActiveElement().GetAttribute() returned error: %v", err)
+	}
+	if name != "q" {
+		t.Fatalf("wd.ActiveElement().GetAttribute() returned element wht name = %q, expected name = 'q'", name)
+	}
+}
+
 func testResizeWindow(t *testing.T, c config) {
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
@@ -1512,7 +1542,8 @@ var homePage = `
 <body>
 	The home page. <br />
 	<form action="/search">
-		<input name="q" /> <input type="submit" id="submit"/> <br />
+		<input name="q" autofocus />
+		<input type="submit" id="submit" /> <br />
 		<input id="chuk" type="checkbox" /> A checkbox.
 	</form>
 	Link to the <a href="/other">other page</a>.

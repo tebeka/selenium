@@ -12,7 +12,10 @@ import (
 	"io/ioutil"
 	"mime"
 	"net/http"
+	"strings"
 	"time"
+
+	"github.com/blang/semver"
 )
 
 // Errors returned by Selenium server.
@@ -55,8 +58,9 @@ type remoteWD struct {
 	id, urlPrefix string
 	capabilities  Capabilities
 
-	w3cCompatible bool
-	browser       string
+	w3cCompatible  bool
+	browser        string
+	browserVersion semver.Version
 }
 
 var httpClient *http.Client
@@ -205,7 +209,13 @@ func NewRemote(capabilities Capabilities, urlPrefix string) (WebDriver, error) {
 		urlPrefix = DefaultURLPrefix
 	}
 
-	wd := &remoteWD{urlPrefix: urlPrefix, capabilities: capabilities}
+	wd := &remoteWD{
+		urlPrefix:    urlPrefix,
+		capabilities: capabilities,
+	}
+	if b := capabilities["browserName"]; b != nil {
+		wd.browser = b.(string)
+	}
 	if _, err := wd.NewSession(); err != nil {
 		return nil, err
 	}
@@ -288,6 +298,21 @@ func (wd *remoteWD) Status() (*Status, error) {
 	return &status.Value, nil
 }
 
+// parseVersion sanitizes the browser version enough for semver.ParseTolerant
+// to parse it.
+func parseVersion(v string) (semver.Version, error) {
+	parts := strings.Split(v, ".")
+	var err error
+	for i := len(parts); i > 0; i-- {
+		var ver semver.Version
+		ver, err = semver.ParseTolerant(strings.Join(parts[:i], "."))
+		if err == nil {
+			return ver, nil
+		}
+	}
+	return semver.Version{}, err
+}
+
 func (wd *remoteWD) NewSession() (string, error) {
 	// Detect whether the remote end complies with the W3C specification:
 	// non-compliant implementations use the top-level 'desiredCapabilities' JSON
@@ -338,26 +363,65 @@ func (wd *remoteWD) NewSession() (string, error) {
 		if reply.Status != 0 && i < len(attempts) {
 			continue
 		}
-
 		if reply.SessionID != nil {
 			wd.id = *reply.SessionID
-		} else if len(reply.Value) > 0 {
-			value := new(struct {
-				SessionID        string
+		}
+
+		if len(reply.Value) > 0 {
+			type returnedCapabilities struct {
+				// firefox via geckodriver: 55.0a1
+				BrowserVersion string
+				// chrome via chromedriver: 61.0.3116.0
+				// firefox via selenium 2: 45.9.0
+				// htmlunit: 9.4.3.v20170317
+				Version          string
 				PageLoadStrategy string
 				Proxy            Proxy
 				Timeouts         struct {
-					Implicit int
-					PageLoad int `json:"page load"`
-					Script   int
+					Implicit       float32
+					PageLoadLegacy float32 `json:"page load"`
+					PageLoad       float32
+					Script         float32
 				}
-			})
+			}
 
-			if err := json.Unmarshal(reply.Value, value); err != nil {
+			value := struct {
+				SessionID string
+
+				// The W3C specification moved most of the returned data into the
+				// "capabilities" field.
+				Capabilities *returnedCapabilities
+
+				// Legacy implementations returned most data directly in the "values"
+				// key.
+				returnedCapabilities
+			}{}
+
+			if err := json.Unmarshal(reply.Value, &value); err != nil {
 				return "", fmt.Errorf("error unmarshalling value: %v", err)
 			}
-			wd.id = value.SessionID
-			wd.w3cCompatible = true
+			if value.SessionID != "" && wd.id == "" {
+				wd.id = value.SessionID
+			}
+			var caps returnedCapabilities
+			if value.Capabilities != nil {
+				caps = *value.Capabilities
+				wd.w3cCompatible = true
+			} else {
+				caps = value.returnedCapabilities
+			}
+
+			for _, s := range []string{caps.Version, caps.BrowserVersion} {
+				if s == "" {
+					continue
+				}
+				v, err := parseVersion(s)
+				if err != nil {
+					debugLog("error parsing version: %v\n", err)
+					continue
+				}
+				wd.browserVersion = v
+			}
 		}
 
 		return wd.id, nil
@@ -742,12 +806,18 @@ func (wd *remoteWD) SwitchFrame(frame interface{}) error {
 }
 
 func (wd *remoteWD) ActiveElement() (WebElement, error) {
+	verb := "GET"
+	if wd.browser == "chrome" || (wd.browser == "firefox" && wd.browserVersion.Major < 47) {
+		// The W3C specification says that GET is the right verb, but Chrome
+		// implements only POST.
+		// https://github.com/seleniumhq/selenium/issues/2751
+		verb = "POST"
+	}
 	url := wd.requestURL("/session/%s/element/active", wd.id)
-	response, err := wd.execute("GET", url, nil)
+	response, err := wd.execute(verb, url, nil)
 	if err != nil {
 		return nil, err
 	}
-
 	return wd.DecodeElement(response)
 }
 
