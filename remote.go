@@ -431,28 +431,6 @@ func (wd *remoteWD) SetPageLoadTimeout(timeout time.Duration) error {
 	})
 }
 
-func (wd *remoteWD) AvailableEngines() ([]string, error) {
-	return wd.stringsCommand("/session/%s/ime/available_engines")
-}
-
-func (wd *remoteWD) ActiveEngine() (string, error) {
-	return wd.stringCommand("/session/%s/ime/active_engine")
-}
-
-func (wd *remoteWD) IsEngineActivated() (bool, error) {
-	return wd.boolCommand("/session/%s/ime/activated")
-}
-
-func (wd *remoteWD) DeactivateEngine() error {
-	return wd.voidCommand("session/%s/ime/deactivate", nil)
-}
-
-func (wd *remoteWD) ActivateEngine(engine string) error {
-	return wd.voidCommand("/session/%s/ime/activate", map[string]string{
-		"engine": engine,
-	})
-}
-
 func (wd *remoteWD) Quit() error {
 	if wd.id == "" {
 		return nil

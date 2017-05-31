@@ -250,17 +250,6 @@ type WebDriver interface {
 	// loading a page. The timeout will be rounded to nearest millisecond.
 	SetPageLoadTimeout(timeout time.Duration) error
 
-	// AvailableEngines lists all available engines on the machine.
-	AvailableEngines() ([]string, error)
-	// ActiveEngine gets the name of the active IME engine.
-	ActiveEngine() (string, error)
-	// IsEngineActivated indicates whether IME input is active at the moment.
-	IsEngineActivated() (bool, error)
-	// DeactivateEngine deactivates the currently-active IME engine.
-	DeactivateEngine() error
-	// ActivateEngine make an engines active.
-	ActivateEngine(engine string) error
-
 	// Quit ends the current session. The browser instance will be closed.
 	Quit() error
 
