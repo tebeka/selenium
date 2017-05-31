@@ -450,7 +450,10 @@ func (wd *remoteWD) CurrentWindowHandle() (string, error) {
 }
 
 func (wd *remoteWD) WindowHandles() ([]string, error) {
-	return wd.stringsCommand("/session/%s/window_handles")
+	if !wd.w3cCompatible {
+		return wd.stringsCommand("/session/%s/window_handles")
+	}
+	return wd.stringsCommand("/session/%s/window/handles")
 }
 
 func (wd *remoteWD) CurrentURL() (string, error) {

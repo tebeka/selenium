@@ -615,13 +615,13 @@ func testWindowHandles(t *testing.T, c config) {
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
-	handles, err := wd.CurrentWindowHandle()
+	handles, err := wd.WindowHandles()
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("wd.WindowHandles() returned error: %v", err)
 	}
 
 	if len(handles) == 0 {
-		t.Fatal("No handles")
+		t.Fatal("No handles returned by wd.WindowHandles()")
 	}
 }
 
