@@ -995,8 +995,8 @@ func testDeleteCookie(t *testing.T, c config) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(cookies) == 0 {
-		t.Fatal("No cookies")
+	if len(cookies) < 2 {
+		t.Fatal("Not enough cookies")
 	}
 	if err := wd.DeleteCookie(cookies[0].Name); err != nil {
 		t.Fatal(err)
@@ -1013,6 +1013,17 @@ func testDeleteCookie(t *testing.T, c config) {
 		if c.Name == cookies[0].Name {
 			t.Fatal("Deleted cookie found")
 		}
+	}
+
+	if err := wd.DeleteAllCookies(); err != nil {
+		t.Fatalf("wd.DeleteAllCookies() returned error: %v", err)
+	}
+	newCookies, err = wd.GetCookies()
+	if err != nil {
+		t.Fatalf("wd.GetCookies() returned error: %v", err)
+	}
+	if len(newCookies) != 0 {
+		t.Fatalf("After wd.DeleteAllCookies(), some remain: %+v", newCookies)
 	}
 }
 
