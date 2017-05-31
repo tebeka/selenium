@@ -12,7 +12,6 @@ import (
 	"io/ioutil"
 	"mime"
 	"net/http"
-	"net/url"
 	"time"
 )
 
@@ -83,18 +82,6 @@ func isRedirect(response *http.Response) bool {
 		return true
 	}
 	return false
-}
-
-func normalizeURL(n string, base string) (string, error) {
-	baseURL, err := url.Parse(base)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse base URL %s with error %s", base, err)
-	}
-	nURL, err := baseURL.Parse(n)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse new URL %s with error %s", n, err)
-	}
-	return nURL.String(), nil
 }
 
 func (wd *remoteWD) requestURL(template string, args ...interface{}) string {
