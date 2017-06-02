@@ -479,6 +479,7 @@ func runTests(t *testing.T, c config) {
 	t.Run("Log", runTest(testLog, c))
 	t.Run("IsSelected", runTest(testIsSelected, c))
 	t.Run("IsDisplayed", runTest(testIsDisplayed, c))
+	t.Run("IsEnabled", runTest(testIsEnabled, c))
 	t.Run("GetAttributeNotFound", runTest(testGetAttributeNotFound, c))
 	t.Run("MaximizeWindow", runTest(testMaximizeWindow, c))
 	t.Run("ResizeWindow", runTest(testResizeWindow, c))
@@ -1275,6 +1276,27 @@ func testIsDisplayed(t *testing.T, c config) {
 	}
 }
 
+func testIsEnabled(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
+
+	if err := wd.Get(serverURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
+	const id = "disabled-element"
+	elem, err := wd.FindElement(ByID, id)
+	if err != nil {
+		t.Fatalf("wd.FindElement(%q, %q) returned error: %v", ByID, id, err)
+	}
+	enabled, err := elem.IsEnabled()
+	if err != nil {
+		t.Fatalf("elem.IsDisplayed() returned error: %v", err)
+	}
+	if enabled {
+		t.Fatalf("Element %q is enabled, want disabled", id)
+	}
+}
+
 func testGetAttributeNotFound(t *testing.T, c config) {
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
@@ -1556,6 +1578,7 @@ var homePage = `
 		<input name="q" autofocus />
 		<input type="submit" id="submit" /> <br />
 		<input id="chuk" type="checkbox" /> A checkbox.
+		<input id="disabled-element" disabled type="checkbox" /> A disabled checkbox.
 	</form>
 	Link to the <a href="/other">other page</a>.
 
