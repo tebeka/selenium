@@ -687,36 +687,40 @@ func (wd *remoteWD) SwitchWindow(name string) error {
 	} else {
 		params["handle"] = name
 	}
-	url := wd.requestURL("/session/%s/window", wd.id)
-	return wd.voidCommand(url, params)
+	return wd.voidCommand("/session/%s/window", params)
 }
 
 func (wd *remoteWD) CloseWindow(name string) error {
-	url := wd.requestURL("/session/%s/window", wd.id)
-	_, err := wd.execute("DELETE", url, nil)
-	return err
+	return wd.modifyWindow(name, "DELETE", "", map[string]string{})
 }
 
 func (wd *remoteWD) MaximizeWindow(name string) error {
 	if !wd.w3cCompatible {
-		name, err := wd.CurrentWindowHandle()
-		if err != nil {
-			return err
+		if name != "" {
+			var err error
+			name, err = wd.CurrentWindowHandle()
+			if err != nil {
+				return err
+			}
 		}
 		url := wd.requestURL("/session/%s/window/%s/maximize", wd.id, name)
-		_, err = wd.execute("POST", url, nil)
+		_, err := wd.execute("POST", url, nil)
 		return err
 	}
-	return wd.modifyWindow(name, "maximize", map[string]string{})
+	return wd.modifyWindow(name, "POST", "maximize", map[string]string{})
 }
 
-func (wd *remoteWD) modifyWindow(name, command string, params interface{}) error {
+func (wd *remoteWD) MinimizeWindow(name string) error {
+	return wd.modifyWindow(name, "POST", "minimize", map[string]string{})
+}
+
+func (wd *remoteWD) modifyWindow(name, verb, command string, params interface{}) error {
 	// The original protocol allowed for maximizing any named window. The W3C
 	// specification only allows the current window be be modified. Emulate the
 	// previous behavior by switching to the target window, maximizing the
 	// current window, and switching back to the original window.
 	var startWindow string
-	if name != "" {
+	if name != "" && wd.w3cCompatible {
 		var err error
 		startWindow, err = wd.CurrentWindowHandle()
 		if err != nil {
@@ -729,12 +733,26 @@ func (wd *remoteWD) modifyWindow(name, command string, params interface{}) error
 		}
 	}
 
-	if err := wd.voidCommand("/session/%s/window/"+command, params); err != nil {
+	url := wd.requestURL("/session/%s/window", wd.id)
+	if command != "" {
+		if wd.w3cCompatible {
+			url = wd.requestURL("/session/%s/window/%s", wd.id, command)
+		} else {
+			url = wd.requestURL("/session/%s/window/%s/%s", wd.id, name, command)
+		}
+	}
+
+	data, err := json.Marshal(params)
+	if err != nil {
+		return err
+	}
+
+	if _, err := wd.execute(verb, url, data); err != nil {
 		return err
 	}
 
 	// TODO(minusnine): add a test for switching back to the original window.
-	if name != startWindow {
+	if name != startWindow && wd.w3cCompatible {
 		if err := wd.SwitchWindow(startWindow); err != nil {
 			return err
 		}
@@ -745,33 +763,14 @@ func (wd *remoteWD) modifyWindow(name, command string, params interface{}) error
 
 func (wd *remoteWD) ResizeWindow(name string, width, height int) error {
 	if !wd.w3cCompatible {
-		if len(name) == 0 {
-			var err error
-			name, err = wd.CurrentWindowHandle()
-			if err != nil {
-				return err
-			}
-		}
-
-		params := struct {
-			Width  int `json:"width"`
-			Height int `json:"height"`
-		}{
-			width,
-			height,
-		}
-		data, err := json.Marshal(params)
-		if err != nil {
-			return err
-		}
-
-		url := wd.requestURL("/session/%s/window/%s/size", wd.id, name)
-		_, err = wd.execute("POST", url, data)
-		return err
+		return wd.modifyWindow(name, "POST", "size", map[string]int{
+			"width":  width,
+			"height": height,
+		})
 	}
-	return wd.modifyWindow(name, "rect", rect{
-		Width:  float64(width),
-		Height: float64(height),
+	return wd.modifyWindow(name, "POST", "rect", map[string]float64{
+		"width":  float64(width),
+		"height": float64(height),
 	})
 }
 
@@ -944,19 +943,11 @@ func (wd *remoteWD) ButtonUp() error {
 	return wd.voidCommand("/session/%s/buttonup", nil)
 }
 
-// TODO(minusnine): add a test for SendModifier.
-// TODO(minusnine): deprecate thie method in favor of KeyDown and KeyUp.
 func (wd *remoteWD) SendModifier(modifier string, isDown bool) error {
-	if !wd.w3cCompatible {
-		return wd.voidCommand("/session/%s/modifier", map[string]interface{}{
-			"value":  modifier,
-			"isdown": isDown,
-		})
-	}
 	if isDown {
-		return wd.keyAction("keyDown", modifier)
+		return wd.KeyDown(modifier)
 	} else {
-		return wd.keyAction("keyUp", modifier)
+		return wd.KeyUp(modifier)
 	}
 }
 
@@ -983,14 +974,18 @@ func (wd *remoteWD) keyAction(action, keys string) error {
 }
 
 func (wd *remoteWD) KeyDown(keys string) error {
-	if !wd.w3cCompatible {
+	// Selenium implemented the actions API but has not yet updated its new
+	// session response.
+	if !wd.w3cCompatible && !(wd.browser == "firefox" && wd.browserVersion.Major > 47) {
 		return wd.voidCommand("/session/%s/keys", wd.processKeyString(keys))
 	}
 	return wd.keyAction("keyDown", keys)
 }
 
 func (wd *remoteWD) KeyUp(keys string) error {
-	if !wd.w3cCompatible {
+	// Selenium implemented the actions API but has not yet updated its new
+	// session response.
+	if !wd.w3cCompatible && !(wd.browser == "firefox" && wd.browserVersion.Major > 47) {
 		return wd.KeyDown(keys)
 	}
 	return wd.keyAction("keyUp", keys)

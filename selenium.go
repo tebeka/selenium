@@ -325,6 +325,8 @@ type WebDriver interface {
 
 	// SendModifier sends the modifier key to the active element. The modifier
 	// can be one of ShiftKey, ControlKey, AltKey, MetaKey.
+	//
+	// Deprecated: Use KeyDown or KeyUp instead.
 	SendModifier(modifier string, isDown bool) error
 	// KeyDown sends a sequence of keystrokes to the active element. This method
 	// is similar to SendKeys but without the implicit termination. Modifiers are

@@ -75,7 +75,11 @@ one.
 5. [Geckodriver does not support the Log
    API](https://github.com/mozilla/geckodriver/issues/284) because it [hasn't
    been defined in the spec yet](https://github.com/w3c/webdriver/issues/406).
-
+6. Firefox via Geckodriver (and also through Selenium) [doesn't handle clicking
+   on an element](https://github.com/mozilla/geckodriver/issues/322).
+7. Firefox via Geckodriver doesn't handle sending control characters [without
+   appending a terminating null
+   key](https://github.com/mozilla/geckodriver/issues/665).
 
 The Geckodriver team recommends using the newest available Firefox version, as
 the integration is actively being developed.

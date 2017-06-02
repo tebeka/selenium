@@ -142,7 +142,7 @@ func testChromeExtension(t *testing.T, c config) {
 	}
 	e, err := wd.FindElement(ByCSSSelector, "body")
 	if err != nil {
-		t.Fatalf("error finding other page link: %v", err)
+		t.Fatalf("error finding body: %v", err)
 	}
 
 	const property = "background-color"
@@ -455,13 +455,13 @@ func runTests(t *testing.T, c config) {
 	t.Run("SetAsyncScriptTimeout", runTest(testSetAsyncScriptTimeout, c))
 	t.Run("SetImplicitWaitTimeout", runTest(testSetImplicitWaitTimeout, c))
 	t.Run("SetPageLoadTimeout", runTest(testSetPageLoadTimeout, c))
-	t.Run("CurrentWindowHandle", runTest(testCurrentWindowHandle, c))
-	t.Run("WindowHandles", runTest(testWindowHandles, c))
+	t.Run("Windows", runTest(testWindows, c))
 	t.Run("Get", runTest(testGet, c))
 	t.Run("Navigation", runTest(testNavigation, c))
 	t.Run("Title", runTest(testTitle, c))
 	t.Run("PageSource", runTest(testPageSource, c))
-	t.Run("ElementRetrieval", runTest(testElementRetrieval, c))
+	t.Run("FindElement", runTest(testFindElement, c))
+	t.Run("FindElements", runTest(testFindElements, c))
 	t.Run("SendKeys", runTest(testSendKeys, c))
 	t.Run("Click", runTest(testClick, c))
 	t.Run("GetCookies", runTest(testGetCookies, c))
@@ -470,15 +470,17 @@ func runTests(t *testing.T, c config) {
 	t.Run("DeleteCookie", runTest(testDeleteCookie, c))
 	t.Run("Location", runTest(testLocation, c))
 	t.Run("LocationInView", runTest(testLocationInView, c))
+	t.Run("Size", runTest(testSize, c))
 	t.Run("ExecuteScript", runTest(testExecuteScript, c))
 	t.Run("ExecuteScriptOnElement", runTest(testExecuteScriptOnElement, c))
 	t.Run("ExecuteScriptWithNilArgs", runTest(testExecuteScriptWithNilArgs, c))
 	t.Run("Screenshot", runTest(testScreenshot, c))
 	t.Run("Log", runTest(testLog, c))
-	t.Run("ElementState", runTest(testElementState, c))
-	t.Run("MaximizeWindow", runTest(testMaximizeWindow, c))
-	t.Run("ResizeWindow", runTest(testResizeWindow, c))
+	t.Run("IsSelected", runTest(testIsSelected, c))
+	t.Run("IsDisplayed", runTest(testIsDisplayed, c))
+	t.Run("GetAttributeNotFound", runTest(testGetAttributeNotFound, c))
 	t.Run("KeyDownUp", runTest(testKeyDownUp, c))
+	t.Run("CSSProperty", runTest(testCSSProperty, c))
 	t.Run("Proxy", runTest(testProxy, c))
 	t.Run("SwitchFrame", runTest(testSwitchFrame, c))
 	t.Run("ActiveElement", runTest(testActiveElement, c))
@@ -597,32 +599,116 @@ func testSetPageLoadTimeout(t *testing.T, c config) {
 	}
 }
 
-func testCurrentWindowHandle(t *testing.T, c config) {
+func testWindows(t *testing.T, c config) {
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
-	handle, err := wd.CurrentWindowHandle()
+	if err := wd.Get(serverURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
+
+	firstHandle, err := wd.CurrentWindowHandle()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if len(handle) == 0 {
+	if len(firstHandle) == 0 {
 		t.Fatal("Empty handle")
 	}
-}
 
-func testWindowHandles(t *testing.T, c config) {
-	wd := newRemote(t, c)
-	defer quitRemote(t, wd)
+	const linkText = "other page"
+	link, err := wd.FindElement(ByLinkText, linkText)
+	if err != nil {
+		t.Fatalf("wd.FindElement(%q, %q) returned error: %v", ByLinkText, linkText, err)
+	}
+	newWindowModifier := ShiftKey
+	if c.browser == "firefox" && c.seleniumVersion.Major == 0 {
+		// Firefox+Geckodriver doesn't handle control characters without appending
+		// a terminating null key.
+		// https://github.com/mozilla/geckodriver/issues/665
+		newWindowModifier = ShiftKey + NullKey
+	}
+	if err := wd.SendModifier(newWindowModifier, true); err != nil {
+		t.Fatalf("wd.SendModifer(ShiftKey) returned error: %v", err)
+	}
+	if c.browser == "firefox" && c.seleniumVersion.Major != 2 {
+		// Firefox and Geckodriver doesn't handle clicking on an element.
+		//
+		// https://github.com/mozilla/geckodriver/issues/322
+		if err := link.SendKeys(EnterKey); err != nil {
+			t.Fatalf("link.SendKeys(EnterKey) returned error: %v", err)
+		}
+	} else {
+		if err := link.Click(); err != nil {
+			t.Fatalf("link.Click() returned error: %v", err)
+		}
+	}
+	if err := wd.SendModifier(newWindowModifier, false); err != nil {
+		t.Fatalf("wd.SendKeys(ShiftKey) returned error: %v", err)
+	}
 
 	handles, err := wd.WindowHandles()
 	if err != nil {
 		t.Fatalf("wd.WindowHandles() returned error: %v", err)
 	}
-
-	if len(handles) == 0 {
-		t.Fatal("No handles returned by wd.WindowHandles()")
+	if len(handles) != 2 {
+		t.Fatalf("len(wd.WindowHandles()) = %d, expected 2", len(handles))
 	}
+	var found bool
+	var otherHandle string
+	for _, h := range handles {
+		if h == firstHandle {
+			found = true
+		} else {
+			otherHandle = h
+		}
+	}
+	if !found {
+		t.Fatalf("wd.WindowHandles() returned %v, expected to include %q", handles, firstHandle)
+	}
+
+	t.Run("SwitchWindow", func(t *testing.T) {
+		if err := wd.SwitchWindow(otherHandle); err != nil {
+			t.Fatalf("wd.SwitchWindow(firstHandle) returned error: %v", err)
+		}
+		if _, err := wd.FindElement(ByLinkText, linkText); err == nil {
+			t.Fatalf("wd.FindElement(%q, %q) (after opening a new window) returned nil, expected error", ByLinkText, linkText)
+		}
+		if err := wd.SwitchWindow(firstHandle); err != nil {
+			t.Fatalf("wd.SwitchWindow(firstHandle) returned error: %v", err)
+		}
+		if _, err := wd.FindElement(ByLinkText, linkText); err != nil {
+			t.Fatalf("wd.FindElement(%q, %q) (after switching to the original window) returned error: %v", ByLinkText, linkText, err)
+		}
+	})
+
+	t.Run("MaximizeWindow", func(t *testing.T) {
+		if c.browser == "firefox" && c.seleniumVersion.Major != 2 {
+			t.Skip("Skipping test due to https://github.com/mozilla/geckodriver/issues/703")
+		}
+		if err := wd.MaximizeWindow(otherHandle); err != nil {
+			t.Fatalf("error maximizing window: %s", err)
+		}
+	})
+
+	t.Run("ResizeWindow", func(t *testing.T) {
+		if err := wd.ResizeWindow(otherHandle, 100, 100); err != nil {
+			t.Fatalf("error resizing window: %s", err)
+		}
+	})
+
+	t.Run("CloseWindow", func(t *testing.T) {
+		if err := wd.CloseWindow(otherHandle); err != nil {
+			t.Fatalf("wd.CloseWindow(otherHandle) returned error: %v", err)
+		}
+		handles, err := wd.WindowHandles()
+		if err != nil {
+			t.Fatalf("wd.WindowHandles() returned error: %v", err)
+		}
+		if len(handles) != 1 {
+			t.Fatalf("len(wd.WindowHandles()) = %d, expected 1", len(handles))
+		}
+	})
 }
 
 func testGet(t *testing.T, c config) {
@@ -724,6 +810,76 @@ func testPageSource(t *testing.T, c config) {
 
 	if !strings.Contains(source, "The home page.") {
 		t.Fatalf("Bad source\n%s", source)
+	}
+}
+
+func testFindElement(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
+
+	if err := wd.Get(serverURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
+
+	for _, tc := range []struct {
+		by, query string
+	}{
+		{ByName, "q"},
+		{ByCSSSelector, "input[name=q]"},
+		{ByXPATH, "/html/body/form/input[1]"},
+		{ByLinkText, "тест"},
+	} {
+		elem, err := wd.FindElement(tc.by, tc.query)
+		if err != nil {
+			t.Errorf("wd.FindElement(%q, %q) returned error: %v", tc.by, tc.query, err)
+			continue
+		}
+
+		we, ok := elem.(*remoteWE)
+		if !ok {
+			t.Errorf("wd.FindElement(%q, %q) = %T, want a *remoteWE", tc.by, tc.query, elem)
+			continue
+		}
+
+		if len(we.id) == 0 {
+			t.Errorf("wd.FindElement(%q, %q) returned an empty element", tc.by, tc.query)
+			continue
+		}
+
+		if we.parent != wd {
+			t.Errorf("wd.FindElement(%q, %q) returned the wrong parent", tc.by, tc.query)
+			continue
+		}
+	}
+}
+
+func testFindElements(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
+
+	if err := wd.Get(serverURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
+	elems, err := wd.FindElements(ByName, "q")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(elems) != 1 {
+		t.Fatalf("Wrong number of elements %d (should be 1)", len(elems))
+	}
+
+	we, ok := elems[0].(*remoteWE)
+	if !ok {
+		t.Fatal("Can't convert to *remoteWE")
+	}
+
+	if len(we.id) == 0 {
+		t.Fatal("Empty element")
+	}
+
+	if we.parent != wd {
+		t.Fatal("Bad parent")
 	}
 }
 
@@ -920,8 +1076,8 @@ func testDeleteCookie(t *testing.T, c config) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(cookies) < 2 {
-		t.Fatal("Not enough cookies")
+	if len(cookies) == 0 {
+		t.Fatal("No cookies")
 	}
 	if err := wd.DeleteCookie(cookies[0].Name); err != nil {
 		t.Fatal(err)
@@ -938,17 +1094,6 @@ func testDeleteCookie(t *testing.T, c config) {
 		if c.Name == cookies[0].Name {
 			t.Fatal("Deleted cookie found")
 		}
-	}
-
-	if err := wd.DeleteAllCookies(); err != nil {
-		t.Fatalf("wd.DeleteAllCookies() returned error: %v", err)
-	}
-	newCookies, err = wd.GetCookies()
-	if err != nil {
-		t.Fatalf("wd.GetCookies() returned error: %v", err)
-	}
-	if len(newCookies) != 0 {
-		t.Fatalf("After wd.DeleteAllCookies(), some remain: %+v", newCookies)
 	}
 }
 
@@ -993,6 +1138,28 @@ func testLocationInView(t *testing.T, c config) {
 
 	if loc.X == 0 || loc.Y == 0 {
 		t.Fatalf("Bad location: %v\n", loc)
+	}
+}
+
+func testSize(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
+
+	if err := wd.Get(serverURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
+	button, err := wd.FindElement(ByID, "submit")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	size, err := button.Size()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if size.Width == 0 || size.Height == 0 {
+		t.Fatalf("Bad size: %v\n", size)
 	}
 }
 
@@ -1123,278 +1290,75 @@ func testLog(t *testing.T, c config) {
 	}
 }
 
-func testElementRetrieval(t *testing.T, c config) {
+func testIsSelected(t *testing.T, c config) {
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
 	if err := wd.Get(serverURL); err != nil {
 		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
 	}
-
-	testCases := []struct {
-		by, query string
-	}{
-		{ByName, "q"},
-		{ByCSSSelector, "input[name=q]"},
-		{ByXPATH, "/html/body/form/input[1]"},
-		{ByLinkText, "тест"},
-	}
-
-	t.Run("FindElement", func(t *testing.T) {
-		for _, tc := range testCases {
-			t.Run(tc.by, func(t *testing.T) {
-				elem, err := wd.FindElement(tc.by, tc.query)
-				if err != nil {
-					t.Fatalf("wd.FindElement(%q, %q) returned error: %v", tc.by, tc.query, err)
-				}
-				we, ok := elem.(*remoteWE)
-				if !ok {
-					t.Fatalf("wd.FindElement(%q, %q) = %T, want a *remoteWE", tc.by, tc.query, elem)
-				}
-				if we.id == "" {
-					t.Fatalf("wd.FindElement(%q, %q) returned an empty element", tc.by, tc.query)
-				}
-				if we.parent != wd {
-					t.Fatalf("wd.FindElement(%q, %q) returned the wrong parent", tc.by, tc.query)
-				}
-			})
-		}
-	})
-
-	t.Run("FindElements", func(t *testing.T) {
-		elems, err := wd.FindElements(ByName, "q")
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if len(elems) != 1 {
-			t.Fatalf("Wrong number of elements %d (should be 1)", len(elems))
-		}
-
-		we, ok := elems[0].(*remoteWE)
-		if !ok {
-			t.Fatal("Can't convert to *remoteWE")
-		}
-
-		if len(we.id) == 0 {
-			t.Fatal("Empty element")
-		}
-
-		if we.parent != wd {
-			t.Fatal("Bad parent")
-		}
-	})
-
-	const tag = "body"
-	e, err := wd.FindElement(ByCSSSelector, tag)
+	elem, err := wd.FindElement(ByID, "chuk")
 	if err != nil {
-		t.Fatalf("wd.FindElement(%q, %q) returned error: %v", ByCSSSelector, tag, err)
+		t.Fatal("Can't find element")
+	}
+	selected, err := elem.IsSelected()
+	if err != nil {
+		t.Fatal("Can't get selection")
 	}
 
-	t.Run("FindElementFromElement", func(t *testing.T) {
-		for _, tc := range testCases {
-			t.Run(tc.by, func(t *testing.T) {
-				elem, err := e.FindElement(tc.by, tc.query)
-				if err != nil {
-					t.Fatalf("wd.FindElement(%q, %q) returned error: %v", tc.by, tc.query, err)
-				}
-				we, ok := elem.(*remoteWE)
-				if !ok {
-					t.Fatalf("wd.FindElement(%q, %q) = %T, want a *remoteWE", tc.by, tc.query, elem)
-				}
-				if we.id == "" {
-					t.Fatalf("wd.FindElement(%q, %q) returned an empty element", tc.by, tc.query)
-				}
-				if we.parent != wd {
-					t.Fatalf("wd.FindElement(%q, %q) returned the wrong parent", tc.by, tc.query)
-				}
-			})
-		}
-	})
+	if selected {
+		t.Fatal("Already selected")
+	}
 
-	t.Run("FindElementsFromElement", func(t *testing.T) {
-		elems, err := e.FindElements(ByName, "q")
-		if err != nil {
-			t.Fatal(err)
-		}
+	if err := elem.Click(); err != nil {
+		t.Fatal("Can't click")
+	}
 
-		if len(elems) != 1 {
-			t.Fatalf("Wrong number of elements %d (should be 1)", len(elems))
-		}
+	selected, err = elem.IsSelected()
+	if err != nil {
+		t.Fatal("Can't get selection")
+	}
 
-		we, ok := elems[0].(*remoteWE)
-		if !ok {
-			t.Fatal("Can't convert to *remoteWE")
-		}
-
-		if len(we.id) == 0 {
-			t.Fatal("Empty element")
-		}
-
-		if we.parent != wd {
-			t.Fatal("Bad parent")
-		}
-	})
+	if !selected {
+		t.Fatal("Not selected")
+	}
 }
 
-func testElementState(t *testing.T, c config) {
+func testIsDisplayed(t *testing.T, c config) {
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
 	if err := wd.Get(serverURL); err != nil {
 		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
 	}
-
-	const chukID = "chuk"
-	chuk, err := wd.FindElement(ByID, chukID)
+	elem, err := wd.FindElement(ByID, "chuk")
 	if err != nil {
-		t.Fatalf("wd.FindElement(%q, %q) returned error: %v", ByID, chukID, err)
+		t.Fatal("Can't find element")
+	}
+	displayed, err := elem.IsDisplayed()
+	if err != nil {
+		t.Fatal("Can't check for displayed")
 	}
 
-	const linkID = "other-page-link"
-	link, err := wd.FindElement(ByID, linkID)
-	if err != nil {
-		t.Fatalf("wd.FindElement(%q, %q) returned error: %v", ByID, linkID, err)
+	if !displayed {
+		t.Fatal("Not displayed")
 	}
-
-	t.Run("IsSelected", func(t *testing.T) {
-		selected, err := chuk.IsSelected()
-		if err != nil {
-			t.Fatal("Can't get selection")
-		}
-
-		if selected {
-			t.Fatal("Already selected")
-		}
-
-		if err := chuk.Click(); err != nil {
-			t.Fatal("Can't click")
-		}
-
-		selected, err = chuk.IsSelected()
-		if err != nil {
-			t.Fatal("Can't get selection")
-		}
-
-		if !selected {
-			t.Fatal("Not selected")
-		}
-	})
-
-	t.Run("GetAttribute", func(t *testing.T) {
-		const attr = "type"
-		typ, err := chuk.GetAttribute(attr)
-		if err != nil {
-			t.Fatalf("<id=%q>.GetAttribute(%q) returned error: %v", chukID, attr, err)
-		}
-		const want = "checkbox"
-		if typ != want {
-			t.Fatalf("got element type %q, want %q", typ, want)
-		}
-		if _, err = chuk.GetAttribute("no-such-attribute"); err == nil {
-			t.Fatal("Got non existing attribute")
-		}
-	})
-
-	t.Run("GetElementCSSValue", func(t *testing.T) {
-		if c.browser == "htmlunit" {
-			t.Skip("Skipping on htmlunit")
-		}
-
-		color, err := link.CSSProperty("color")
-		if err != nil {
-			t.Fatalf(`link.CSSProperty("color") returned error: %v`, err)
-		}
-
-		// Later versions of Firefox and HTMLUnit return the "rgb" version.
-		wantColors := []string{"rgba(0, 0, 238, 1)", "rgb(0, 0, 238)"}
-		for _, wantColor := range wantColors {
-			if color == wantColor {
-				return
-			}
-		}
-		t.Fatalf(`link.CSSProperty("color") = %q, want one of %q`, color, wantColors)
-	})
-
-	t.Run("IsDisplayed", func(t *testing.T) {
-		displayed, err := chuk.IsDisplayed()
-		if err != nil {
-			t.Fatal("Can't check for displayed")
-		}
-
-		if !displayed {
-			t.Fatal("Not displayed")
-		}
-	})
-
-	t.Run("TagName", func(t *testing.T) {
-		tag, err := chuk.TagName()
-		if err != nil {
-			t.Fatalf("chuk.TagName() returned error: %v", err)
-		}
-		const want = "input"
-		if tag != want {
-			t.Fatalf("got tag name %q, want %q", tag, want)
-		}
-	})
-
-	t.Run("Text", func(t *testing.T) {
-		text, err := link.Text()
-		if err != nil {
-			t.Fatalf("link.Text() returned error: %v", err)
-		}
-		const want = "other page"
-		if text != want {
-			t.Fatalf("got %q, want %q", text, want)
-		}
-	})
-
-	t.Run("Size", func(t *testing.T) {
-		button, err := wd.FindElement(ByID, "submit")
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		size, err := button.Size()
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if size.Width == 0 || size.Height == 0 {
-			t.Fatalf("Bad size: %v\n", size)
-		}
-	})
-
-	t.Run("IsEnabled", func(t *testing.T) {
-		const id = "disabled-element"
-		elem, err := wd.FindElement(ByID, id)
-		if err != nil {
-			t.Fatalf("wd.FindElement(%q, %q) returned error: %v", ByID, id, err)
-		}
-		enabled, err := elem.IsEnabled()
-		if err != nil {
-			t.Fatalf("elem.IsEnabled() returned error: %v", err)
-		}
-		if enabled {
-			t.Fatalf("Element %q is enabled, want disabled", id)
-		}
-	})
 }
 
-func testMaximizeWindow(t *testing.T, c config) {
-	if c.browser == "firefox" {
-		t.Skip("Skipping test due to https://github.com/mozilla/geckodriver/issues/703")
-	}
-
+func testGetAttributeNotFound(t *testing.T, c config) {
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
 	if err := wd.Get(serverURL); err != nil {
 		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
 	}
+	elem, err := wd.FindElement(ByID, "chuk")
+	if err != nil {
+		t.Fatal("Can't find element")
+	}
 
-	if err := wd.MaximizeWindow(""); err != nil {
-		t.Fatalf("error maximizing window: %s", err)
+	if _, err = elem.GetAttribute("no-such-attribute"); err == nil {
+		t.Fatal("Got non existing attribute")
 	}
 }
 
@@ -1423,27 +1387,7 @@ func testActiveElement(t *testing.T, c config) {
 	}
 }
 
-func testResizeWindow(t *testing.T, c config) {
-	wd := newRemote(t, c)
-	defer quitRemote(t, wd)
-
-	if err := wd.Get(serverURL); err != nil {
-		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
-	}
-
-	if err := wd.ResizeWindow("", 100, 100); err != nil {
-		t.Fatalf("error resizing window: %s", err)
-	}
-}
-
 func testKeyDownUp(t *testing.T, c config) {
-	if c.browser == "firefox" && c.seleniumVersion.Major == 3 {
-		// Marionette: https://bugzilla.mozilla.org/show_bug.cgi?id=1292178
-		// GeckoDriver: https://github.com/mozilla/geckodriver/issues/159
-		// Selenium 3: https://github.com/SeleniumHQ/selenium/issues/2285
-		t.Skip("The action interface is not yet supported on Firefox and Selenium 3")
-	}
-
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
@@ -1465,6 +1409,37 @@ func testKeyDownUp(t *testing.T, c config) {
 	if err := wd.KeyUp(ControlKey); err != nil {
 		t.Fatalf("error releasing control key: %v", err)
 	}
+}
+
+func testCSSProperty(t *testing.T, c config) {
+	if c.browser == "htmlunit" {
+		t.Skip("Skipping on htmlunit")
+	}
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
+
+	if err := wd.Get(serverURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
+
+	e, err := wd.FindElement(ByLinkText, "other page")
+	if err != nil {
+		t.Fatalf("error finding other page link: %v", err)
+	}
+
+	color, err := e.CSSProperty("color")
+	if err != nil {
+		t.Fatalf(`e.CSSProperty("color") returned error: %v`, err)
+	}
+
+	// Later versions of Firefox and HTMLUnit return the "rgb" version.
+	wantColors := []string{"rgba(0, 0, 238, 1)", "rgb(0, 0, 238)"}
+	for _, wantColor := range wantColors {
+		if color == wantColor {
+			return
+		}
+	}
+	t.Fatalf(`e.CSSProperty("color") = %q, want one of %q`, color, wantColors)
 }
 
 func testProxy(t *testing.T, c config) {
@@ -1614,9 +1589,8 @@ var homePage = `
 		<input name="q" autofocus />
 		<input type="submit" id="submit" /> <br />
 		<input id="chuk" type="checkbox" /> A checkbox.
-		<input id="disabled-element" disabled type="checkbox" /> A disabled checkbox.
 	</form>
-	Link to the <a id="other-page-link" href="/other">other page</a>.
+	Link to the <a href="/other">other page</a>.
 
 	<a href="/log">тест</a>
 </body>
