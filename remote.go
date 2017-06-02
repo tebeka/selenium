@@ -1209,6 +1209,8 @@ func (elem *remoteWE) IsDisplayed() (bool, error) {
 	return elem.boolQuery("/session/%%s/element/%s/displayed")
 }
 
+// TODO(minusnine): Add Property(name string) (string, error).
+
 func (elem *remoteWE) GetAttribute(name string) (string, error) {
 	template := "/session/%%s/element/%s/attribute/%s"
 	urlTemplate := fmt.Sprintf(template, elem.id, name)

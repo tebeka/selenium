@@ -471,20 +471,15 @@ func runTests(t *testing.T, c config) {
 	t.Run("DeleteCookie", runTest(testDeleteCookie, c))
 	t.Run("Location", runTest(testLocation, c))
 	t.Run("LocationInView", runTest(testLocationInView, c))
-	t.Run("Size", runTest(testSize, c))
 	t.Run("ExecuteScript", runTest(testExecuteScript, c))
 	t.Run("ExecuteScriptOnElement", runTest(testExecuteScriptOnElement, c))
 	t.Run("ExecuteScriptWithNilArgs", runTest(testExecuteScriptWithNilArgs, c))
 	t.Run("Screenshot", runTest(testScreenshot, c))
 	t.Run("Log", runTest(testLog, c))
-	t.Run("IsSelected", runTest(testIsSelected, c))
-	t.Run("IsDisplayed", runTest(testIsDisplayed, c))
-	t.Run("IsEnabled", runTest(testIsEnabled, c))
-	t.Run("GetAttributeNotFound", runTest(testGetAttributeNotFound, c))
+	t.Run("ElementState", runTest(testElementState, c))
 	t.Run("MaximizeWindow", runTest(testMaximizeWindow, c))
 	t.Run("ResizeWindow", runTest(testResizeWindow, c))
 	t.Run("KeyDownUp", runTest(testKeyDownUp, c))
-	t.Run("CSSProperty", runTest(testCSSProperty, c))
 	t.Run("Proxy", runTest(testProxy, c))
 	t.Run("SwitchFrame", runTest(testSwitchFrame, c))
 	t.Run("ActiveElement", runTest(testActiveElement, c))
@@ -1072,28 +1067,6 @@ func testLocationInView(t *testing.T, c config) {
 	}
 }
 
-func testSize(t *testing.T, c config) {
-	wd := newRemote(t, c)
-	defer quitRemote(t, wd)
-
-	if err := wd.Get(serverURL); err != nil {
-		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
-	}
-	button, err := wd.FindElement(ByID, "submit")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	size, err := button.Size()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if size.Width == 0 || size.Height == 0 {
-		t.Fatalf("Bad size: %v\n", size)
-	}
-}
-
 func testExecuteScript(t *testing.T, c config) {
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
@@ -1221,97 +1194,148 @@ func testLog(t *testing.T, c config) {
 	}
 }
 
-func testIsSelected(t *testing.T, c config) {
+func testElementState(t *testing.T, c config) {
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
 	if err := wd.Get(serverURL); err != nil {
 		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
 	}
-	elem, err := wd.FindElement(ByID, "chuk")
+
+	const chukID = "chuk"
+	chuk, err := wd.FindElement(ByID, chukID)
 	if err != nil {
-		t.Fatal("Can't find element")
+		t.Fatalf("wd.FindElement(%q, %q) returned error: %v", ByID, chukID, err)
 	}
-	selected, err := elem.IsSelected()
+
+	const linkID = "other-page-link"
+	link, err := wd.FindElement(ByID, linkID)
 	if err != nil {
-		t.Fatal("Can't get selection")
+		t.Fatalf("wd.FindElement(%q, %q) returned error: %v", ByID, linkID, err)
 	}
 
-	if selected {
-		t.Fatal("Already selected")
-	}
+	t.Run("IsSelected", func(t *testing.T) {
+		selected, err := chuk.IsSelected()
+		if err != nil {
+			t.Fatal("Can't get selection")
+		}
 
-	if err := elem.Click(); err != nil {
-		t.Fatal("Can't click")
-	}
+		if selected {
+			t.Fatal("Already selected")
+		}
 
-	selected, err = elem.IsSelected()
-	if err != nil {
-		t.Fatal("Can't get selection")
-	}
+		if err := chuk.Click(); err != nil {
+			t.Fatal("Can't click")
+		}
 
-	if !selected {
-		t.Fatal("Not selected")
-	}
-}
+		selected, err = chuk.IsSelected()
+		if err != nil {
+			t.Fatal("Can't get selection")
+		}
 
-func testIsDisplayed(t *testing.T, c config) {
-	wd := newRemote(t, c)
-	defer quitRemote(t, wd)
+		if !selected {
+			t.Fatal("Not selected")
+		}
+	})
 
-	if err := wd.Get(serverURL); err != nil {
-		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
-	}
-	elem, err := wd.FindElement(ByID, "chuk")
-	if err != nil {
-		t.Fatal("Can't find element")
-	}
-	displayed, err := elem.IsDisplayed()
-	if err != nil {
-		t.Fatal("Can't check for displayed")
-	}
+	t.Run("GetAttribute", func(t *testing.T) {
+		const attr = "type"
+		typ, err := chuk.GetAttribute(attr)
+		if err != nil {
+			t.Fatalf("<id=%q>.GetAttribute(%q) returned error: %v", chukID, attr, err)
+		}
+		const want = "checkbox"
+		if typ != want {
+			t.Fatalf("got element type %q, want %q", typ, want)
+		}
+		if _, err = chuk.GetAttribute("no-such-attribute"); err == nil {
+			t.Fatal("Got non existing attribute")
+		}
+	})
 
-	if !displayed {
-		t.Fatal("Not displayed")
-	}
-}
+	t.Run("GetElementCSSValue", func(t *testing.T) {
+		if c.browser == "htmlunit" {
+			t.Skip("Skipping on htmlunit")
+		}
 
-func testIsEnabled(t *testing.T, c config) {
-	wd := newRemote(t, c)
-	defer quitRemote(t, wd)
+		color, err := link.CSSProperty("color")
+		if err != nil {
+			t.Fatalf(`link.CSSProperty("color") returned error: %v`, err)
+		}
 
-	if err := wd.Get(serverURL); err != nil {
-		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
-	}
-	const id = "disabled-element"
-	elem, err := wd.FindElement(ByID, id)
-	if err != nil {
-		t.Fatalf("wd.FindElement(%q, %q) returned error: %v", ByID, id, err)
-	}
-	enabled, err := elem.IsEnabled()
-	if err != nil {
-		t.Fatalf("elem.IsDisplayed() returned error: %v", err)
-	}
-	if enabled {
-		t.Fatalf("Element %q is enabled, want disabled", id)
-	}
-}
+		// Later versions of Firefox and HTMLUnit return the "rgb" version.
+		wantColors := []string{"rgba(0, 0, 238, 1)", "rgb(0, 0, 238)"}
+		for _, wantColor := range wantColors {
+			if color == wantColor {
+				return
+			}
+		}
+		t.Fatalf(`link.CSSProperty("color") = %q, want one of %q`, color, wantColors)
+	})
 
-func testGetAttributeNotFound(t *testing.T, c config) {
-	wd := newRemote(t, c)
-	defer quitRemote(t, wd)
+	t.Run("IsDisplayed", func(t *testing.T) {
+		displayed, err := chuk.IsDisplayed()
+		if err != nil {
+			t.Fatal("Can't check for displayed")
+		}
 
-	if err := wd.Get(serverURL); err != nil {
-		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
-	}
-	elem, err := wd.FindElement(ByID, "chuk")
-	if err != nil {
-		t.Fatal("Can't find element")
-	}
+		if !displayed {
+			t.Fatal("Not displayed")
+		}
+	})
 
-	if _, err = elem.GetAttribute("no-such-attribute"); err == nil {
-		t.Fatal("Got non existing attribute")
-	}
+	t.Run("TagName", func(t *testing.T) {
+		tag, err := chuk.TagName()
+		if err != nil {
+			t.Fatalf("chuk.TagName() returned error: %v", err)
+		}
+		const want = "input"
+		if tag != want {
+			t.Fatalf("got tag name %q, want %q", tag, want)
+		}
+	})
+
+	t.Run("Text", func(t *testing.T) {
+		text, err := link.Text()
+		if err != nil {
+			t.Fatalf("link.Text() returned error: %v", err)
+		}
+		const want = "other page"
+		if text != want {
+			t.Fatalf("got %q, want %q", text, want)
+		}
+	})
+
+	t.Run("Size", func(t *testing.T) {
+		button, err := wd.FindElement(ByID, "submit")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		size, err := button.Size()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if size.Width == 0 || size.Height == 0 {
+			t.Fatalf("Bad size: %v\n", size)
+		}
+	})
+
+	t.Run("IsEnabled", func(t *testing.T) {
+		const id = "disabled-element"
+		elem, err := wd.FindElement(ByID, id)
+		if err != nil {
+			t.Fatalf("wd.FindElement(%q, %q) returned error: %v", ByID, id, err)
+		}
+		enabled, err := elem.IsEnabled()
+		if err != nil {
+			t.Fatalf("elem.IsEnabled() returned error: %v", err)
+		}
+		if enabled {
+			t.Fatalf("Element %q is enabled, want disabled", id)
+		}
+	})
 }
 
 func testMaximizeWindow(t *testing.T, c config) {
@@ -1398,37 +1422,6 @@ func testKeyDownUp(t *testing.T, c config) {
 	if err := wd.KeyUp(ControlKey); err != nil {
 		t.Fatalf("error releasing control key: %v", err)
 	}
-}
-
-func testCSSProperty(t *testing.T, c config) {
-	if c.browser == "htmlunit" {
-		t.Skip("Skipping on htmlunit")
-	}
-	wd := newRemote(t, c)
-	defer quitRemote(t, wd)
-
-	if err := wd.Get(serverURL); err != nil {
-		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
-	}
-
-	e, err := wd.FindElement(ByLinkText, "other page")
-	if err != nil {
-		t.Fatalf("error finding other page link: %v", err)
-	}
-
-	color, err := e.CSSProperty("color")
-	if err != nil {
-		t.Fatalf(`e.CSSProperty("color") returned error: %v`, err)
-	}
-
-	// Later versions of Firefox and HTMLUnit return the "rgb" version.
-	wantColors := []string{"rgba(0, 0, 238, 1)", "rgb(0, 0, 238)"}
-	for _, wantColor := range wantColors {
-		if color == wantColor {
-			return
-		}
-	}
-	t.Fatalf(`e.CSSProperty("color") = %q, want one of %q`, color, wantColors)
 }
 
 func testProxy(t *testing.T, c config) {
@@ -1580,7 +1573,7 @@ var homePage = `
 		<input id="chuk" type="checkbox" /> A checkbox.
 		<input id="disabled-element" disabled type="checkbox" /> A disabled checkbox.
 	</form>
-	Link to the <a href="/other">other page</a>.
+	Link to the <a id="other-page-link" href="/other">other page</a>.
 
 	<a href="/log">тест</a>
 </body>
