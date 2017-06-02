@@ -598,34 +598,63 @@ func (wd *remoteWD) find(by, value, suffix, url string) ([]byte, error) {
 	return wd.execute("POST", wd.requestURL(url+suffix, wd.id), data)
 }
 
-type element struct {
-	Element string `json:"ELEMENT"`
-}
-
 func (wd *remoteWD) DecodeElement(data []byte) (WebElement, error) {
-	if !wd.w3cCompatible {
-		reply := new(struct{ Value element })
-		if err := json.Unmarshal(data, reply); err != nil {
-			return nil, err
-		}
-		return &remoteWE{
-			parent: wd,
-			id:     reply.Value.Element,
-		}, nil
-	}
 	reply := new(struct{ Value map[string]string })
 	if err := json.Unmarshal(data, &reply); err != nil {
 		return nil, err
 	}
-	ref := reply.Value[webElementIdentifier]
-	if ref == "" {
+
+	id := elementIDFromValue(reply.Value)
+	if id == "" {
 		return nil, fmt.Errorf("invalid element returned: %+v", reply)
 	}
-
 	return &remoteWE{
 		parent: wd,
-		id:     ref,
+		id:     id,
 	}, nil
+}
+
+const (
+	// legacyWebElementIdentifier is the string constant used in the old
+	// WebDriver JSON protocol that is the key for the map that contains an
+	// unique element identifier.
+	legacyWebElementIdentifier = "ELEMENT"
+
+	// webElementIdentifier is the string constant defined by the W3C
+	// specification that is the key for the map that contains a unique element identifier.
+	webElementIdentifier = "element-6066-11e4-a52e-4f735466cecf"
+)
+
+func elementIDFromValue(v map[string]string) string {
+	for _, key := range []string{webElementIdentifier, legacyWebElementIdentifier} {
+		v, ok := v[key]
+		if !ok || v == "" {
+			continue
+		}
+		return v
+	}
+	return ""
+}
+
+func (wd *remoteWD) DecodeElements(data []byte) ([]WebElement, error) {
+	reply := new(struct{ Value []map[string]string })
+	if err := json.Unmarshal(data, reply); err != nil {
+		return nil, err
+	}
+
+	elems := make([]WebElement, len(reply.Value))
+	for i, elem := range reply.Value {
+		id := elementIDFromValue(elem)
+		if id == "" {
+			return nil, fmt.Errorf("invalid element returned: %+v", reply)
+		}
+		elems[i] = &remoteWE{
+			parent: wd,
+			id:     id,
+		}
+	}
+
+	return elems, nil
 }
 
 func (wd *remoteWD) FindElement(by, value string) (WebElement, error) {
@@ -634,42 +663,6 @@ func (wd *remoteWD) FindElement(by, value string) (WebElement, error) {
 		return nil, err
 	}
 	return wd.DecodeElement(response)
-}
-
-func (wd *remoteWD) DecodeElements(data []byte) ([]WebElement, error) {
-	if !wd.w3cCompatible {
-		reply := new(struct{ Value []element })
-		if err := json.Unmarshal(data, reply); err != nil {
-			return nil, err
-		}
-
-		elems := make([]WebElement, len(reply.Value))
-		for i, elem := range reply.Value {
-			elems[i] = &remoteWE{
-				parent: wd,
-				id:     elem.Element,
-			}
-		}
-		return elems, nil
-	}
-	reply := new(struct{ Value []map[string]string })
-	if err := json.Unmarshal(data, &reply); err != nil {
-		return nil, err
-	}
-
-	elems := make([]WebElement, len(reply.Value))
-	for i, elem := range reply.Value {
-		ref := elem[webElementIdentifier]
-		if ref == "" {
-			return nil, fmt.Errorf("invalid element returned: %+v", elem)
-		}
-		elems[i] = &remoteWE{
-			parent: wd,
-			id:     ref,
-		}
-	}
-
-	return elems, nil
 }
 
 func (wd *remoteWD) FindElements(by, value string) ([]WebElement, error) {
@@ -929,20 +922,24 @@ func (wd *remoteWD) DeleteCookie(name string) error {
 	return err
 }
 
+// TODO(minusnine): add a test for Click.
 func (wd *remoteWD) Click(button int) error {
 	return wd.voidCommand("/session/%s/click", map[string]int{
 		"button": button,
 	})
 }
 
+// TODO(minusnine): add a test for DoubleClick.
 func (wd *remoteWD) DoubleClick() error {
 	return wd.voidCommand("/session/%s/doubleclick", nil)
 }
 
+// TODO(minusnine): add a test for ButtonDown.
 func (wd *remoteWD) ButtonDown() error {
 	return wd.voidCommand("/session/%s/buttondown", nil)
 }
 
+// TODO(minusnine): add a test for ButtonUp.
 func (wd *remoteWD) ButtonUp() error {
 	return wd.voidCommand("/session/%s/buttonup", nil)
 }
@@ -1299,10 +1296,6 @@ func (elem *remoteWE) CSSProperty(name string) (string, error) {
 	wd := elem.parent
 	return wd.stringCommand(fmt.Sprintf("/session/%%s/element/%s/css/%s", elem.id, name))
 }
-
-// webElementIdentifier is the string constant defined by the W3C specification
-// that is the key for the map that contains an element.
-const webElementIdentifier = "element-6066-11e4-a52e-4f735466cecf"
 
 func (elem *remoteWE) MarshalJSON() ([]byte, error) {
 	return json.Marshal(map[string]string{
