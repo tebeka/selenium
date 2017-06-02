@@ -461,8 +461,7 @@ func runTests(t *testing.T, c config) {
 	t.Run("Navigation", runTest(testNavigation, c))
 	t.Run("Title", runTest(testTitle, c))
 	t.Run("PageSource", runTest(testPageSource, c))
-	t.Run("FindElement", runTest(testFindElement, c))
-	t.Run("FindElements", runTest(testFindElements, c))
+	t.Run("ElementRetrieval", runTest(testElementRetrieval, c))
 	t.Run("SendKeys", runTest(testSendKeys, c))
 	t.Run("Click", runTest(testClick, c))
 	t.Run("GetCookies", runTest(testGetCookies, c))
@@ -725,76 +724,6 @@ func testPageSource(t *testing.T, c config) {
 
 	if !strings.Contains(source, "The home page.") {
 		t.Fatalf("Bad source\n%s", source)
-	}
-}
-
-func testFindElement(t *testing.T, c config) {
-	wd := newRemote(t, c)
-	defer quitRemote(t, wd)
-
-	if err := wd.Get(serverURL); err != nil {
-		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
-	}
-
-	for _, tc := range []struct {
-		by, query string
-	}{
-		{ByName, "q"},
-		{ByCSSSelector, "input[name=q]"},
-		{ByXPATH, "/html/body/form/input[1]"},
-		{ByLinkText, "тест"},
-	} {
-		elem, err := wd.FindElement(tc.by, tc.query)
-		if err != nil {
-			t.Errorf("wd.FindElement(%q, %q) returned error: %v", tc.by, tc.query, err)
-			continue
-		}
-
-		we, ok := elem.(*remoteWE)
-		if !ok {
-			t.Errorf("wd.FindElement(%q, %q) = %T, want a *remoteWE", tc.by, tc.query, elem)
-			continue
-		}
-
-		if len(we.id) == 0 {
-			t.Errorf("wd.FindElement(%q, %q) returned an empty element", tc.by, tc.query)
-			continue
-		}
-
-		if we.parent != wd {
-			t.Errorf("wd.FindElement(%q, %q) returned the wrong parent", tc.by, tc.query)
-			continue
-		}
-	}
-}
-
-func testFindElements(t *testing.T, c config) {
-	wd := newRemote(t, c)
-	defer quitRemote(t, wd)
-
-	if err := wd.Get(serverURL); err != nil {
-		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
-	}
-	elems, err := wd.FindElements(ByName, "q")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(elems) != 1 {
-		t.Fatalf("Wrong number of elements %d (should be 1)", len(elems))
-	}
-
-	we, ok := elems[0].(*remoteWE)
-	if !ok {
-		t.Fatal("Can't convert to *remoteWE")
-	}
-
-	if len(we.id) == 0 {
-		t.Fatal("Empty element")
-	}
-
-	if we.parent != wd {
-		t.Fatal("Bad parent")
 	}
 }
 
@@ -1192,6 +1121,120 @@ func testLog(t *testing.T, c config) {
 	if len(logs) == 0 {
 		t.Fatal("Empty reply")
 	}
+}
+
+func testElementRetrieval(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
+
+	if err := wd.Get(serverURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
+
+	testCases := []struct {
+		by, query string
+	}{
+		{ByName, "q"},
+		{ByCSSSelector, "input[name=q]"},
+		{ByXPATH, "/html/body/form/input[1]"},
+		{ByLinkText, "тест"},
+	}
+
+	t.Run("FindElement", func(t *testing.T) {
+		for _, tc := range testCases {
+			t.Run(tc.by, func(t *testing.T) {
+				elem, err := wd.FindElement(tc.by, tc.query)
+				if err != nil {
+					t.Fatalf("wd.FindElement(%q, %q) returned error: %v", tc.by, tc.query, err)
+				}
+				we, ok := elem.(*remoteWE)
+				if !ok {
+					t.Fatalf("wd.FindElement(%q, %q) = %T, want a *remoteWE", tc.by, tc.query, elem)
+				}
+				if we.id == "" {
+					t.Fatalf("wd.FindElement(%q, %q) returned an empty element", tc.by, tc.query)
+				}
+				if we.parent != wd {
+					t.Fatalf("wd.FindElement(%q, %q) returned the wrong parent", tc.by, tc.query)
+				}
+			})
+		}
+	})
+
+	t.Run("FindElements", func(t *testing.T) {
+		elems, err := wd.FindElements(ByName, "q")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(elems) != 1 {
+			t.Fatalf("Wrong number of elements %d (should be 1)", len(elems))
+		}
+
+		we, ok := elems[0].(*remoteWE)
+		if !ok {
+			t.Fatal("Can't convert to *remoteWE")
+		}
+
+		if len(we.id) == 0 {
+			t.Fatal("Empty element")
+		}
+
+		if we.parent != wd {
+			t.Fatal("Bad parent")
+		}
+	})
+
+	const tag = "body"
+	e, err := wd.FindElement(ByCSSSelector, tag)
+	if err != nil {
+		t.Fatalf("wd.FindElement(%q, %q) returned error: %v", ByCSSSelector, tag, err)
+	}
+
+	t.Run("FindElementFromElement", func(t *testing.T) {
+		for _, tc := range testCases {
+			t.Run(tc.by, func(t *testing.T) {
+				elem, err := e.FindElement(tc.by, tc.query)
+				if err != nil {
+					t.Fatalf("wd.FindElement(%q, %q) returned error: %v", tc.by, tc.query, err)
+				}
+				we, ok := elem.(*remoteWE)
+				if !ok {
+					t.Fatalf("wd.FindElement(%q, %q) = %T, want a *remoteWE", tc.by, tc.query, elem)
+				}
+				if we.id == "" {
+					t.Fatalf("wd.FindElement(%q, %q) returned an empty element", tc.by, tc.query)
+				}
+				if we.parent != wd {
+					t.Fatalf("wd.FindElement(%q, %q) returned the wrong parent", tc.by, tc.query)
+				}
+			})
+		}
+	})
+
+	t.Run("FindElementsFromElement", func(t *testing.T) {
+		elems, err := e.FindElements(ByName, "q")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(elems) != 1 {
+			t.Fatalf("Wrong number of elements %d (should be 1)", len(elems))
+		}
+
+		we, ok := elems[0].(*remoteWE)
+		if !ok {
+			t.Fatal("Can't convert to *remoteWE")
+		}
+
+		if len(we.id) == 0 {
+			t.Fatal("Empty element")
+		}
+
+		if we.parent != wd {
+			t.Fatal("Bad parent")
+		}
+	})
 }
 
 func testElementState(t *testing.T, c config) {
