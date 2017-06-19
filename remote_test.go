@@ -647,9 +647,21 @@ func testWindows(t *testing.T, c config) {
 		t.Fatalf("wd.SendKeys(ShiftKey) returned error: %v", err)
 	}
 
-	handles, err := wd.WindowHandles()
-	if err != nil {
-		t.Fatalf("wd.WindowHandles() returned error: %v", err)
+	// Starting a new window can take a while. Try a few times before failing.
+	var handles []string
+	tries := 10
+	for {
+		handles, err = wd.WindowHandles()
+		if err != nil {
+			t.Fatalf("wd.WindowHandles() returned error: %v", err)
+		}
+		if len(handles) == 2 {
+			break
+		}
+		tries--
+		if tries > 0 {
+			time.Sleep(time.Second)
+		}
 	}
 	if len(handles) != 2 {
 		t.Fatalf("len(wd.WindowHandles()) = %d, expected 2", len(handles))
