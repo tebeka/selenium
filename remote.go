@@ -48,8 +48,8 @@ const (
 	// DefaultURLPrefix is the default HTTP endpoint that offers the WebDriver
 	// API.
 	DefaultURLPrefix = "http://127.0.0.1:4444/wd/hub"
-	// JSONType is JSON content type.
-	JSONType = "application/json"
+	// jsonContentType is JSON content type.
+	jsonContentType = "application/json"
 )
 
 type remoteWD struct {
@@ -70,17 +70,9 @@ func newRequest(method string, url string, data []byte) (*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
-	request.Header.Add("Accept", JSONType)
+	request.Header.Add("Accept", jsonContentType)
 
 	return request, nil
-}
-
-func isRedirect(response *http.Response) bool {
-	switch response.StatusCode {
-	case 301, 302, 303, 307:
-		return true
-	}
-	return false
 }
 
 func (wd *remoteWD) requestURL(template string, args ...interface{}) string {
@@ -148,10 +140,10 @@ func (wd *remoteWD) execute(method, url string, data []byte) (json.RawMessage, e
 	fullCType := response.Header.Get("Content-Type")
 	cType, _, err := mime.ParseMediaType(fullCType)
 	if err != nil {
-		return nil, fmt.Errorf("got content type header %q, expected %q", fullCType, JSONType)
+		return nil, fmt.Errorf("got content type header %q, expected %q", fullCType, jsonContentType)
 	}
-	if cType != JSONType {
-		return nil, fmt.Errorf("got content type %q, expected %q", cType, JSONType)
+	if cType != jsonContentType {
+		return nil, fmt.Errorf("got content type %q, expected %q", cType, jsonContentType)
 	}
 
 	reply := new(serverReply)
