@@ -43,8 +43,6 @@ var remoteErrors = map[int]string{
 }
 
 const (
-	// Success is status code that indicates the method was successful.
-	Success = 0
 	// DefaultURLPrefix is the default HTTP endpoint that offers the WebDriver
 	// API.
 	DefaultURLPrefix = "http://127.0.0.1:4444/wd/hub"
@@ -167,7 +165,8 @@ func (wd *remoteWD) execute(method, url string, data []byte) (json.RawMessage, e
 	}
 
 	// Handle the legacy error format.
-	if reply.Status != Success {
+	const success = 0
+	if reply.Status != success {
 		shortMsg, ok := remoteErrors[reply.Status]
 		if !ok {
 			shortMsg = fmt.Sprintf("unknown error - %d", reply.Status)
