@@ -42,14 +42,6 @@ var remoteErrors = map[int]string{
 	32: "invalid selector",
 }
 
-const (
-	// DefaultURLPrefix is the default HTTP endpoint that offers the WebDriver
-	// API.
-	DefaultURLPrefix = "http://127.0.0.1:4444/wd/hub"
-	// jsonContentType is JSON content type.
-	jsonContentType = "application/json"
-)
-
 type remoteWD struct {
 	id, urlPrefix string
 	capabilities  Capabilities
@@ -62,6 +54,9 @@ type remoteWD struct {
 // HTTPClient is the default client to use to communicate with the WebDriver
 // server.
 var HTTPClient = http.DefaultClient
+
+// jsonContentType is JSON content type.
+const jsonContentType = "application/json"
 
 func newRequest(method string, url string, data []byte) (*http.Request, error) {
 	request, err := http.NewRequest(method, url, bytes.NewBuffer(data))
@@ -183,6 +178,9 @@ func (wd *remoteWD) execute(method, url string, data []byte) (json.RawMessage, e
 
 	return buf, nil
 }
+
+// DefaultURLPrefix is the default HTTP endpoint that offers the WebDriver API.
+const DefaultURLPrefix = "http://127.0.0.1:4444/wd/hub"
 
 // NewRemote creates new remote client, this will also start a new session.
 // capabilities provides the desired capabilities. urlPrefix is the URL to the
