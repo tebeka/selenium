@@ -28,22 +28,6 @@ Run
 
 Docs are at https://godoc.org/github.com/tebeka/selenium
 
-### AppEngine
-
-`GetHTTPClient` exposes the HTTP client used by the driver. You can access it to
-add the request context.
-
-    func myRequestHandler(w http.ResponseWriter, r *http.Request) {
-        selenium.GetHTTPClient().Transport = &urlfetch.Transport{
-            Context:  appengine.NewContext(r),
-            Deadline: 30 * time.Second,
-        }
-        ...
-    }
-
-Thanks to [bthomson](https://bitbucket.org/tebeka/selenium/issue/8) for this
-one.
-
 ## TODO
 
 * Finish full [WebDriver API][api].

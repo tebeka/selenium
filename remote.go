@@ -50,8 +50,6 @@ const (
 	DefaultURLPrefix = "http://127.0.0.1:4444/wd/hub"
 	// JSONType is JSON content type.
 	JSONType = "application/json"
-	// MaxRedirects is the maximum number of redirects to follow.
-	MaxRedirects = 10
 )
 
 type remoteWD struct {
@@ -63,12 +61,9 @@ type remoteWD struct {
 	browserVersion semver.Version
 }
 
-var httpClient *http.Client
-
-// GetHTTPClient returns the default HTTP client.
-func GetHTTPClient() *http.Client {
-	return httpClient
-}
+// HTTPClient is the default client to use to communicate with the WebDriver
+// server.
+var HTTPClient = http.DefaultClient
 
 func newRequest(method string, url string, data []byte) (*http.Request, error) {
 	request, err := http.NewRequest(method, url, bytes.NewBuffer(data))
@@ -130,7 +125,7 @@ func (wd *remoteWD) execute(method, url string, data []byte) (json.RawMessage, e
 		return nil, err
 	}
 
-	response, err := httpClient.Do(request)
+	response, err := HTTPClient.Do(request)
 	if err != nil {
 		return nil, err
 	}
@@ -1299,18 +1294,4 @@ func (elem *remoteWE) MarshalJSON() ([]byte, error) {
 		"ELEMENT":            elem.id,
 		webElementIdentifier: elem.id,
 	})
-}
-
-func init() {
-	// http.Client doesn't copy request headers, and selenium requires that
-	httpClient = &http.Client{
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			if len(via) > MaxRedirects {
-				return fmt.Errorf("too many redirects (%d)", len(via))
-			}
-
-			req.Header.Add("Accept", JSONType)
-			return nil
-		},
-	}
 }
