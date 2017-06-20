@@ -1,4 +1,4 @@
-# `selenium` - Selenium Client For Go
+# The most complete, best-tested WebDriver client for Go
 
 [![GoDoc](https://godoc.org/github.com/tebeka/selenium?status.svg)](https://godoc.org/github.com/tebeka/selenium)
 [![Travis](https://travis-ci.org/tebeka/selenium.svg?branch=master)](https://travis-ci.org/tebeka/selenium)
@@ -6,15 +6,18 @@
 
 ## About
 
-This is a [Selenium][selenium] client for [Go][go]. It supports the WebDriver
-protocol and has been tested on [Selenium WebDriver][selenium] and
-[ChromeDriver][chromedriver].
+This is a [WebDriver][selenium] client for [Go][go]. It supports the [WebDriver
+protocol][webdriver] and has been tested with various versions of [Selenium
+WebDriver][selenium], Firefox and [Geckodriver][geckodriver], and Chrome and
+[ChromeDriver][chromedriver], 
 
 `selenium` is currently maintained by Eric Garrido ([@minusnine][minusnine]).
 
 [selenium]: http://seleniumhq.org/
+[webdriver]: https://www.w3.org/TR/webdriver/
 [go]: http://golang.org/
 [server]: http://seleniumhq.org/download/
+[geckodriver]: https://github.com/mozilla/geckodriver
 [chromedriver]: https://sites.google.com/a/chromium.org/chromedriver/
 [minusnine]: http://github.com/minusnine
 
@@ -24,22 +27,33 @@ Run
 
     go get github.com/tebeka/selenium
 
-## Docs
+to fetch the package.
 
-Docs are at https://godoc.org/github.com/tebeka/selenium
+The package requires a working WebDriver installation, which can include recent
+versions of a web browser being driven by Selenium WebDriver.
 
-## TODO
+## Documentation
 
-* Finish full [WebDriver API][api].
-* Add usage examples
-* Test Chrome interaction on Travis. Currently, only Firefox is tested.
-* Any additional TODOs marked in the code.
-* Allow testing on Windows and OS X.
+The API documentation is at https://godoc.org/github.com/tebeka/selenium. See
+[the example](https://github.com/tebeka/selenium/blob/master/example_test.go)
+and [the unit
+tests](https://github.com/tebeka/selenium/blob/master/remote_test.go) for
+better usage information.
 
-[api]: https://www.w3.org/TR/webdriver/
-[sauce]: http://saucelabs.com/docs/quickstart
+## Known Issues
 
-## Known issues
+Any issues are usually because the underlying browser automation framework has
+a bug or inconsistency. Where possible, we try to cover up these underlying
+problems in the client, but sometimes workarounds require higher-level
+intervention.
+
+Please feel free to [file an issue][issue] if this client doesn't work as
+expected.
+
+[issue]: https://github.com/tebeka/selenium/issues/new
+
+Below are known issues that affect the usage of this API. There are likely
+others filed on the respective issue trackers.
 
 ### Selenium 2
 
@@ -66,7 +80,7 @@ Docs are at https://godoc.org/github.com/tebeka/selenium
    key](https://github.com/mozilla/geckodriver/issues/665).
 
 The Geckodriver team recommends using the newest available Firefox version, as
-the integration is actively being developed.
+the integration is actively being developed and is constantly improving.
 
 ### Geckodriver (Standalone)
 
@@ -80,7 +94,7 @@ Using Geckodriver without Selenium usually has the above known issues as well.
 ### ChromeDriver
 
 1. ChromeDriver has not yet implemented the nascent W3C standard. So far, this
-	 only means that GetCookie is not available for Chrome.
+	 only means that `GetCookie` is not available for Chrome.
 
 ### HTMLUnit
 
@@ -94,7 +108,11 @@ Patches are encouraged through GitHub pull requests. Please ensure that a test
 is added for anything more than a trivial change and that the existing tests
 pass.
 
-### Download Dependencies
+See [the issue tracker][issues] for features that need implementing.
+
+[issues]: https://github.com/tebeka/selenium/issues
+
+### Downloading Dependencies
 
 First, download the ChromeDriver binary, the Firefox binary and the Selenium
 WebDriver JARs:
@@ -120,27 +138,35 @@ Run the tests:
     2. A new version of Firefox and Selenium 3.
     3. An old version of Firefox and Selenium 2.
     4. HTMLUnit, a Java-based lightweight headless browser implementation.
-    5. A new version of Firefox directly against Geckodriver, if the
-       `--run_direct_deckodriver_tests` flag is provided. (This has
-       known-failing tests and is considered experimental).
+    5. A new version of Firefox directly against Geckodriver.
     
   There are subtests that are shared between both top-level tests.
-* To run only one of the top-level tests, pass
-  `-test.run=TestFirefoxSelenium2`, `-test.run=TestFirefoxSelenium3`,
-  `-test.run=TestHTMLUnit` or `-test.run=TestChrome`. To run a specific
-  subtest, pass `-test.run=Test<Browser>/<subtest>` as appropriate. This flag
-  supports regular expressions.
+
+* To run only one of the top-level tests, pass one of:
+
+    * `-test.run=TestFirefoxSelenium2`
+    * `-test.run=TestFirefoxSelenium3`,
+    * `-test.run=TestFirefoxGeckoDriver`,
+    * `-test.run=TestHTMLUnit`, or
+    * `-test.run=TestChrome`.
+
+  To run a specific subtest, pass `-test.run=Test<Browser>/<subtest>` as
+  appropriate. This flag supports regular expressions.
+
 * If the Chrome or Firefox binaries, the Selenium JAR, the Geckodriver binary,
   or the ChromeDriver binary cannot be found, the corresponding tests will be
   skipped.
+
 * The binaries and JAR under test can be configured by passing flags to `go
   test`. See the available flags with `go test --arg --help`.
-* Add the argument `-test.v` to see detailed output from Selenium and the
-  browsers.
+
+* Add the argument `-test.v` to see detailed output from the test automation
+  framework.
 
 ### Testing With Docker
 
-You will need an installed and running Docker system.
+To ensure hermeticity, we also have tests that run under Docker. You will need
+an installed and running Docker system.
 
 To run the tests under Docker, run:
 
@@ -150,7 +176,7 @@ This will create a new Docker container and run the tests in it. (Note: flags
 supplied to this invocation are not curried through to the `go test` invocation
 within the Docker container).
 
-For debugging docker directly, run the following commands:
+For debugging Docker directly, run the following commands:
 
     $ docker build -t go-selenium testing/
     $ docker run --volume=${GOPATH?}:/code --workdir=/code/src/github.com/tebeka/selenium -it go-selenium bash
