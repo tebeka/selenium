@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/blang/semver"
+	"github.com/tebeka/selenium/firefox"
 )
 
 // Errors returned by Selenium server.
@@ -297,6 +298,60 @@ func parseVersion(v string) (semver.Version, error) {
 	return semver.Version{}, err
 }
 
+// The list of valid, top-level capability names, according to the W3C
+// specification.
+//
+// This must be kept in sync with the specification:
+// https://www.w3.org/TR/webdriver/#capabilities
+var w3cCapabilityNames = []string{
+	"acceptInsecureCerts",
+	"browserName",
+	"browserVersion",
+	"platformName",
+	"pageLoadStrategy",
+	"proxy",
+	"setWindowRect",
+	"timeouts",
+	"unhandledPromptBehavior",
+}
+
+var isValidW3CCapability = map[string]bool{}
+
+func init() {
+	for _, name := range w3cCapabilityNames {
+		isValidW3CCapability[name] = true
+	}
+}
+
+// Create a W3C-compatible capabilities instance.
+func newW3CCapabilities(caps Capabilities) Capabilities {
+	alwaysMatch := make(Capabilities)
+	for name, value := range caps {
+		if isValidW3CCapability[name] || strings.Contains(name, ":") {
+			alwaysMatch[name] = value
+		}
+	}
+
+	// Move the Firefox profile setting from the old location to the new
+	// location.
+	if prof, ok := caps["firefox_profile"]; ok {
+		if c, ok := alwaysMatch[firefox.CapabilitiesKey]; ok {
+			firefoxCaps := c.(firefox.Capabilities)
+			if firefoxCaps.Profile == "" {
+				firefoxCaps.Profile = prof.(string)
+			}
+		} else {
+			alwaysMatch[firefox.CapabilitiesKey] = firefox.Capabilities{
+				Profile: prof.(string),
+			}
+		}
+	}
+
+	return Capabilities{
+		"alwaysMatch": alwaysMatch,
+	}
+}
+
 func (wd *remoteWD) NewSession() (string, error) {
 	// Detect whether the remote end complies with the W3C specification:
 	// non-compliant implementations use the top-level 'desiredCapabilities' JSON
@@ -311,10 +366,7 @@ func (wd *remoteWD) NewSession() (string, error) {
 		params map[string]interface{}
 	}{
 		{map[string]interface{}{
-			"capabilities": map[string]interface{}{
-				"alwaysMatch":         wd.capabilities,
-				"desiredCapabilities": wd.capabilities,
-			},
+			"capabilities":        newW3CCapabilities(wd.capabilities),
 			"desiredCapabilities": wd.capabilities,
 		}},
 		{map[string]interface{}{

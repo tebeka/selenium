@@ -343,6 +343,7 @@ func testFirefoxProfile(t *testing.T, c config) {
 	if _, err := wd.NewSession(); err != nil {
 		t.Fatalf("wd.NewSession() returned error: %v", err)
 	}
+	defer quitRemote(t, wd)
 
 	u, err := wd.CurrentURL()
 	if err != nil {
@@ -351,6 +352,15 @@ func testFirefoxProfile(t *testing.T, c config) {
 	const wantURL = "about:config"
 	if u != wantURL {
 		t.Fatalf("wd.Current() = %q, want %q", u, wantURL)
+	}
+
+	// Test that the old Firefox profile location gets migrated for W3C
+	// compatibility.
+	caps = newW3CCapabilities(map[string]interface{}{"firefox_profile": "base64-encoded Firefox profile goes here"})
+	fmt.Printf("%v", caps)
+	f = caps["alwaysMatch"].(Capabilities)[firefox.CapabilitiesKey].(firefox.Capabilities)
+	if f.Profile == "" {
+		t.Fatalf("Capability 'firefox_profile' was not migrated to 'moz:firefoxOptions.profile': %+v", caps)
 	}
 }
 
