@@ -1265,6 +1265,16 @@ func (elem *remoteWE) GetAttribute(name string) (string, error) {
 	return elem.parent.stringCommand(urlTemplate)
 }
 
+func round(f float64) int {
+	if f < -0.5 {
+		return int(f - 0.5)
+	}
+	if f > 0.5 {
+		return int(f + 0.5)
+	}
+	return 0
+}
+
 func (elem *remoteWE) location(suffix string) (*Point, error) {
 	if !elem.parent.w3cCompatible {
 		wd := elem.parent
@@ -1274,18 +1284,18 @@ func (elem *remoteWE) location(suffix string) (*Point, error) {
 		if err != nil {
 			return nil, err
 		}
-		reply := new(struct{ Value Point })
+		reply := new(struct{ Value rect })
 		if err := json.Unmarshal(response, reply); err != nil {
 			return nil, err
 		}
-		return &reply.Value, nil
+		return &Point{round(reply.Value.X), round(reply.Value.Y)}, nil
 	}
 
 	rect, err := elem.rect()
 	if err != nil {
 		return nil, err
 	}
-	return &Point{int(rect.X), int(rect.Y)}, nil
+	return &Point{round(rect.X), round(rect.Y)}, nil
 }
 
 func (elem *remoteWE) Location() (*Point, error) {
