@@ -17,6 +17,7 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/tebeka/selenium/firefox"
+	"github.com/tebeka/selenium/log"
 )
 
 // Errors returned by Selenium server.
@@ -1123,9 +1124,9 @@ func (wd *remoteWD) Screenshot() ([]byte, error) {
 	return ioutil.ReadAll(decoder)
 }
 
-func (wd *remoteWD) Log(typ LogType) ([]LogMessage, error) {
+func (wd *remoteWD) Log(typ log.Type) ([]LogMessage, error) {
 	url := wd.requestURL("/session/%s/log", wd.id)
-	params := map[string]LogType{
+	params := map[string]log.Type{
 		"type": typ,
 	}
 	data, err := json.Marshal(params)
