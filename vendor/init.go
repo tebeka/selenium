@@ -45,10 +45,10 @@ var files = []file{
 		hash: "1cce6d3a5ca5b2e32be18ca5107d4f21bddaa9a18700e3b117768f13040b7cf8",
 	},
 	{
-		url:    "https://chromedriver.storage.googleapis.com/2.29/chromedriver_linux64.zip",
-		name:   "chromedriver_2.29_linux64.zip",
-		hash:   "bb2cf08f2c213f061d6fbca9658fc44a367c1ba7e40b3ee1e3ae437be0f901c2",
-		rename: []string{"chromedriver", "chromedriver-linux64-2.29"},
+		url:    "https://chromedriver.storage.googleapis.com/2.30/chromedriver_linux64.zip",
+		name:   "chromedriver_2.30_linux64.zip",
+		hash:   "342f4f8db4f9c5f14fdd8a255d2188bf735e6785d678fce93eab0b316307e474",
+		rename: []string{"chromedriver", "chromedriver-linux64-2.30"},
 	},
 	{
 		url:    "https://github.com/mozilla/geckodriver/releases/download/v0.16.1/geckodriver-v0.16.1-linux64.tar.gz",
