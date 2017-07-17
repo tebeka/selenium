@@ -1124,7 +1124,7 @@ func (wd *remoteWD) Screenshot() ([]byte, error) {
 	return ioutil.ReadAll(decoder)
 }
 
-func (wd *remoteWD) Log(typ log.Type) ([]LogMessage, error) {
+func (wd *remoteWD) Log(typ log.Type) ([]log.Message, error) {
 	url := wd.requestURL("/session/%s/log", wd.id)
 	params := map[string]log.Type{
 		"type": typ,
@@ -1138,12 +1138,27 @@ func (wd *remoteWD) Log(typ log.Type) ([]LogMessage, error) {
 		return nil, err
 	}
 
-	c := new(struct{ Value []LogMessage })
+	c := new(struct {
+		Value []struct {
+			Timestamp int64
+			Level     string
+			Message   string
+		}
+	})
 	if err = json.Unmarshal(response, c); err != nil {
 		return nil, err
 	}
 
-	return c.Value, nil
+	val := make([]log.Message, len(c.Value))
+	for i, v := range c.Value {
+		val[i] = log.Message{
+			Timestamp: time.Unix(0, v.Timestamp*1000),
+			Level:     log.Level(v.Level),
+			Message:   v.Message,
+		}
+	}
+
+	return val, nil
 }
 
 type remoteWE struct {

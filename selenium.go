@@ -202,13 +202,6 @@ type Size struct {
 	Width, Height int
 }
 
-// LogMessage is a log message returned from the Log method.
-type LogMessage struct {
-	Timestamp int
-	Level     string
-	Message   string
-}
-
 // Cookie represents an HTTP cookie.
 type Cookie struct {
 	Name   string `json:"name"`
@@ -344,7 +337,7 @@ type WebDriver interface {
 	// capabilities.
 	//
 	// NOTE: will return an error (not implemented) on IE11 or Edge drivers.
-	Log(typ log.Type) ([]LogMessage, error)
+	Log(typ log.Type) ([]log.Message, error)
 
 	// DismissAlert dismisses current alert.
 	DismissAlert() error

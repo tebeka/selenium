@@ -1319,7 +1319,13 @@ func testLog(t *testing.T, c config) {
 		t.Fatalf("wd.Log(Browser) returned error: %v", err)
 	}
 	if len(logs) == 0 {
-		t.Fatal("empty reply from wd.Log(Browser)")
+		t.Fatalf("empty reply from wd.Log(Browser)")
+	} else {
+		for _, l := range logs {
+			if len(l.Level) == 0 || l.Timestamp.Unix() == 0 || len(l.Message) == 0 {
+				t.Errorf("wd.Log(Browser) returned malformed message: %+v", l)
+			}
+		}
 	}
 
 	if c.browser == "chrome" {
@@ -1329,6 +1335,12 @@ func testLog(t *testing.T, c config) {
 		}
 		if len(logs) == 0 {
 			t.Fatal("empty reply from wd.Log(Performance)")
+		} else {
+			for _, l := range logs {
+				if len(l.Level) == 0 || l.Timestamp.Unix() == 0 || len(l.Message) == 0 {
+					t.Errorf("wd.Log(Browser) returned malformed message: %+v", l)
+				}
+			}
 		}
 	}
 }

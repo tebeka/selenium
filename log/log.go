@@ -1,6 +1,8 @@
 // Package log provides logging-related configuration types and constants.
 package log
 
+import "time"
+
 // Type represents a component capable of logging.
 type Type string
 
@@ -38,3 +40,10 @@ const CapabilitiesKey = "loggingPrefs"
 // Capability is the map to include in the WebDriver capabilities structure to
 // configure logging.
 type Capabilities map[Type]Level
+
+// Message is a log message returned from the Log method.
+type Message struct {
+	Timestamp time.Time
+	Level     Level
+	Message   string
+}
