@@ -31,7 +31,7 @@ var (
 	firefoxBinarySelenium3 = flag.String("firefox_binary_for_selenium3", "vendor/firefox-nightly/firefox", "The name of the Firefox binary for Selenium 3 tests or the path to it. If the name does not contain directory separators, the PATH will be searched.")
 	geckoDriverPath        = flag.String("geckodriver_path", "vendor/geckodriver-v0.16.1-linux64", "The path to the geckodriver binary. If empty of the file is not present, the Geckodriver tests will not be run.")
 
-	chromeDriverPath = flag.String("chrome_driver_path", "vendor/chromedriver-linux64-2.29", "The path to the ChromeDriver binary. If empty of the file is not present, Chrome tests will not be run.")
+	chromeDriverPath = flag.String("chrome_driver_path", "vendor/chromedriver-linux64-2.30", "The path to the ChromeDriver binary. If empty of the file is not present, Chrome tests will not be run.")
 	chromeBinary     = flag.String("chrome_binary", "vendor/chrome-linux/chrome", "The name of the Chrome binary or the path to it. If name is not an exact path, the PATH will be searched.")
 
 	useDocker          = flag.Bool("docker", false, "If set, run the tests in a Docker container.")
