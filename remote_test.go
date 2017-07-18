@@ -20,6 +20,7 @@ import (
 	"github.com/blang/semver"
 	"github.com/tebeka/selenium/chrome"
 	"github.com/tebeka/selenium/firefox"
+	"github.com/tebeka/selenium/log"
 )
 
 var (
@@ -1295,20 +1296,52 @@ func testLog(t *testing.T, c config) {
 		// https://github.com/mozilla/geckodriver/issues/284
 		t.Skip("The log interface is not supported on Firefox, since it is not yet part of the W3C spec.")
 	}
-	wd := newRemote(t, c)
+	caps := newTestCapabilities(t, c)
+	caps.SetLogLevel(log.Browser, log.All)
+	if c.browser == "chrome" {
+		caps.SetLogLevel(log.Performance, log.All)
+	}
+	wd := &remoteWD{
+		capabilities: caps,
+		urlPrefix:    c.addr,
+	}
+	if _, err := wd.NewSession(); err != nil {
+		t.Fatalf("wd.NewSession() returned error: %v", err)
+	}
 	defer quitRemote(t, wd)
 
 	url := serverURL + "/log"
 	if err := wd.Get(url); err != nil {
 		t.Fatalf("wd.Get(%q) returned error: %v", url, err)
 	}
-	logs, err := wd.Log(Browser)
+	logs, err := wd.Log(log.Browser)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("wd.Log(Browser) returned error: %v", err)
+	}
+	if len(logs) == 0 {
+		t.Fatalf("empty reply from wd.Log(Browser)")
+	} else {
+		for _, l := range logs {
+			if len(l.Level) == 0 || l.Timestamp.Unix() == 0 || len(l.Message) == 0 {
+				t.Errorf("wd.Log(Browser) returned malformed message: %+v", l)
+			}
+		}
 	}
 
-	if len(logs) == 0 {
-		t.Fatal("Empty reply")
+	if c.browser == "chrome" {
+		logs, err = wd.Log(log.Performance)
+		if err != nil {
+			t.Fatalf("wd.Log(Performance) returned error: %v", err)
+		}
+		if len(logs) == 0 {
+			t.Fatal("empty reply from wd.Log(Performance)")
+		} else {
+			for _, l := range logs {
+				if len(l.Level) == 0 || l.Timestamp.Unix() == 0 || len(l.Message) == 0 {
+					t.Errorf("wd.Log(Browser) returned malformed message: %+v", l)
+				}
+			}
+		}
 	}
 }
 

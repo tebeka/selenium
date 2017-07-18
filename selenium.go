@@ -5,6 +5,7 @@ import (
 
 	"github.com/tebeka/selenium/chrome"
 	"github.com/tebeka/selenium/firefox"
+	"github.com/tebeka/selenium/log"
 )
 
 // Version specifies the semantic version (SemVer) of this driver.
@@ -109,6 +110,21 @@ func (c Capabilities) AddProxy(p Proxy) {
 	c["proxy"] = p
 }
 
+// AddLogging adds logging configuration to the capabilities.
+func (c Capabilities) AddLogging(l log.Capabilities) {
+	c[log.CapabilitiesKey] = l
+}
+
+// SetLogLevel sets the logging level of a component. It is a shortcut for
+// passing a log.Capabilities instance to AddLogging.
+func (c Capabilities) SetLogLevel(typ log.Type, level log.Level) {
+	if _, ok := c[log.CapabilitiesKey]; !ok {
+		c[log.CapabilitiesKey] = make(log.Capabilities)
+	}
+	m := c[log.CapabilitiesKey].(log.Capabilities)
+	m[typ] = level
+}
+
 // Proxy specifies configuration for proxies in the browser. Set the key
 // "proxy" in Capabilities to an instance of this type.
 type Proxy struct {
@@ -195,26 +211,6 @@ type Cookie struct {
 	Secure bool   `json:"secure"`
 	Expiry uint   `json:"expiry"`
 }
-
-// LogMessage is returned from the Log method.
-type LogMessage struct {
-	Timestamp int
-	Level     string
-	Message   string
-}
-
-// LogType are logger types
-type LogType string
-
-// The valid log types.
-const (
-	ServerLog   LogType = "server"
-	Browser             = "browser"
-	Client              = "client"
-	Driver              = "driver"
-	Performance         = "performance"
-	Profiler            = "profiler"
-)
 
 // WebDriver defines methods supported by WebDriver drivers.
 type WebDriver interface {
@@ -341,7 +337,7 @@ type WebDriver interface {
 	// capabilities.
 	//
 	// NOTE: will return an error (not implemented) on IE11 or Edge drivers.
-	Log(typ LogType) ([]LogMessage, error)
+	Log(typ log.Type) ([]log.Message, error)
 
 	// DismissAlert dismisses current alert.
 	DismissAlert() error
