@@ -102,6 +102,17 @@ Using Geckodriver without Selenium usually has the above known issues as well.
    broken](https://github.com/tebeka/selenium/issues/61), with the root cause
    not yet diagnosed.
 
+## Breaking Changes
+
+There are a number of upcoming changes that break backward compatibility in an
+effort to improve and adapt the existing API. They are listed here:
+
+### 18 April 2017
+
+The Log method was changed to accept a typed constant for the type of log to
+retrieve, instead of a raw string. The return value was also changed to provide
+a more idiomatic type.
+
 ## Hacking
 
 Patches are encouraged through GitHub pull requests. Please ensure that a test
