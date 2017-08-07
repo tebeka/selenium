@@ -192,6 +192,18 @@ For debugging Docker directly, run the following commands:
     $ docker build -t go-selenium testing/
     $ docker run --volume=${GOPATH?}:/code --workdir=/code/src/github.com/tebeka/selenium -it go-selenium bash
 
+### Testing With Sauce Labs
+
+Tests can be run using a browser located in the cloud via Sauce Labs.
+
+To run the tests under Sauce, run:
+
+    $ go test --test.run=TestSauce --experimental_enable_sauce \
+      --sauce_user_name=minusnine --sauce_access_key=[access key goes here]
+
+Test results can be viewed through the [Sauce Labs
+Dashboard](https://saucelabs.com/beta/dashboard/tests).
+
 ## License
 
 This project is licensed under the [MIT][mit] license.

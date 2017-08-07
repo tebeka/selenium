@@ -18,15 +18,14 @@ import (
 	"time"
 
 	"github.com/blang/semver"
+	"github.com/google/go-cmp/cmp"
 	"github.com/tebeka/selenium/chrome"
 	"github.com/tebeka/selenium/firefox"
 	"github.com/tebeka/selenium/log"
+	"github.com/tebeka/selenium/sauce"
 )
 
 var (
-	selenium2Path          = flag.String("selenium2_path", "vendor/selenium-server-standalone-2.53.1.jar", "The path to the Selenium 2 server JAR. If empty or the file is not present, Firefox tests on Selenium 2 will not be run.")
-	firefoxBinarySelenium2 = flag.String("firefox_binary_for_selenium2", "vendor/firefox-47/firefox", "The name of the Firefox binary for Selenium 2 tests or the path to it. If the name does not contain directory separators, the PATH will be searched.")
-
 	selenium3Path          = flag.String("selenium3_path", "vendor/selenium-server-standalone-3.4.jar", "The path to the Selenium 3 server JAR. If empty or the file is not present, Firefox tests using Selenium 3 will not be run.")
 	firefoxBinarySelenium3 = flag.String("firefox_binary_for_selenium3", "vendor/firefox-nightly/firefox", "The name of the Firefox binary for Selenium 3 tests or the path to it. If the name does not contain directory separators, the PATH will be searched.")
 	geckoDriverPath        = flag.String("geckodriver_path", "vendor/geckodriver-v0.18.0-linux64", "The path to the geckodriver binary. If empty of the file is not present, the Geckodriver tests will not be run.")
@@ -70,6 +69,7 @@ func pickUnusedPort() (int, error) {
 
 type config struct {
 	addr, browser, path string
+	sauce               *sauce.Capabilities
 	seleniumVersion     semver.Version
 	serviceOptions      []ServiceOption
 }
@@ -157,19 +157,6 @@ func testChromeExtension(t *testing.T, c config) {
 	if color != wantColor {
 		t.Fatalf("body background has color %q, want %q", color, wantColor)
 	}
-}
-
-func TestFirefoxSelenium2(t *testing.T) {
-	if *useDocker {
-		t.Skip("Skipping tests because they will be run under a Docker container")
-	}
-	if _, err := os.Stat(*selenium2Path); err != nil {
-		t.Skipf("Skipping Firefox tests using Selenium 2 because Selenium WebDriver JAR not found at path %q", *selenium2Path)
-	}
-	runFirefoxTests(t, *selenium2Path, config{
-		seleniumVersion: semver.MustParse("2.0.0"),
-		path:            *firefoxBinarySelenium2,
-	})
 }
 
 func TestFirefoxSelenium3(t *testing.T) {
@@ -279,15 +266,19 @@ func runFirefoxTests(t *testing.T, webDriverPath string, c config) {
 		c.addr = fmt.Sprintf("http://127.0.0.1:%d/wd/hub", port)
 	}
 
+	runFirefoxSubTests(t, c)
+
+	if err := s.Stop(); err != nil {
+		t.Fatalf("Error stopping the Selenium service: %v", err)
+	}
+}
+
+func runFirefoxSubTests(t *testing.T, c config) {
 	runTests(t, c)
 
 	// Firefox-specific tests.
 	t.Run("Preferences", runTest(testFirefoxPreferences, c))
 	t.Run("Profile", runTest(testFirefoxProfile, c))
-
-	if err := s.Stop(); err != nil {
-		t.Fatalf("Error stopping the Selenium service: %v", err)
-	}
 }
 
 func testFirefoxPreferences(t *testing.T, c config) {
@@ -442,6 +433,21 @@ func newTestCapabilities(t *testing.T, c config) Capabilities {
 	case "htmlunit":
 		caps["javascriptEnabled"] = true
 	}
+
+	if c.sauce != nil {
+		m, err := c.sauce.ToMap()
+		if err != nil {
+			t.Fatalf("Error obtaining map for sauce.Capabilities: %s", err)
+		}
+		for k, v := range m {
+			caps[k] = v
+		}
+		if c.seleniumVersion.Major > 0 {
+			caps["seleniumVersion"] = c.seleniumVersion.String()
+		}
+		caps["name"] = t.Name()
+	}
+
 	return caps
 }
 
@@ -515,8 +521,12 @@ func testStatus(t *testing.T, c config) {
 		t.Fatalf("wd.Status() returned error: %v", err)
 	}
 
-	if len(status.OS.Name) == 0 && status.Message == "" {
-		t.Fatalf("OS.Name or Message not provided: %+v", status)
+	if c.sauce == nil {
+		if len(status.OS.Name) == 0 && status.Message == "" {
+			t.Fatalf("OS.Name or Message not provided: %+v", status)
+		}
+	} else if status.Build.Version != "Sauce Labs" {
+		t.Fatalf("status.Build.Version = %q, expected 'Sauce Labs'", status.Build.Version)
 	}
 }
 
@@ -563,6 +573,8 @@ func testExtendedErrorMessage(t *testing.T, c config) {
 
 	var want string
 	switch {
+	case c.sauce != nil:
+		want = "404 Not Found"
 	case c.browser == "firefox" && c.seleniumVersion.Major == 2:
 		want = "unknown error:"
 	case c.browser == "firefox" && c.seleniumVersion.Major == 0:
@@ -1044,6 +1056,10 @@ func testGetCookies(t *testing.T, c config) {
 	}
 }
 
+func v(s string) semver.Version {
+	return semver.MustParse(s)
+}
+
 func testAddCookie(t *testing.T, c config) {
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
@@ -1062,12 +1078,25 @@ func testAddCookie(t *testing.T, c config) {
 	}
 
 	// These fields are added implicitly by the browser.
-	want.Path = "/"
 	want.Domain = "127.0.0.1"
+	want.Path = "/"
 
-	// Firefox and Geckodriver returns an empty string for the path.
-	if c.browser == "firefox" && c.seleniumVersion.Major == 0 {
-		want.Path = ""
+	// Firefox and Geckodriver now returns an empty string for the path.
+	if c.browser == "firefox" {
+		r := wd.(*remoteWD)
+		switch {
+		case r.browserVersion.LT(v("56.0.0")):
+			// https://github.com/mozilla/geckodriver/issues/463
+			want.Expiry = 0
+		case c.seleniumVersion.Major == 0: // Geckodriver returns an empty string.
+			want.Path = ""
+		}
+		if c.seleniumVersion.Major == 0 && c.sauce != nil {
+			want.Path = ""
+		}
+		if c.sauce != nil {
+			want.Expiry = 0
+		}
 	}
 
 	cookies, err := wd.GetCookies()
@@ -1085,8 +1114,8 @@ func testAddCookie(t *testing.T, c config) {
 		t.Fatalf("wd.GetCookies() = %v, missing cookie %q", cookies, want.Name)
 	}
 
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("Cookie %q = %+v, want %+v", want.Name, got, want)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Fatalf("wd.GetCookies() returned diff (-want/+got):\n%s", diff)
 	}
 }
 
@@ -1500,6 +1529,9 @@ func testCSSProperty(t *testing.T, c config) {
 }
 
 func testProxy(t *testing.T, c config) {
+	if c.sauce != nil {
+		t.Skip("Testing a proxy on Sauce Labs doesn't work.")
+	}
 	const pageContents = "You are viewing a proxied page"
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		fmt.Fprintf(w, pageContents)

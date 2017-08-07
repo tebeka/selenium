@@ -40,11 +40,6 @@ var files = []file{
 		hash: "21cbbd775678821b6b72c208b8d59664a4c7381b3c50b008b331914d2834ec8d",
 	},
 	{
-		url:  "http://selenium-release.storage.googleapis.com/2.53/selenium-server-standalone-2.53.1.jar",
-		name: "selenium-server-standalone-2.53.1.jar",
-		hash: "1cce6d3a5ca5b2e32be18ca5107d4f21bddaa9a18700e3b117768f13040b7cf8",
-	},
-	{
 		url:    "https://chromedriver.storage.googleapis.com/2.30/chromedriver_linux64.zip",
 		name:   "chromedriver_2.30_linux64.zip",
 		hash:   "342f4f8db4f9c5f14fdd8a255d2188bf735e6785d678fce93eab0b316307e474",
@@ -57,19 +52,18 @@ var files = []file{
 		rename: []string{"geckodriver", "geckodriver-v0.18.0-linux64"},
 	},
 	{
-		url:     "https://ftp.mozilla.org/pub/firefox/releases/47.0.2/linux-x86_64/en-US/firefox-47.0.2.tar.bz2",
-		name:    "firefox-47-0.2.tar.bz2",
-		hash:    "ea88e5d18438d1b80e6048fa2cfbaa90875fba8f42ef5bddc191b6bfd90af672",
-		browser: true,
-		rename:  []string{"firefox", "firefox-47"},
-	},
-	{
 		// This is a recent nightly. Update this path periodically.
 		url:     "https://archive.mozilla.org/pub/firefox/nightly/2017/08/2017-08-21-10-03-50-mozilla-central/firefox-57.0a1.en-US.linux-x86_64.tar.bz2",
 		name:    "firefox-57.0a1.en-US.linux-x86_64.tar.bz2",
 		hash:    "77c57356935f66a5a59b1b2cffeaa53b70204195e6a7b15ee828fd3308561e46",
 		browser: true,
 		rename:  []string{"firefox", "firefox-nightly"},
+	},
+	{
+		url:    "https://saucelabs.com/downloads/sc-4.4.9-linux.tar.gz",
+		name:   "sauce-connect-4.4.9-linux.tar.gz",
+		hash:   "b1bedccc2690b48d6708ac71f23189c85b0da62c56ee943a1b20d8f17fa8bbde",
+		rename: []string{"sc-4.4.9-linux", "sauce-connect"},
 	},
 }
 
