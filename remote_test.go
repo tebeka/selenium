@@ -121,7 +121,6 @@ func TestChrome(t *testing.T) {
 	if err := s.Stop(); err != nil {
 		t.Fatalf("Error stopping the ChromeDriver service: %v", err)
 	}
-
 }
 
 func testChromeExtension(t *testing.T, c config) {
@@ -478,6 +477,7 @@ func runTest(f func(*testing.T, config), c config) func(*testing.T) {
 func runTests(t *testing.T, c config) {
 	t.Run("Status", runTest(testStatus, c))
 	t.Run("NewSession", runTest(testNewSession, c))
+	t.Run("Error", runTest(testError, c))
 	t.Run("ExtendedErrorMessage", runTest(testExtendedErrorMessage, c))
 	t.Run("Capabilities", runTest(testCapabilities, c))
 	t.Run("SetAsyncScriptTimeout", runTest(testSetAsyncScriptTimeout, c))
@@ -564,6 +564,43 @@ func testNewSession(t *testing.T, c config) {
 
 	if wd.browserVersion.Major == 0 {
 		t.Fatalf("wd.browserVersion.Major = %d, expected > 0", wd.browserVersion.Major)
+	}
+}
+
+func testError(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
+
+	_, err := wd.FindElement(ByID, "no-such-element")
+	if err == nil {
+		t.Fatal("wd.FindElement(ByID, 'no-such-element') did not return an error as expected")
+	}
+
+	e, ok := err.(*Error)
+	if !ok {
+		if c.seleniumVersion.Major > 0 {
+			//			t.Skipf("Selenium does not support W3C-style errors.")
+		} else {
+			t.Fatalf("wd.FindElement(ByID, 'no-such-element') returned an error that is not an *Error: %v", err)
+		}
+	}
+	if want := "no such element"; e.Err != want {
+		t.Errorf("wd.FindElement(ByID, 'no-such-element'); err.Err = %q, want %q", e.Err, want)
+	}
+
+	var wantCode int
+	switch c.browser {
+	case "chrome":
+		wantCode = 200
+	case "firefox":
+		if c.seleniumVersion.Major > 0 {
+			wantCode = 500
+		} else {
+			wantCode = 400
+		}
+	}
+	if e.HTTPCode != wantCode {
+		t.Errorf("wd.FindElement(ByID, 'no-such-element'); err.HTTPCode = %d, want %d", e.HTTPCode, wantCode)
 	}
 }
 

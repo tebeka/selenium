@@ -90,12 +90,24 @@ type serverReply struct {
 	Error
 }
 
-// Error contains information about a failure of a command.
+// Error contains information about a failure of a command. See the table of
+// these strings at https://www.w3.org/TR/webdriver/#handling-errors .
+//
+// This error type is only returned by servers that implement the W3C
+// specification.
 type Error struct {
-	Err        string `json:"error"`
-	Message    string `json:"message"`
+	// Err contains a general error string provided by the server.
+	Err string `json:"error"`
+	// Message is a detailed, human-readable message specific to the failure.
+	Message string `json:"message"`
+	// Stacktrace may contain the server-side stacktrace where the error occurred.
 	Stacktrace string `json:"stacktrace"`
+	// HTTPCode is the HTTP status code returned by the server.
+	HTTPCode int
 }
+
+// TODO(minusnine): Make Stacktrace more descriptive. Selenium emits a list of
+// objects that enumerate various fields. This is not standard, though.
 
 // Error implements the error interface.
 func (e *Error) Error() string {
@@ -157,6 +169,7 @@ func (wd *remoteWD) execute(method, url string, data []byte) (json.RawMessage, e
 	if len(reply.Value) > 0 {
 		respErr := new(Error)
 		if err := json.Unmarshal(reply.Value, respErr); err == nil && respErr.Err != "" {
+			respErr.HTTPCode = response.StatusCode
 			return nil, respErr
 		}
 	}
@@ -175,7 +188,11 @@ func (wd *remoteWD) execute(method, url string, data []byte) (json.RawMessage, e
 		if err := json.Unmarshal(reply.Value, longMsg); err != nil {
 			return nil, errors.New(shortMsg)
 		}
-		return nil, fmt.Errorf("%s: %s", shortMsg, longMsg.Message)
+		return nil, &Error{
+			Err:      shortMsg,
+			Message:  longMsg.Message,
+			HTTPCode: response.StatusCode,
+		}
 	}
 
 	return buf, nil
