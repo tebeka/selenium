@@ -494,6 +494,7 @@ func runTests(t *testing.T, c config) {
 	t.Run("CSSProperty", runTest(testCSSProperty, c))
 	t.Run("Proxy", runTest(testProxy, c))
 	t.Run("SwitchFrame", runTest(testSwitchFrame, c))
+	t.Run("Wait", runTest(testWait, c))
 	t.Run("ActiveElement", runTest(testActiveElement, c))
 }
 
@@ -1633,6 +1634,40 @@ func testSwitchFrame(t *testing.T, c config) {
 	}
 }
 
+func titleChangeCondition(wd WebDriver) (bool, error) {
+	title, err := wd.Title()
+	if err != nil {
+		return false, err
+	}
+
+	fmt.Printf("title \"%s\"\n", title)
+	return title == "Title changed.", nil
+}
+
+func testWait(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
+
+	if err := wd.Get(serverURL + "/title"); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
+
+	// Testing when the title should change.
+	if err := wd.Wait(titleChangeCondition); err != nil {
+		t.Fatalf("wd.Wait(titleChangeCondition) returned error: %v", err)
+	}
+
+	// Reloading the page
+	if err := wd.Get(serverURL + "/title"); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	}
+
+	// Testing when the Wait() should error the timeout..
+	if err := wd.WaitWithTimeout(titleChangeCondition, 3*time.Second); err == nil {
+		t.Fatalf("wd.Wait(titleChangeCondition) should returned error, but it didn't.")
+	}
+}
+
 var homePage = `
 <html>
 <head>
@@ -1708,6 +1743,21 @@ var framePage = `
 </html>
 `
 
+var titleChangePage = `
+<html>
+<head>
+	<title>Go Selenium Test Suite - Title Change Page</title>
+</head>
+<body>
+	This page will change a title after 5 seconds.
+
+	<script>
+		setTimeout(function() { document.title = 'Title changed.' }, 5000);
+	</script>
+</body>
+</html>
+`
+
 func handler(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 	page, ok := map[string]string{
@@ -1716,6 +1766,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		"/search": searchPage,
 		"/log":    logPage,
 		"/frame":  framePage,
+		"/title":  titleChangePage,
 	}[path]
 	if !ok {
 		http.NotFound(w, r)
