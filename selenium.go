@@ -360,13 +360,13 @@ type WebDriver interface {
 	ExecuteScriptAsyncRaw(script string, args []interface{}) ([]byte, error)
 
 	// WaitWithTimeoutAndInterval waits for the condition to evaluate to true.
-	WaitWithTimeoutAndInterval(condition Condition, timeout time.Duration, interval time.Duration) (error)
+	WaitWithTimeoutAndInterval(condition Condition, timeout, interval time.Duration) error
 
 	// WaitWithTimeout works like WaitWithTimeoutAndInterval, but with default polling interval.
-	WaitWithTimeout(condition Condition, timeout time.Duration) (error)
+	WaitWithTimeout(condition Condition, timeout time.Duration) error
 
 	//Wait works like WaitWithTimeoutAndInterval, but using the default timeout and polling interval.
-	Wait(condition Condition) (error)
+	Wait(condition Condition) error
 }
 
 // WebElement defines method supported by web elements.

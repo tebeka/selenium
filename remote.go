@@ -44,16 +44,6 @@ var remoteErrors = map[int]string{
 	32: "invalid selector",
 }
 
-// Alias for a type that is passed as an argument for selenium.Wait
-type Condition func(wd WebDriver) (bool, error)
-
-// Default polling interval for selenium.Wait function.
-const DefaultWaitInterval = 100 * time.Millisecond
-
-// Default timeout for selenium.Wait function.
-const DefaultWaitTimeout = 60 * time.Second
-
-
 type remoteWD struct {
 	id, urlPrefix string
 	capabilities  Capabilities
@@ -1134,7 +1124,19 @@ func (wd *remoteWD) Screenshot() ([]byte, error) {
 	return ioutil.ReadAll(decoder)
 }
 
-func (wd *remoteWD) WaitWithTimeoutAndInterval(condition Condition, timeout time.Duration, interval time.Duration) (error) {
+// Condition is an alias for a type that is passed as an argument
+// for selenium.Wait(cond Condition) (error) function.
+type Condition func(wd WebDriver) (bool, error)
+
+const (
+	// Default polling interval for selenium.Wait function.
+	DefaultWaitInterval = 100 * time.Millisecond
+
+	// Default timeout for selenium.Wait function.
+	DefaultWaitTimeout = 60 * time.Second
+)
+
+func (wd *remoteWD) WaitWithTimeoutAndInterval(condition Condition, timeout, interval time.Duration) error {
 	startTime := time.Now()
 
 	for {
@@ -1142,24 +1144,22 @@ func (wd *remoteWD) WaitWithTimeoutAndInterval(condition Condition, timeout time
 		if err != nil {
 			return err
 		}
-
 		if done {
 			return nil
 		}
 
-		elapsed := time.Since(startTime)
-		if elapsed > timeout {
-			return fmt.Errorf("Timeout after %v", elapsed)
+		if elapsed := time.Since(startTime); elapsed > timeout {
+			return fmt.Errorf("timeout after %v", elapsed)
 		}
 		time.Sleep(interval)
 	}
 }
 
-func (wd *remoteWD) WaitWithTimeout(condition Condition, timeout time.Duration) (error){
+func (wd *remoteWD) WaitWithTimeout(condition Condition, timeout time.Duration) error {
 	return wd.WaitWithTimeoutAndInterval(condition, timeout, DefaultWaitInterval)
 }
 
-func (wd *remoteWD) Wait(condition Condition) (error) {
+func (wd *remoteWD) Wait(condition Condition) error {
 	return wd.WaitWithTimeoutAndInterval(condition, DefaultWaitTimeout, DefaultWaitInterval)
 }
 
