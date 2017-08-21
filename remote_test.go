@@ -31,7 +31,7 @@ var (
 	geckoDriverPath        = flag.String("geckodriver_path", "vendor/geckodriver-v0.18.0-linux64", "The path to the geckodriver binary. If empty of the file is not present, the Geckodriver tests will not be run.")
 	javaPath               = flag.String("java_path", "", "The path to the Java runtime binary to invoke. If not specified, 'java' will be used.")
 
-	chromeDriverPath = flag.String("chrome_driver_path", "vendor/chromedriver-linux64-2.30", "The path to the ChromeDriver binary. If empty of the file is not present, Chrome tests will not be run.")
+	chromeDriverPath = flag.String("chrome_driver_path", "vendor/chromedriver-linux64-2.31", "The path to the ChromeDriver binary. If empty of the file is not present, Chrome tests will not be run.")
 	chromeBinary     = flag.String("chrome_binary", "vendor/chrome-linux/chrome", "The name of the Chrome binary or the path to it. If name is not an exact path, the PATH will be searched.")
 
 	useDocker          = flag.Bool("docker", false, "If set, run the tests in a Docker container.")
