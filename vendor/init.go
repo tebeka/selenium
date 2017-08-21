@@ -51,10 +51,10 @@ var files = []file{
 		rename: []string{"chromedriver", "chromedriver-linux64-2.30"},
 	},
 	{
-		url:    "https://github.com/mozilla/geckodriver/releases/download/v0.16.1/geckodriver-v0.16.1-linux64.tar.gz",
-		name:   "geckodriver-v0.16.1-linux64.tar.gz",
-		hash:   "dcadab8586264cf33aae1fff0897520d46e39dad4580c6cae712452fdc59e529",
-		rename: []string{"geckodriver", "geckodriver-v0.16.1-linux64"},
+		url:    "https://github.com/mozilla/geckodriver/releases/download/v0.18.0/geckodriver-v0.18.0-linux64.tar.gz",
+		name:   "geckodriver-v0.18.0-linux64.tar.gz",
+		hash:   "b78a0c5d2e249312d266d846e803e88a26477de20f33bfd635e164d27e59ae20",
+		rename: []string{"geckodriver", "geckodriver-v0.18.0-linux64"},
 	},
 	{
 		url:     "https://ftp.mozilla.org/pub/firefox/releases/47.0.2/linux-x86_64/en-US/firefox-47.0.2.tar.bz2",
