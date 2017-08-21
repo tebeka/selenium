@@ -1634,22 +1634,24 @@ func testSwitchFrame(t *testing.T, c config) {
 	}
 }
 
-func titleChangeCondition(wd WebDriver) (bool, error) {
-	title, err := wd.Title()
-	if err != nil {
-		return false, err
+func testWait(t *testing.T, c config) {
+	newTitle := "Title changed."
+	titleChangeCondition:= func (wd WebDriver) (bool, error) {
+		title, err := wd.Title()
+		if err != nil {
+			return false, err
+		}
+
+		return title == newTitle, nil
 	}
 
-	fmt.Printf("title \"%s\"\n", title)
-	return title == "Title changed.", nil
-}
-
-func testWait(t *testing.T, c config) {
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
-	if err := wd.Get(serverURL + "/title"); err != nil {
-		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	titleURL := serverURL + "/title"
+
+	if err := wd.Get(titleURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", titleURL, err)
 	}
 
 	// Testing when the title should change.
@@ -1657,13 +1659,13 @@ func testWait(t *testing.T, c config) {
 		t.Fatalf("wd.Wait(titleChangeCondition) returned error: %v", err)
 	}
 
-	// Reloading the page
-	if err := wd.Get(serverURL + "/title"); err != nil {
-		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
+	// Reloading the page.
+	if err := wd.Get(titleURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", titleURL, err)
 	}
 
 	// Testing when the Wait() should error the timeout..
-	if err := wd.WaitWithTimeout(titleChangeCondition, 3*time.Second); err == nil {
+	if err := wd.WaitWithTimeout(titleChangeCondition, 500*time.Millisecond); err == nil {
 		t.Fatalf("wd.Wait(titleChangeCondition) should returned error, but it didn't.")
 	}
 }
@@ -1749,10 +1751,10 @@ var titleChangePage = `
 	<title>Go Selenium Test Suite - Title Change Page</title>
 </head>
 <body>
-	This page will change a title after 5 seconds.
+	This page will change a title after 1 second.
 
 	<script>
-		setTimeout(function() { document.title = 'Title changed.' }, 5000);
+		setTimeout(function() { document.title = 'Title changed.' }, 1000);
 	</script>
 </body>
 </html>
