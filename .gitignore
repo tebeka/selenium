@@ -6,3 +6,5 @@ selenium-server-standalone-*.jar
 chromedriver*
 vendor/*
 !vendor/*.go
+coverage.txt
+coverage.out

@@ -1124,6 +1124,45 @@ func (wd *remoteWD) Screenshot() ([]byte, error) {
 	return ioutil.ReadAll(decoder)
 }
 
+// Condition is an alias for a type that is passed as an argument
+// for selenium.Wait(cond Condition) (error) function.
+type Condition func(wd WebDriver) (bool, error)
+
+const (
+	// Default polling interval for selenium.Wait function.
+	DefaultWaitInterval = 100 * time.Millisecond
+
+	// Default timeout for selenium.Wait function.
+	DefaultWaitTimeout = 60 * time.Second
+)
+
+func (wd *remoteWD) WaitWithTimeoutAndInterval(condition Condition, timeout, interval time.Duration) error {
+	startTime := time.Now()
+
+	for {
+		done, err := condition(wd)
+		if err != nil {
+			return err
+		}
+		if done {
+			return nil
+		}
+
+		if elapsed := time.Since(startTime); elapsed > timeout {
+			return fmt.Errorf("timeout after %v", elapsed)
+		}
+		time.Sleep(interval)
+	}
+}
+
+func (wd *remoteWD) WaitWithTimeout(condition Condition, timeout time.Duration) error {
+	return wd.WaitWithTimeoutAndInterval(condition, timeout, DefaultWaitInterval)
+}
+
+func (wd *remoteWD) Wait(condition Condition) error {
+	return wd.WaitWithTimeoutAndInterval(condition, DefaultWaitTimeout, DefaultWaitInterval)
+}
+
 func (wd *remoteWD) Log(typ log.Type) ([]log.Message, error) {
 	url := wd.requestURL("/session/%s/log", wd.id)
 	params := map[string]log.Type{
