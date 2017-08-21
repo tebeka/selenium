@@ -80,6 +80,14 @@ func GeckoDriver(path string) ServiceOption {
 	}
 }
 
+// Specify the path to the JRE for a Selenium service.
+func JavaPath(path string) ServiceOption {
+	return func(s *Service) error {
+		s.javaPath = path
+		return nil
+	}
+}
+
 // Service controls a locally-running Selenium subprocess.
 type Service struct {
 	port            int
@@ -90,18 +98,20 @@ type Service struct {
 	display, xauthPath string
 	xvfb               *FrameBuffer
 
-	geckoDriverPath string
+	geckoDriverPath, javaPath string
 
 	output io.Writer
 }
 
 // NewSeleniumService starts a Selenium instance in the background.
 func NewSeleniumService(jarPath string, port int, opts ...ServiceOption) (*Service, error) {
-	// TODO(minusnine): allow specifying the path to the JRE.
 	cmd := exec.Command("java", "-jar", jarPath, "-port", strconv.Itoa(port))
 	s, err := newService(cmd, port, opts...)
 	if err != nil {
 		return nil, err
+	}
+	if s.javaPath != "" {
+		s.cmd.Path = s.javaPath
 	}
 	if s.geckoDriverPath != "" {
 		s.cmd.Args = append([]string{"java", "-Dwebdriver.gecko.driver=" + s.geckoDriverPath}, cmd.Args[1:]...)

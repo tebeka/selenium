@@ -244,6 +244,9 @@ func runFirefoxTests(t *testing.T, webDriverPath string, c config) {
 		SetDebug(true)
 		c.serviceOptions = append(c.serviceOptions, Output(os.Stderr))
 	}
+	if *javaPath != "" {
+		c.serviceOptions = append(c.serviceOptions, JavaPath(*javaPath))
+	}
 
 	port, err := pickUnusedPort()
 	if err != nil {
