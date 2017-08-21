@@ -97,6 +97,7 @@ type Service struct {
 
 // NewSeleniumService starts a Selenium instance in the background.
 func NewSeleniumService(jarPath string, port int, opts ...ServiceOption) (*Service, error) {
+	// TODO(minusnine): allow specifying the path to the JRE.
 	cmd := exec.Command("java", "-jar", jarPath, "-port", strconv.Itoa(port))
 	s, err := newService(cmd, port, opts...)
 	if err != nil {

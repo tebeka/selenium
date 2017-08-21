@@ -317,13 +317,20 @@ func testFirefoxPreferences(t *testing.T, c config) {
 		t.Fatalf("error in new session - %s", err)
 	}
 
-	u, err := wd.CurrentURL()
-	if err != nil {
-		t.Fatalf("wd.Current() returned error: %v", err)
+	// TODO(minusnine): use the upcoming Wait API for this.
+	var u string
+	for i := 0; i < 5; i++ {
+		var err error
+		u, err = wd.CurrentURL()
+		if err != nil {
+			t.Fatalf("wd.Current() returned error: %v", err)
+		}
+		if u == serverURL+"/" {
+			return
+		}
+		time.Sleep(time.Second)
 	}
-	if u != serverURL+"/" {
-		t.Fatalf("wd.Current() = %q, want %q", u, serverURL+"/")
-	}
+	t.Fatalf("wd.Current() = %q, want %q", u, serverURL+"/")
 }
 
 func testFirefoxProfile(t *testing.T, c config) {
@@ -1058,16 +1065,9 @@ func testAddCookie(t *testing.T, c config) {
 	want.Path = "/"
 	want.Domain = "127.0.0.1"
 
-	if c.browser == "firefox" && (c.seleniumVersion.Major == 3 || c.seleniumVersion.Major == 0) {
-		// Geckodriver does not return the valid expiration date for the cookie.
-		// https://github.com/mozilla/geckodriver/issues/463
-		t.Log("Working around https://github.com/mozilla/geckodriver/issues/463")
-		want.Expiry = 0
-
-		// Firefox and Geckodriver now also returns an empty string for the path.
-		if c.seleniumVersion.Major == 0 {
-			want.Path = ""
-		}
+	// Firefox and Geckodriver returns an empty string for the path.
+	if c.browser == "firefox" && c.seleniumVersion.Major == 0 {
+		want.Path = ""
 	}
 
 	cookies, err := wd.GetCookies()

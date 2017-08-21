@@ -65,9 +65,9 @@ var files = []file{
 	},
 	{
 		// This is a recent nightly. Update this path periodically.
-		url:     "https://archive.mozilla.org/pub/firefox/nightly/2017/05/2017-05-08-10-02-18-mozilla-central/firefox-55.0a1.en-US.linux-x86_64.tar.bz2",
-		name:    "firefox-55.0a1.en-US.linux-x86_64.tar.bz2",
-		hash:    "88b08469e055014fc2e9b6c43aeacb2b52a028e16acd96854f03523fbd9a9148",
+		url:     "https://archive.mozilla.org/pub/firefox/nightly/2017/08/2017-08-21-10-03-50-mozilla-central/firefox-57.0a1.en-US.linux-x86_64.tar.bz2",
+		name:    "firefox-57.0a1.en-US.linux-x86_64.tar.bz2",
+		hash:    "77c57356935f66a5a59b1b2cffeaa53b70204195e6a7b15ee828fd3308561e46",
 		browser: true,
 		rename:  []string{"firefox", "firefox-nightly"},
 	},
