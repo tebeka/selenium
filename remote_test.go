@@ -632,6 +632,10 @@ func testSetPageLoadTimeout(t *testing.T, c config) {
 }
 
 func testWindows(t *testing.T, c config) {
+	if c.browser == "chrome" {
+		t.Skip("Skipping due to bug: https://bugs.chromium.org/p/chromedriver/issues/detail?id=1918")
+	}
+
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
@@ -1061,6 +1065,10 @@ func v(s string) semver.Version {
 }
 
 func testAddCookie(t *testing.T, c config) {
+	if c.browser == "chrome" {
+		t.Skip("Skipping due to bug: https://bugs.chromium.org/p/chromedriver/issues/detail?id=1949")
+	}
+
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
@@ -1120,6 +1128,10 @@ func testAddCookie(t *testing.T, c config) {
 }
 
 func testDeleteCookie(t *testing.T, c config) {
+	if c.browser == "chrome" {
+		t.Skip("Skipping due to bug: https://bugs.chromium.org/p/chromedriver/issues/detail?id=1950")
+	}
+
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
