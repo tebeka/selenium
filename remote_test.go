@@ -1635,8 +1635,8 @@ func testSwitchFrame(t *testing.T, c config) {
 }
 
 func testWait(t *testing.T, c config) {
-	newTitle := "Title changed."
-	titleChangeCondition:= func (wd WebDriver) (bool, error) {
+	const newTitle = "Title changed."
+	titleChangeCondition := func(wd WebDriver) (bool, error) {
 		title, err := wd.Title()
 		if err != nil {
 			return false, err
