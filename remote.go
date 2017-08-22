@@ -104,6 +104,10 @@ type Error struct {
 	Stacktrace string `json:"stacktrace"`
 	// HTTPCode is the HTTP status code returned by the server.
 	HTTPCode int
+	// LegacyCode is the "Response Status Code" defined in the legacy Selenium
+	// WebDriver JSON wire protocol. This code is only produced by older
+	// Selenium WebDriver versions, Chromedriver, and InternetExplorerDriver.
+	LegacyCode int
 }
 
 // TODO(minusnine): Make Stacktrace more descriptive. Selenium emits a list of
@@ -189,9 +193,10 @@ func (wd *remoteWD) execute(method, url string, data []byte) (json.RawMessage, e
 			return nil, errors.New(shortMsg)
 		}
 		return nil, &Error{
-			Err:      shortMsg,
-			Message:  longMsg.Message,
-			HTTPCode: response.StatusCode,
+			Err:        shortMsg,
+			Message:    longMsg.Message,
+			HTTPCode:   response.StatusCode,
+			LegacyCode: reply.Status,
 		}
 	}
 

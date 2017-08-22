@@ -588,19 +588,27 @@ func testError(t *testing.T, c config) {
 		t.Errorf("wd.FindElement(ByID, 'no-such-element'); err.Err = %q, want %q", e.Err, want)
 	}
 
-	var wantCode int
+	var wantCode, wantLegacyCode int
 	switch c.browser {
 	case "chrome":
 		wantCode = 200
+		wantLegacyCode = 7
 	case "firefox":
 		if c.seleniumVersion.Major > 0 {
 			wantCode = 500
+			wantLegacyCode = 7
 		} else {
-			wantCode = 400
+			wantCode = 404
 		}
+	case "htmlunit":
+		wantCode = 500
+		wantLegacyCode = 7
 	}
 	if e.HTTPCode != wantCode {
 		t.Errorf("wd.FindElement(ByID, 'no-such-element'); err.HTTPCode = %d, want %d", e.HTTPCode, wantCode)
+	}
+	if e.LegacyCode != wantLegacyCode {
+		t.Errorf("wd.FindElement(ByID, 'no-such-element'); err.LegacyCode = %d, want %d", e.LegacyCode, wantLegacyCode)
 	}
 }
 
