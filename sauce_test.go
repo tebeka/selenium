@@ -64,7 +64,7 @@ func TestSauce(t *testing.T) {
 		{"Latest", "Windows 10", "3.4.0"},
 		{"45.0", "Linux", "2.53.1"},
 	} {
-		name := fmt.Sprintf("%s/%s/%s", browser, tc.version, tc.platform)
+		name := fmt.Sprintf("%s/%s/%s/%s", browser, tc.version, tc.platform, tc.selenium)
 		browser, version := strings.ToLower(browser), strings.ToLower(tc.version)
 
 		t.Run(name, func(t *testing.T) {
