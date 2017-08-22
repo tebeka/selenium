@@ -995,9 +995,8 @@ func (wd *remoteWD) ButtonUp() error {
 func (wd *remoteWD) SendModifier(modifier string, isDown bool) error {
 	if isDown {
 		return wd.KeyDown(modifier)
-	} else {
-		return wd.KeyUp(modifier)
 	}
+	return wd.KeyUp(modifier)
 }
 
 func (wd *remoteWD) keyAction(action, keys string) error {
@@ -1141,10 +1140,11 @@ func (wd *remoteWD) Screenshot() ([]byte, error) {
 type Condition func(wd WebDriver) (bool, error)
 
 const (
-	// Default polling interval for selenium.Wait function.
+	// DefaultWaitInterval is the default polling interval for selenium.Wait
+	// function.
 	DefaultWaitInterval = 100 * time.Millisecond
 
-	// Default timeout for selenium.Wait function.
+	// DefaultWaitTimeout is the default timeout for selenium.Wait function.
 	DefaultWaitTimeout = 60 * time.Second
 )
 

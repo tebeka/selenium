@@ -80,7 +80,7 @@ func GeckoDriver(path string) ServiceOption {
 	}
 }
 
-// Specify the path to the JRE for a Selenium service.
+// JavaPath specifies the path to the JRE for a Selenium service.
 func JavaPath(path string) ServiceOption {
 	return func(s *Service) error {
 		s.javaPath = path
