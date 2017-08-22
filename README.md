@@ -145,9 +145,6 @@ WebDriver JARs:
 You only have to do this once initially and later when version numbers in
 init.go change.
 
-Ensure that the `chromium` binary is in your path. If the binary is named
-differently, run the tests with the flags `--chrome_binary=<binary name>`.
-
 ### Testing Locally
 
 Run the tests:
