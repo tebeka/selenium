@@ -135,7 +135,7 @@ type Proxy struct {
 	// The following are used when Type is set to Manual.
 	//
 	// Note that in Firefox, connections to localhost are not proxied by default,
-	// even if a proxy is set. This can be overrided via a preference setting.
+	// even if a proxy is set. This can be overridden via a preference setting.
 	FTP           string `json:"ftpProxy,omitempty"`
 	HTTP          string `json:"httpProxy,omitempty"`
 	SSL           string `json:"sslProxy,omitempty"`
