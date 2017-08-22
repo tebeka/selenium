@@ -100,12 +100,6 @@ Using Geckodriver without Selenium usually has the above known issues as well.
 3. DeleteCookie [doesn't work in
 	 v62+](https://bugs.chromium.org/p/chromedriver/issues/detail?id=1950).
 
-### HTMLUnit
-
-1. [Enabling Javscript support in HTMLUnit using Selenium WebDriver 3.4 seems
-   broken](https://github.com/tebeka/selenium/issues/61), with the root cause
-   not yet diagnosed.
-
 ## Breaking Changes
 
 There are a number of upcoming changes that break backward compatibility in an
