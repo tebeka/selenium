@@ -1,20 +1,13 @@
 /*
-Package selenium provider a WebDriver client.
+Package selenium provides a client to drive web browser-based automation and
+testing.
 
-Currently provides only WebDriver remote client.
+See the example below for how to get started with this API.
 
-This means you'll need to run the Selenium server by yourself (or use a service
-like SauceLabs). The easiest way to do that is to grab the Selenium server jar
-from http://www.seleniumhq.org/download/ and run it
-	java -jar selenium-server-standalone-2.24.1.jar
-
-To use the webdriver with firefox, you may (depending on versions) require the
-gecko driver package. You can download it here
-        https://github.com/mozilla/geckodriver/releases
-and configure the webdriver in your Go code like this
-        caps := selenium.Capabilities{
-            "browserName":            "firefox",
-            "webdriver.gecko.driver": "/path/to/downloaded/geckodriver",
-        }
+This package can depend on several binaries being available, depending on which
+browsers will be used and how. To avoid needing to manage these dependencies,
+use a cloud-based browser testing environment, like Sauce Labs, BrowserStack
+or similar. Otherwise, use the methods provided by this API to specify the
+paths to the dependencies, which will have to be downloaded separately.
 */
 package selenium
