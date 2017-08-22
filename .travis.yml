@@ -18,7 +18,9 @@ before_script:
     - "sh -e /etc/init.d/xvfb start"
     - sleep 3 # give xvfb some time to start
 
-script: ./testing/travis-ci-test.sh
+script: 
+    - ./testing/travis-ci-gofmt.sh
+    - ./testing/travis-ci-test.sh
 
 after_success:
   - bash <(curl -s https://codecov.io/bash) -- -v
