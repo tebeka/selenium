@@ -1011,9 +1011,6 @@ func testClick(t *testing.T, c config) {
 }
 
 func testGetCookie(t *testing.T, c config) {
-	if c.browser == "chrome" {
-		t.Skip("ChromeDriver does not implement GetCookie")
-	}
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 

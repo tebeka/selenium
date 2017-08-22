@@ -881,6 +881,18 @@ func (c cookie) sanitize() Cookie {
 }
 
 func (wd *remoteWD) GetCookie(name string) (Cookie, error) {
+	if wd.browser == "chrome" {
+		cs, err := wd.GetCookies()
+		if err != nil {
+			return Cookie{}, err
+		}
+		for _, c := range cs {
+			if c.Name == name {
+				return c, nil
+			}
+		}
+		return Cookie{}, errors.New("cookie not found")
+	}
 	url := wd.requestURL("/session/%s/cookie/%s", wd.id, name)
 	data, err := wd.execute("GET", url, nil)
 	if err != nil {
