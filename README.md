@@ -154,15 +154,13 @@ Run the tests:
 * There is one top-level test for each of:
     1. Chromium and ChromeDriver.
     2. A new version of Firefox and Selenium 3.
-    3. An old version of Firefox and Selenium 2.
-    4. HTMLUnit, a Java-based lightweight headless browser implementation.
-    5. A new version of Firefox directly against Geckodriver.
+    3. HTMLUnit, a Java-based lightweight headless browser implementation.
+    4. A new version of Firefox directly against Geckodriver.
     
   There are subtests that are shared between both top-level tests.
 
 * To run only one of the top-level tests, pass one of:
 
-    * `-test.run=TestFirefoxSelenium2`
     * `-test.run=TestFirefoxSelenium3`,
     * `-test.run=TestFirefoxGeckoDriver`,
     * `-test.run=TestHTMLUnit`, or
