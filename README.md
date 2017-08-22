@@ -119,9 +119,15 @@ a more idiomatic type.
 
 ## Hacking
 
-Patches are encouraged through GitHub pull requests. Please ensure that a test
-is added for anything more than a trivial change and that the existing tests
-pass.
+Patches are encouraged through GitHub pull requests. Please ensure that: 
+
+1. A test is added for anything more than a trivial change and that the
+   existing tests pass. See below for instructions on setting up your test
+   environment.
+2. Please ensure that gofmt has been run on the changed files before
+   committing. Install a pre-commit hook with the following command:
+
+     $ ln -s ../../misc/git/pre-commit .git/hooks/pre-commit
 
 See [the issue tracker][issues] for features that need implementing.
 
