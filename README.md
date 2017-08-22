@@ -127,7 +127,7 @@ Patches are encouraged through GitHub pull requests. Please ensure that:
 2. Please ensure that gofmt has been run on the changed files before
    committing. Install a pre-commit hook with the following command:
 
-     $ ln -s ../../misc/git/pre-commit .git/hooks/pre-commit
+       $ ln -s ../../misc/git/pre-commit .git/hooks/pre-commit
 
 See [the issue tracker][issues] for features that need implementing.
 
