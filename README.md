@@ -111,6 +111,10 @@ Using Geckodriver without Selenium usually has the above known issues as well.
 There are a number of upcoming changes that break backward compatibility in an
 effort to improve and adapt the existing API. They are listed here:
 
+### 22 August 2017
+
+The `Version` constant was removed as it is unused.
+
 ### 18 April 2017
 
 The Log method was changed to accept a typed constant for the type of log to

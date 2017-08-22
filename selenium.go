@@ -8,9 +8,6 @@ import (
 	"github.com/tebeka/selenium/log"
 )
 
-// Version specifies the semantic version (SemVer) of this driver.
-const Version = "0.9.3"
-
 // TODO(minusnine): make an enum type called FindMethod.
 
 // Methods by which to find elements.
