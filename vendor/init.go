@@ -16,6 +16,7 @@ import (
 	"os/exec"
 	"path"
 	"strings"
+	"sync"
 
 	"cloud.google.com/go/storage"
 	"github.com/golang/glog"
@@ -110,50 +111,68 @@ func addChrome(ctx context.Context) error {
 func main() {
 	flag.Parse()
 	ctx := context.Background()
+	wg := sync.WaitGroup{}
 	if *downloadBrowsers {
-		if err := addChrome(ctx); err != nil {
-			glog.Errorf("unable to Download Google Chrome browser: %v", err)
-		}
+		wg.Add(1)
+		go func() {
+			if err := addChrome(ctx); err != nil {
+				glog.Errorf("unable to Download Google Chrome browser: %v", err)
+			}
+			wg.Done()
+		}()
 	}
 	for _, file := range files {
-		if file.browser && !*downloadBrowsers {
-			glog.Infof("Skipping %q because --download_browser is not set.", file.name)
-			continue
-		}
-		if !fileSameHash(file) {
-			glog.Infof("Downloading %q from %q", file.name, file.url)
-			if err := downloadFile(file); err != nil {
-				glog.Exit(err.Error())
+		wg.Add(1)
+		file := file
+		go func() {
+			if err := handleFile(file); err != nil {
+				glog.Exitf("Error handling %s: %s", file.name, err)
 			}
-		} else {
-			glog.Infof("Skipping file %q which has already been downloaded.", file.name)
-		}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+}
 
-		switch path.Ext(file.name) {
-		case ".zip":
-			glog.Infof("Unzipping %q", file.name)
-			if err := exec.Command("unzip", "-o", file.name).Run(); err != nil {
-				glog.Exitf("Error unzipping %q: %v", file.name, err)
-			}
-		case ".gz":
-			glog.Infof("Unzipping %q", file.name)
-			if err := exec.Command("tar", "-xzf", file.name).Run(); err != nil {
-				glog.Exitf("Error unzipping %q: %v", file.name, err)
-			}
-		case ".bz2":
-			glog.Infof("Unzipping %q", file.name)
-			if err := exec.Command("tar", "-xjf", file.name).Run(); err != nil {
-				glog.Exitf("Error unzipping %q: %v", file.name, err)
-			}
+func handleFile(file file) error {
+	if file.browser && !*downloadBrowsers {
+		glog.Infof("Skipping %q because --download_browser is not set.", file.name)
+		return nil
+	}
+	if !fileSameHash(file) {
+		glog.Infof("Downloading %q from %q", file.name, file.url)
+		if err := downloadFile(file); err != nil {
+			return err
 		}
-		if rename := file.rename; len(rename) == 2 {
-			glog.Infof("Renaming %q to %q", rename[0], rename[1])
-			os.RemoveAll(rename[1]) // Ignore error.
-			if err := os.Rename(rename[0], rename[1]); err != nil {
-				glog.Warningf("Error renaming %q to %q: %v", rename[0], rename[1], err)
-			}
+	} else {
+		glog.Infof("Skipping file %q which has already been downloaded.", file.name)
+	}
+
+	switch path.Ext(file.name) {
+	case ".zip":
+		glog.Infof("Unzipping %q", file.name)
+		if err := exec.Command("unzip", "-o", file.name).Run(); err != nil {
+			return fmt.Errorf("Error unzipping %q: %v", file.name, err)
+		}
+	case ".gz":
+		glog.Infof("Unzipping %q", file.name)
+		if err := exec.Command("tar", "-xzf", file.name).Run(); err != nil {
+			return fmt.Errorf("Error unzipping %q: %v", file.name, err)
+		}
+	case ".bz2":
+		glog.Infof("Unzipping %q", file.name)
+		if err := exec.Command("tar", "-xjf", file.name).Run(); err != nil {
+			return fmt.Errorf("Error unzipping %q: %v", file.name, err)
 		}
 	}
+	if rename := file.rename; len(rename) == 2 {
+		glog.Infof("Renaming %q to %q", rename[0], rename[1])
+		os.RemoveAll(rename[1]) // Ignore error.
+		if err := os.Rename(rename[0], rename[1]); err != nil {
+			glog.Warningf("Error renaming %q to %q: %v", rename[0], rename[1], err)
+		}
+	}
+	return nil
 }
 
 func downloadFile(file file) (err error) {
