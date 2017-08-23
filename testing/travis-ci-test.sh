@@ -6,5 +6,5 @@ pushd vendor
 go get -d -v
 go run init.go --alsologtostderr --download_browsers
 popd
-go test -coverprofile=coverage.txt -covermode=atomic -test.v \
+go test -coverprofile=coverage.txt -covermode=atomic -test.v -timeout=20m \
   --start_frame_buffer=false --test.run=TestFirefoxSelenium3
