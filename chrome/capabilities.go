@@ -75,7 +75,7 @@ type MobileEmulation struct {
 	DeviceName string `json:"deviceName,omitempty"`
 	// DeviceMetrics provides specifications of an device to emulate. It should
 	// not be set if DeviceName is set.
-	DeviceMetrics DeviceMetrics `json:"deviceMetrics,omitempty"`
+	DeviceMetrics *DeviceMetrics `json:"deviceMetrics,omitempty"`
 	// UserAgent specifies the user agent string to send to the remote web
 	// server.
 	UserAgent string `json:"userAgent,omitempty"`
