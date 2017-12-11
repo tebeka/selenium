@@ -111,16 +111,12 @@ func addChrome(ctx context.Context) error {
 func main() {
 	flag.Parse()
 	ctx := context.Background()
-	wg := sync.WaitGroup{}
 	if *downloadBrowsers {
-		wg.Add(1)
-		go func() {
-			if err := addChrome(ctx); err != nil {
-				glog.Errorf("unable to Download Google Chrome browser: %v", err)
-			}
-			wg.Done()
-		}()
+		if err := addChrome(ctx); err != nil {
+			glog.Errorf("unable to Download Google Chrome browser: %v", err)
+		}
 	}
+	var wg sync.WaitGroup
 	for _, file := range files {
 		wg.Add(1)
 		file := file
