@@ -36,7 +36,7 @@ type file struct {
 
 var files = []file{
 	{
-		url:  "selenium-release.storage.googleapis.com/3.8/selenium-server-standalone-3.8.1.jar",
+		url:  "https://selenium-release.storage.googleapis.com/3.8/selenium-server-standalone-3.8.1.jar",
 		name: "selenium-server-standalone-3.8.1.jar",
 		hash: "2ca30da4a482688263b0eed5c73d1a4bbf3116316a1f2ffb96310a1643dbe663",
 	},
