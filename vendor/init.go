@@ -50,7 +50,7 @@ var files = []file{
 		url:    "https://github.com/mozilla/geckodriver/releases/download/v0.19.1/geckodriver-v0.19.1-linux64.tar.gz",
 		name:   "geckodriver-v0.19.1-linux64.tar.gz",
 		hash:   "7f55c4c89695fd1e6f8fc7372345acc1e2dbaa4a8003cee4bd282eed88145937",
-		rename: []string{"geckodriver", "geckodriver-v0.18.0-linux64"},
+		rename: []string{"geckodriver", "geckodriver-v0.19.1-linux64"},
 	},
 	{
 		// This is a recent nightly. Update this path periodically.
