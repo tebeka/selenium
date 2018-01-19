@@ -36,21 +36,21 @@ type file struct {
 
 var files = []file{
 	{
-		url:  "http://selenium-release.storage.googleapis.com/3.4/selenium-server-standalone-3.4.0.jar",
-		name: "selenium-server-standalone-3.4.jar",
-		hash: "21cbbd775678821b6b72c208b8d59664a4c7381b3c50b008b331914d2834ec8d",
+		url:  "https://selenium-release.storage.googleapis.com/3.8/selenium-server-standalone-3.8.1.jar",
+		name: "selenium-server-standalone-3.8.1.jar",
+		hash: "2ca30da4a482688263b0eed5c73d1a4bbf3116316a1f2ffb96310a1643dbe663",
 	},
 	{
-		url:    "https://chromedriver.storage.googleapis.com/2.31/chromedriver_linux64.zip",
-		name:   "chromedriver_2.31_linux64.zip",
-		hash:   "3e372ef676beb3a03aba72089ec0624bb9d3b52597635f907d4c23390fb485a0",
-		rename: []string{"chromedriver", "chromedriver-linux64-2.31"},
+		url:    "https://chromedriver.storage.googleapis.com/2.35/chromedriver_linux64.zip",
+		name:   "chromedriver_2.35_linux64.zip",
+		hash:   "67fad24c4a85e3f33f51c97924a98b619722db15ce92dcd27484fb748af93e8e",
+		rename: []string{"chromedriver", "chromedriver-linux64-2.35"},
 	},
 	{
-		url:    "https://github.com/mozilla/geckodriver/releases/download/v0.18.0/geckodriver-v0.18.0-linux64.tar.gz",
-		name:   "geckodriver-v0.18.0-linux64.tar.gz",
-		hash:   "b78a0c5d2e249312d266d846e803e88a26477de20f33bfd635e164d27e59ae20",
-		rename: []string{"geckodriver", "geckodriver-v0.18.0-linux64"},
+		url:    "https://github.com/mozilla/geckodriver/releases/download/v0.19.1/geckodriver-v0.19.1-linux64.tar.gz",
+		name:   "geckodriver-v0.19.1-linux64.tar.gz",
+		hash:   "7f55c4c89695fd1e6f8fc7372345acc1e2dbaa4a8003cee4bd282eed88145937",
+		rename: []string{"geckodriver", "geckodriver-v0.19.1-linux64"},
 	},
 	{
 		// This is a recent nightly. Update this path periodically.
