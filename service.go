@@ -29,7 +29,7 @@ func Display(d, xauthPath string) ServiceOption {
 			return fmt.Errorf("service xauth path already set: %v", s.xauthPath)
 		}
 		if _, err := strconv.Atoi(d); err != nil {
-			return fmt.Errorf("supplied display %q must be of the format x or x.y where x and y are integers", d)
+			return fmt.Errorf("supplied display %q must be of the format 'x' or 'x.y' where x and y are integers", d)
 		}
 		s.display = d
 		s.xauthPath = xauthPath
