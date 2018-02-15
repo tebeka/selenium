@@ -28,13 +28,29 @@ func Display(d, xauthPath string) ServiceOption {
 		if s.xauthPath != "" {
 			return fmt.Errorf("service xauth path already set: %v", s.xauthPath)
 		}
-		if _, err := strconv.Atoi(d); err != nil {
-			return fmt.Errorf("supplied display %q must be an integer as a string", d)
+		if !isDisplay(d) {
+			return fmt.Errorf("supplied display %q must be of the format 'x' or 'x.y' where x and y are integers", d)
 		}
 		s.display = d
 		s.xauthPath = xauthPath
 		return nil
 	}
+}
+
+// isDisplay validates that the given disp is in the format "x" or "x.y", where
+// x and y are both integers.
+func isDisplay(disp string) bool {
+	ds := strings.Split(disp, ".")
+	if len(ds) > 2 {
+		return false
+	}
+
+	for _, d := range ds {
+		if _, err := strconv.Atoi(d); err != nil {
+			return false
+		}
+	}
+	return true
 }
 
 // StartFrameBuffer causes an X virtual frame buffer to start before the
