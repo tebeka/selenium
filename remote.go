@@ -1387,7 +1387,7 @@ func (elem *remoteWE) Size() (*Size, error) {
 		if err != nil {
 			return nil, err
 		}
-		reply := make(struct{ Value rect })
+		reply := new(struct{ Value rect })
 		if err := json.Unmarshal(response, reply); err != nil {
 			return nil, err
 		}
