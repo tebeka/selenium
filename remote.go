@@ -1387,11 +1387,11 @@ func (elem *remoteWE) Size() (*Size, error) {
 		if err != nil {
 			return nil, err
 		}
-		reply := new(struct{ Value Size })
+		reply := new(struct{ Value rect })
 		if err := json.Unmarshal(response, reply); err != nil {
 			return nil, err
 		}
-		return &reply.Value, nil
+		return &Size{round(reply.Value.Width), round(reply.Value.Height)}, nil
 	}
 
 	rect, err := elem.rect()
@@ -1399,7 +1399,7 @@ func (elem *remoteWE) Size() (*Size, error) {
 		return nil, err
 	}
 
-	return &Size{int(rect.Width), int(rect.Height)}, nil
+	return &Size{round(rect.Width), round(rect.Height)}, nil
 }
 
 type rect struct {
