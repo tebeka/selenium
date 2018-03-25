@@ -62,6 +62,8 @@ type Capabilities struct {
 	// window handles. For access to <webview> elements, include "webview" in
 	// this list.
 	WindowTypes []string `json:"windowTypes,omitempty"`
+	// Android Chrome WebDriver path "com.android.chrome"
+	AndroidPackage string `json:"androidPackage,omitempty"`
 }
 
 // TODO(minusnine): https://bugs.chromium.org/p/chromedriver/issues/detail?id=1625
