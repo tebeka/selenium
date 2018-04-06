@@ -17,9 +17,10 @@ import (
 	"github.com/tebeka/selenium/internal/zip"
 )
 
-// CapabilitiesKey is the key in the top-level Capabilities map under which
+// DeprecatedCapabilitiesKey and CapabilitiesKey are the key in the top-level Capabilities map under which
 // ChromeDriver expects the Chrome-specific options to be set.
-const CapabilitiesKey = "chromeOptions"
+const DeprecatedCapabilitiesKey = "chromeOptions"
+const CapabilitiesKey = "goog:chromeOptions"
 
 // Capabilities defines the Chrome-specific desired capabilities when using
 // ChromeDriver. An instance of this struct can be stored in the Capabilities
