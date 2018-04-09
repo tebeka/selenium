@@ -95,6 +95,7 @@ type Capabilities map[string]interface{}
 // AddChrome adds Chrome-specific capabilities.
 func (c Capabilities) AddChrome(f chrome.Capabilities) {
 	c[chrome.CapabilitiesKey] = f
+	c[chrome.DeprecatedCapabilitiesKey] = f
 }
 
 // AddFirefox adds Firefox-specific capabilities.
