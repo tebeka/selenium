@@ -17,9 +17,12 @@ import (
 // ServiceOption configures a Service instance.
 type ServiceOption func(*Service) error
 
-// FrameBufferOptionScreenSize is the option for the frame buffer screen size.
-// This is of the form "{width}x{height}[x{depth}]".  For example: "1024x768x24"
-const FrameBufferOptionScreenSize = "screen-size"
+// FrameBufferOptions describes the options that can be used to create a frame buffer.
+type FrameBufferOptions struct {
+	// ScreenSize is the option for the frame buffer screen size.
+	// This is of the form "{width}x{height}[x{depth}]".  For example: "1024x768x24"
+	ScreenSize string
+}
 
 // Display specifies the value to which set the DISPLAY environment variable,
 // as well as the path to the Xauthority file containing credentials needed to
@@ -64,14 +67,13 @@ func isDisplay(disp string) bool {
 // This is equivalent to calling StartFrameBufferWithOptions with an empty
 // map.
 func StartFrameBuffer() ServiceOption {
-	options := map[string]string{}
-	return StartFrameBufferWithOptions(options)
+	return StartFrameBufferWithOptions(FrameBufferOptions{})
 }
 
 // StartFrameBufferWithOptions causes an X virtual frame buffer to start before
 // the WebDriver service. The frame buffer process will be terminated when the
 // service itself is stopped.
-func StartFrameBufferWithOptions(options map[string]string) ServiceOption {
+func StartFrameBufferWithOptions(options FrameBufferOptions) ServiceOption {
 	return func(s *Service) error {
 		if s.display != "" {
 			return fmt.Errorf("service display already set: %v", s.display)
@@ -134,8 +136,7 @@ type Service struct {
 	output io.Writer
 }
 
-// FrameBuffer returns the FrameBuffer pointer.
-// This is necessary in order to record or take screenshots from the frame buffer.
+// FrameBuffer returns the FrameBuffer if one was started by the service and nil otherwise.
 func (s Service) FrameBuffer() *FrameBuffer {
 	return s.xvfb
 }
@@ -275,13 +276,12 @@ type FrameBuffer struct {
 //
 // This is equivalent to calling NewFrameBufferWithOptions with an empty map.
 func NewFrameBuffer() (*FrameBuffer, error) {
-	options := map[string]string{}
-	return NewFrameBufferWithOptions(options)
+	return NewFrameBufferWithOptions(FrameBufferOptions{})
 }
 
 // NewFrameBufferWithOptions starts an X virtual frame buffer running in the background.
 // You may pass in additional options (the "FrameBufferOption*" constants) to change its behavior.
-func NewFrameBufferWithOptions(options map[string]string) (*FrameBuffer, error) {
+func NewFrameBufferWithOptions(options FrameBufferOptions) (*FrameBuffer, error) {
 	r, w, err := os.Pipe()
 	if err != nil {
 		return nil, err
@@ -300,8 +300,8 @@ func NewFrameBufferWithOptions(options map[string]string) (*FrameBuffer, error) 
 	// Xvfb will print the display on which it is listening to file descriptor 3,
 	// for which we provide a pipe.
 	arguments := []string{"-displayfd", "3", "-nolisten", "tcp"}
-	if value := options[FrameBufferOptionScreenSize]; len(value) > 0 {
-		arguments = append(arguments, "-screen", "0", value)
+	if len(options.ScreenSize) > 0 {
+		arguments = append(arguments, "-screen", "0", options.ScreenSize)
 	}
 	xvfb := exec.Command("Xvfb", arguments...)
 	xvfb.ExtraFiles = []*os.File{w}
