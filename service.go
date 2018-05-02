@@ -24,6 +24,10 @@ type FrameBufferOptions struct {
 	ScreenSize string
 }
 
+// This function is syntactically identical to `exec.Command`, but we want to be
+// able to switch it out for a different version for unit testing.
+var newExecCommand = exec.Command
+
 // Display specifies the value to which set the DISPLAY environment variable,
 // as well as the path to the Xauthority file containing credentials needed to
 // write to that X server.
@@ -143,7 +147,7 @@ func (s Service) FrameBuffer() *FrameBuffer {
 
 // NewSeleniumService starts a Selenium instance in the background.
 func NewSeleniumService(jarPath string, port int, opts ...ServiceOption) (*Service, error) {
-	cmd := exec.Command("java", "-jar", jarPath, "-port", strconv.Itoa(port))
+	cmd := newExecCommand("java", "-jar", jarPath, "-port", strconv.Itoa(port))
 	s, err := newService(cmd, port, opts...)
 	if err != nil {
 		return nil, err
@@ -303,13 +307,13 @@ func NewFrameBufferWithOptions(options FrameBufferOptions) (*FrameBuffer, error)
 	if len(options.ScreenSize) > 0 {
 		arguments = append(arguments, "-screen", "0", options.ScreenSize)
 	}
-	xvfb := exec.Command("Xvfb", arguments...)
+	xvfb := newExecCommand("Xvfb", arguments...)
 	xvfb.ExtraFiles = []*os.File{w}
 
 	// TODO(minusnine): plumb a way to set xvfb.Std{err,out} conditionally.
 	// TODO(minusnine): Pdeathsig is only supported on Linux. Somehow, make sure
 	// process cleanup happens as gracefully as possible.
-	xvfb.Env = []string{"XAUTHORITY=" + authPath}
+	xvfb.Env = append(xvfb.Env, "XAUTHORITY="+authPath)
 	if err := xvfb.Start(); err != nil {
 		return nil, err
 	}
@@ -340,10 +344,10 @@ func NewFrameBufferWithOptions(options FrameBufferOptions) (*FrameBuffer, error)
 		return nil, errors.New("timeout waiting for Xvfb")
 	}
 
-	xauth := exec.Command("xauth", "generate", ":"+display, ".", "trusted")
+	xauth := newExecCommand("xauth", "generate", ":"+display, ".", "trusted")
 	xauth.Stderr = os.Stderr
 	xauth.Stdout = os.Stdout
-	xauth.Env = []string{"XAUTHORITY=" + authPath}
+	xauth.Env = append(xauth.Env, "XAUTHORITY="+authPath)
 
 	if err := xauth.Run(); err != nil {
 		return nil, err
