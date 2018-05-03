@@ -1,8 +1,11 @@
 package selenium
 
 import (
+	"fmt"
 	"testing"
+	"time"
 
+	"github.com/BurntSushi/xgbutil"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -72,37 +75,32 @@ func TestIsDisplay(t *testing.T) {
 }
 
 func TestFrameBuffer(t *testing.T) {
-	// Make sure that we are using our unit-test version of `exec.Command`.
-	newExecCommand = fakeExecCommand
-
+	// Note on FrameBuffer and xgb.Conn:
+	// There appears to be a race condition when closing a Conn instance before
+	// a FrameBuffer instance.  A short sleep solves the problem.
 	t.Run("Default behavior", func(t *testing.T) {
+		// The default Xvfb screen size is "1280x1024x8".
 		frameBuffer, err := NewFrameBuffer()
 		if err != nil {
 			t.Fatalf("Could not create frame buffer: %s", err.Error())
 		}
-		if frameBuffer.Display != "1" {
-			t.Errorf("frameBuffer.Display = %s, want %s", frameBuffer.Display, "1")
+		defer frameBuffer.Stop()
+
+		if frameBuffer.Display == "" {
+			t.Fatalf("frameBuffer.Display is empty")
 		}
-		args := frameBuffer.cmd.Args[3:]
-		expectedArgs := []string{"Xvfb", "-displayfd", "3", "-nolisten", "tcp"}
-		if diff := cmp.Diff(expectedArgs, args); diff != "" {
+
+		d, err := xgbutil.NewConnDisplay(":" + frameBuffer.Display)
+		if err != nil {
+			t.Fatalf("could not connect to display %q: %s", frameBuffer.Display, err.Error())
+		}
+		defer time.Sleep(time.Second * 2)
+		defer d.Conn().Close()
+		s := d.Screen()
+		if diff := cmp.Diff(1280, int(s.WidthInPixels)); diff != "" {
 			t.Fatalf("args returned diff (-want/+got):\n%s", diff)
 		}
-	})
-	t.Run("With screen size", func(t *testing.T) {
-		options := FrameBufferOptions{
-			ScreenSize: "1024x768x24",
-		}
-		frameBuffer, err := NewFrameBufferWithOptions(options)
-		if err != nil {
-			t.Fatalf("Could not create frame buffer: %s", err.Error())
-		}
-		if frameBuffer.Display != "1" {
-			t.Errorf("frameBuffer.Display = %s, want %s", frameBuffer.Display, "1")
-		}
-		args := frameBuffer.cmd.Args[3:]
-		expectedArgs := []string{"Xvfb", "-displayfd", "3", "-nolisten", "tcp", "-screen", "0", options.ScreenSize}
-		if diff := cmp.Diff(expectedArgs, args); diff != "" {
+		if diff := cmp.Diff(1024, int(s.HeightInPixels)); diff != "" {
 			t.Fatalf("args returned diff (-want/+got):\n%s", diff)
 		}
 	})
@@ -113,6 +111,37 @@ func TestFrameBuffer(t *testing.T) {
 		_, err := NewFrameBufferWithOptions(options)
 		if err == nil {
 			t.Fatalf("Expected an error about the screen size")
+		}
+	})
+	t.Run("With screen size", func(t *testing.T) {
+		desiredWidth := 1024
+		desiredHeight := 768
+		desiredDepth := 24
+		options := FrameBufferOptions{
+			ScreenSize: fmt.Sprintf("%dx%dx%d", desiredWidth, desiredHeight, desiredDepth),
+		}
+		frameBuffer, err := NewFrameBufferWithOptions(options)
+		if err != nil {
+			t.Fatalf("Could not create frame buffer: %s", err.Error())
+		}
+		defer frameBuffer.Stop()
+
+		if frameBuffer.Display == "" {
+			t.Fatalf("frameBuffer.Display is empty")
+		}
+
+		d, err := xgbutil.NewConnDisplay(":" + frameBuffer.Display)
+		if err != nil {
+			t.Fatalf("could not connect to display %q: %s", frameBuffer.Display, err.Error())
+		}
+		defer time.Sleep(time.Second * 2)
+		defer d.Conn().Close()
+		s := d.Screen()
+		if diff := cmp.Diff(desiredWidth, int(s.WidthInPixels)); diff != "" {
+			t.Fatalf("args returned diff (-want/+got):\n%s", diff)
+		}
+		if diff := cmp.Diff(desiredHeight, int(s.HeightInPixels)); diff != "" {
+			t.Fatalf("args returned diff (-want/+got):\n%s", diff)
 		}
 	})
 }
