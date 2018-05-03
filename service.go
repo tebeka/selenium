@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -56,7 +57,24 @@ func isDisplay(disp string) bool {
 // StartFrameBuffer causes an X virtual frame buffer to start before the
 // WebDriver service. The frame buffer process will be terminated when the
 // service itself is stopped.
+//
+// This is equivalent to calling StartFrameBufferWithOptions with an empty
+// map.
 func StartFrameBuffer() ServiceOption {
+	return StartFrameBufferWithOptions(FrameBufferOptions{})
+}
+
+// FrameBufferOptions describes the options that can be used to create a frame buffer.
+type FrameBufferOptions struct {
+	// ScreenSize is the option for the frame buffer screen size.
+	// This is of the form "{width}x{height}[x{depth}]".  For example: "1024x768x24"
+	ScreenSize string
+}
+
+// StartFrameBufferWithOptions causes an X virtual frame buffer to start before
+// the WebDriver service. The frame buffer process will be terminated when the
+// service itself is stopped.
+func StartFrameBufferWithOptions(options FrameBufferOptions) ServiceOption {
 	return func(s *Service) error {
 		if s.display != "" {
 			return fmt.Errorf("service display already set: %v", s.display)
@@ -67,7 +85,7 @@ func StartFrameBuffer() ServiceOption {
 		if s.xvfb != nil {
 			return fmt.Errorf("service Xvfb instance already running")
 		}
-		fb, err := NewFrameBuffer()
+		fb, err := NewFrameBufferWithOptions(options)
 		if err != nil {
 			return fmt.Errorf("error starting frame buffer: %v", err)
 		}
@@ -119,9 +137,18 @@ type Service struct {
 	output io.Writer
 }
 
+// FrameBuffer returns the FrameBuffer if one was started by the service and nil otherwise.
+func (s Service) FrameBuffer() *FrameBuffer {
+	return s.xvfb
+}
+
+// This function is syntactically identical to `exec.Command`, but we want to be
+// able to switch it out for a different version for unit testing.
+var newExecCommand = exec.Command
+
 // NewSeleniumService starts a Selenium instance in the background.
 func NewSeleniumService(jarPath string, port int, opts ...ServiceOption) (*Service, error) {
-	cmd := exec.Command("java", "-jar", jarPath, "-port", strconv.Itoa(port))
+	cmd := newExecCommand("java", "-jar", jarPath, "-port", strconv.Itoa(port))
 	s, err := newService(cmd, port, opts...)
 	if err != nil {
 		return nil, err
@@ -251,7 +278,15 @@ type FrameBuffer struct {
 }
 
 // NewFrameBuffer starts an X virtual frame buffer running in the background.
+//
+// This is equivalent to calling NewFrameBufferWithOptions with an empty NewFrameBufferWithOptions.
 func NewFrameBuffer() (*FrameBuffer, error) {
+	return NewFrameBufferWithOptions(FrameBufferOptions{})
+}
+
+// NewFrameBufferWithOptions starts an X virtual frame buffer running in the background.
+// FrameBufferOptions may be populated to change the behavior of the frame buffer.
+func NewFrameBufferWithOptions(options FrameBufferOptions) (*FrameBuffer, error) {
 	r, w, err := os.Pipe()
 	if err != nil {
 		return nil, err
@@ -269,13 +304,21 @@ func NewFrameBuffer() (*FrameBuffer, error) {
 
 	// Xvfb will print the display on which it is listening to file descriptor 3,
 	// for which we provide a pipe.
-	xvfb := exec.Command("Xvfb", "-displayfd", "3", "-nolisten", "tcp")
+	arguments := []string{"-displayfd", "3", "-nolisten", "tcp"}
+	if options.ScreenSize != "" {
+		var screenSizeExpression = regexp.MustCompile(`^\d+x\d+(?:x\d+)$`)
+		if !screenSizeExpression.MatchString(options.ScreenSize) {
+			return nil, fmt.Errorf("invalid screen size: expected 'WxH[xD]', got %q", options.ScreenSize)
+		}
+		arguments = append(arguments, "-screen", "0", options.ScreenSize)
+	}
+	xvfb := newExecCommand("Xvfb", arguments...)
 	xvfb.ExtraFiles = []*os.File{w}
 
 	// TODO(minusnine): plumb a way to set xvfb.Std{err,out} conditionally.
 	// TODO(minusnine): Pdeathsig is only supported on Linux. Somehow, make sure
 	// process cleanup happens as gracefully as possible.
-	xvfb.Env = []string{"XAUTHORITY=" + authPath}
+	xvfb.Env = append(xvfb.Env, "XAUTHORITY="+authPath)
 	if err := xvfb.Start(); err != nil {
 		return nil, err
 	}
@@ -306,10 +349,10 @@ func NewFrameBuffer() (*FrameBuffer, error) {
 		return nil, errors.New("timeout waiting for Xvfb")
 	}
 
-	xauth := exec.Command("xauth", "generate", ":"+display, ".", "trusted")
+	xauth := newExecCommand("xauth", "generate", ":"+display, ".", "trusted")
 	xauth.Stderr = os.Stderr
 	xauth.Stdout = os.Stdout
-	xauth.Env = []string{"XAUTHORITY=" + authPath}
+	xauth.Env = append(xauth.Env, "XAUTHORITY="+authPath)
 
 	if err := xauth.Run(); err != nil {
 		return nil, err

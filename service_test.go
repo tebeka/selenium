@@ -1,6 +1,10 @@
 package selenium
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+)
 
 func TestIsDisplay(t *testing.T) {
 	tests := []struct {
@@ -65,4 +69,50 @@ func TestIsDisplay(t *testing.T) {
 			t.Errorf("%s: isDisplay = %t, want %t", test.desc, got, want)
 		}
 	}
+}
+
+func TestFrameBuffer(t *testing.T) {
+	// Make sure that we are using our unit-test version of `exec.Command`.
+	newExecCommand = fakeExecCommand
+
+	t.Run("Default behavior", func(t *testing.T) {
+		frameBuffer, err := NewFrameBuffer()
+		if err != nil {
+			t.Fatalf("Could not create frame buffer: %s", err.Error())
+		}
+		if frameBuffer.Display != "1" {
+			t.Errorf("frameBuffer.Display = %s, want %s", frameBuffer.Display, "1")
+		}
+		args := frameBuffer.cmd.Args[3:]
+		expectedArgs := []string{"Xvfb", "-displayfd", "3", "-nolisten", "tcp"}
+		if diff := cmp.Diff(expectedArgs, args); diff != "" {
+			t.Fatalf("args returned diff (-want/+got):\n%s", diff)
+		}
+	})
+	t.Run("With screen size", func(t *testing.T) {
+		options := FrameBufferOptions{
+			ScreenSize: "1024x768x24",
+		}
+		frameBuffer, err := NewFrameBufferWithOptions(options)
+		if err != nil {
+			t.Fatalf("Could not create frame buffer: %s", err.Error())
+		}
+		if frameBuffer.Display != "1" {
+			t.Errorf("frameBuffer.Display = %s, want %s", frameBuffer.Display, "1")
+		}
+		args := frameBuffer.cmd.Args[3:]
+		expectedArgs := []string{"Xvfb", "-displayfd", "3", "-nolisten", "tcp", "-screen", "0", options.ScreenSize}
+		if diff := cmp.Diff(expectedArgs, args); diff != "" {
+			t.Fatalf("args returned diff (-want/+got):\n%s", diff)
+		}
+	})
+	t.Run("With bad screen size", func(t *testing.T) {
+		options := FrameBufferOptions{
+			ScreenSize: "not a screen size",
+		}
+		_, err := NewFrameBufferWithOptions(options)
+		if err == nil {
+			t.Fatalf("Expected an error about the screen size")
+		}
+	})
 }
