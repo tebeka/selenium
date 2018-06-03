@@ -408,4 +408,6 @@ type WebElement interface {
 	// CSSProperty returns the value of the specified CSS property of the
 	// element.
 	CSSProperty(name string) (string, error)
+	// Screenshot takes a screenshot of the attribute scroll'ing if necessary.
+	Screenshot(scroll bool) ([]byte, error)
 }
