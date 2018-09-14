@@ -12,7 +12,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -202,7 +201,8 @@ func TestHTMLUnit(t *testing.T) {
 	}
 
 	c := config{
-		browser: "htmlunit",
+		browser:         "htmlunit",
+		seleniumVersion: semver.MustParse("3.0.0"),
 	}
 	if *startFrameBuffer {
 		c.serviceOptions = append(c.serviceOptions, StartFrameBuffer())
@@ -359,7 +359,6 @@ func testFirefoxProfile(t *testing.T, c config) {
 	// Test that the old Firefox profile location gets migrated for W3C
 	// compatibility.
 	caps = newW3CCapabilities(map[string]interface{}{"firefox_profile": "base64-encoded Firefox profile goes here"})
-	fmt.Printf("%v", caps)
 	f = caps["alwaysMatch"].(Capabilities)[firefox.CapabilitiesKey].(firefox.Capabilities)
 	if f.Profile == "" {
 		t.Fatalf("Capability 'firefox_profile' was not migrated to 'moz:firefoxOptions.profile': %+v", caps)
@@ -594,12 +593,7 @@ func testError(t *testing.T, c config) {
 		wantCode = 200
 		wantLegacyCode = 7
 	case "firefox":
-		if c.seleniumVersion.Major > 0 {
-			wantCode = 500
-			wantLegacyCode = 7
-		} else {
-			wantCode = 404
-		}
+		wantCode = 404
 	case "htmlunit":
 		wantCode = 500
 		wantLegacyCode = 7
@@ -623,6 +617,8 @@ func testExtendedErrorMessage(t *testing.T, c config) {
 	switch {
 	case c.sauce != nil:
 		want = "404 Not Found"
+	case c.seleniumVersion.Major == 3:
+		want = "invalid session id:"
 	case c.browser == "firefox" && c.seleniumVersion.Major == 2:
 		want = "unknown error:"
 	case c.browser == "firefox" && c.seleniumVersion.Major == 0:
@@ -636,7 +632,7 @@ func testExtendedErrorMessage(t *testing.T, c config) {
 }
 
 func testCapabilities(t *testing.T, c config) {
-	if c.browser == "firefox" && c.seleniumVersion.Major == 0 {
+	if c.browser == "firefox" {
 		t.Skip("This method is not supported by Geckodriver.")
 	}
 	wd := newRemote(t, c)
@@ -680,10 +676,6 @@ func testSetPageLoadTimeout(t *testing.T, c config) {
 }
 
 func testWindows(t *testing.T, c config) {
-	if c.browser == "chrome" {
-		t.Skip("Skipping due to bug: https://bugs.chromium.org/p/chromedriver/issues/detail?id=1918")
-	}
-
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
@@ -781,6 +773,9 @@ func testWindows(t *testing.T, c config) {
 	t.Run("MaximizeWindow", func(t *testing.T) {
 		if c.browser == "firefox" && c.seleniumVersion.Major != 2 {
 			t.Skip("Skipping test due to https://github.com/mozilla/geckodriver/issues/703")
+		}
+		if c.browser == "chrome" {
+			t.Skip("Skipping due to bug: https://bugs.chromium.org/p/chromedriver/issues/detail?id=1918")
 		}
 		if err := wd.MaximizeWindow(otherHandle); err != nil {
 			t.Fatalf("error maximizing window: %s", err)
@@ -1133,10 +1128,6 @@ func v(s string) semver.Version {
 }
 
 func testAddCookie(t *testing.T, c config) {
-	if c.browser == "chrome" {
-		t.Skip("Skipping due to bug: https://bugs.chromium.org/p/chromedriver/issues/detail?id=1949")
-	}
-
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
@@ -1159,18 +1150,12 @@ func testAddCookie(t *testing.T, c config) {
 
 	// Firefox and Geckodriver now returns an empty string for the path.
 	if c.browser == "firefox" {
+		want.Path = ""
 		r := wd.(*remoteWD)
 		switch {
+		// https://github.com/mozilla/geckodriver/issues/463
 		case r.browserVersion.LT(v("56.0.0")):
-			// https://github.com/mozilla/geckodriver/issues/463
-			want.Expiry = 0
-		case c.seleniumVersion.Major == 0: // Geckodriver returns an empty string.
-			want.Path = ""
-		}
-		if c.seleniumVersion.Major == 0 && c.sauce != nil {
-			want.Path = ""
-		}
-		if c.sauce != nil {
+		case c.sauce != nil:
 			want.Expiry = 0
 		}
 	}
@@ -1196,10 +1181,6 @@ func testAddCookie(t *testing.T, c config) {
 }
 
 func testDeleteCookie(t *testing.T, c config) {
-	if c.browser == "chrome" {
-		t.Skip("Skipping due to bug: https://bugs.chromium.org/p/chromedriver/issues/detail?id=1950")
-	}
-
 	wd := newRemote(t, c)
 	defer quitRemote(t, wd)
 
@@ -1624,30 +1605,12 @@ func testProxy(t *testing.T, c config) {
 	}
 
 	caps := newTestCapabilities(t, c)
-	proxy := Proxy{Type: Manual}
+	proxy := Proxy{
+		Type: Manual,
+		HTTP: u.Host,
+	}
 	switch c.browser {
 	case "firefox":
-		switch c.seleniumVersion.Major {
-		case 0: // Geckodriver.
-			host, port, err := net.SplitHostPort(u.Host)
-			if err != nil {
-				t.Fatalf("net.SplitHostPort(%q) returned error: %v", u.Host, err)
-			}
-			p, err := strconv.Atoi(port)
-			if err != nil {
-				t.Fatalf("strconv.Atoi(%q) returned error: %v", port, err)
-			}
-			proxy.HTTP = host
-			proxy.HTTPPort = p
-		case 2:
-			proxy.HTTP = u.Host
-		case 3:
-			// When the Proxy object is passed through Selenium 3 to GeckoDriver, it
-			// adds a whole bunch of "null" values for empty entities. GeckoDriver
-			// does not interpret this well.
-			// https://github.com/mozilla/geckodriver/issues/490
-			t.Skip("Skipping test due to https://github.com/mozilla/geckodriver/issues/490")
-		}
 		// By default, Firefox explicitly does not use a proxy for connection to
 		// localhost and 127.0.0.1. Clear this preference to reach our test proxy.
 		ff := caps[firefox.CapabilitiesKey].(firefox.Capabilities)
@@ -1656,8 +1619,6 @@ func testProxy(t *testing.T, c config) {
 		}
 		ff.Prefs["network.proxy.no_proxies_on"] = ""
 		caps[firefox.CapabilitiesKey] = ff
-	case "chrome", "htmlunit":
-		proxy.HTTP = u.Host
 	}
 	caps.AddProxy(proxy)
 
