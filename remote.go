@@ -750,7 +750,7 @@ func (wd *remoteWD) SwitchWindow(name string) error {
 }
 
 func (wd *remoteWD) CloseWindow(name string) error {
-	return wd.modifyWindow(name, "DELETE", "", map[string]string{})
+	return wd.modifyWindow(name, "DELETE", "", nil)
 }
 
 func (wd *remoteWD) MaximizeWindow(name string) error {
@@ -801,9 +801,12 @@ func (wd *remoteWD) modifyWindow(name, verb, command string, params interface{})
 		}
 	}
 
-	data, err := json.Marshal(params)
-	if err != nil {
-		return err
+	var data []byte
+	if params != nil {
+		var err error
+		if data, err = json.Marshal(params); err != nil {
+			return err
+		}
 	}
 
 	if _, err := wd.execute(verb, url, data); err != nil {
