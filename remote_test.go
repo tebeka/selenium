@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"github.com/blang/semver"
-	"github.com/google/go-cmp/cmp"
 	"github.com/tebeka/selenium/chrome"
 	"github.com/tebeka/selenium/firefox"
 	"github.com/tebeka/selenium/log"
@@ -636,12 +635,7 @@ func testError(t *testing.T, c config) {
 		wantCode = 200
 		wantLegacyCode = 7
 	case "firefox":
-		if c.seleniumVersion.Major > 0 {
-			wantCode = 500
-			wantLegacyCode = 7
-		} else {
-			wantCode = 404
-		}
+		wantCode = 404
 	case "htmlunit":
 		wantCode = 500
 		wantLegacyCode = 7
@@ -669,6 +663,8 @@ func testExtendedErrorMessage(t *testing.T, c config) {
 		want = "unknown error:"
 	case c.browser == "firefox" && c.seleniumVersion.Major == 0:
 		want = "unknown command"
+	case c.browser == "firefox" || c.browser == "htmlunit":
+		want = "invalid session id:"
 	default:
 		want = "invalid session ID:"
 	}
@@ -678,7 +674,7 @@ func testExtendedErrorMessage(t *testing.T, c config) {
 }
 
 func testCapabilities(t *testing.T, c config) {
-	if c.browser == "firefox" && c.seleniumVersion.Major == 0 {
+	if c.browser == "firefox" && c.seleniumVersion.Major == 0 || c.seleniumVersion.Major == 3 {
 		t.Skip("This method is not supported by Geckodriver.")
 	}
 	wd := newRemote(t, c)
@@ -1232,8 +1228,20 @@ func testAddCookie(t *testing.T, c config) {
 		t.Fatalf("wd.GetCookies() = %v, missing cookie %q", cookies, want.Name)
 	}
 
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Fatalf("wd.GetCookies() returned diff (-want/+got):\n%s", diff)
+	if want.Name != got.Name {
+		t.Fatalf("Expected Name to be '%s', but got '%s'", want.Name, got.Name)
+	}
+
+	if want.Value != got.Value {
+		t.Fatalf("Expected Value to be '%s', but got '%s'", want.Value, got.Value)
+	}
+
+	if want.Expiry != got.Expiry {
+		t.Fatalf("Expected Expery to be '%d', but got '%d'", want.Expiry, got.Expiry)
+	}
+
+	if want.Domain != got.Domain {
+		t.Fatalf("Expected Domain to be '%s', but got '%s'", want.Domain, got.Domain)
 	}
 }
 
