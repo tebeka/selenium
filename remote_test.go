@@ -26,12 +26,12 @@ import (
 )
 
 var (
-	selenium3Path          = flag.String("selenium3_path", "vendor/selenium-server-standalone-3.4.jar", "The path to the Selenium 3 server JAR. If empty or the file is not present, Firefox tests using Selenium 3 will not be run.")
+	selenium3Path          = flag.String("selenium3_path", "", "The path to the Selenium 3 server JAR. If empty or the file is not present, Firefox tests using Selenium 3 will not be run.")
 	firefoxBinarySelenium3 = flag.String("firefox_binary_for_selenium3", "vendor/firefox-nightly/firefox", "The name of the Firefox binary for Selenium 3 tests or the path to it. If the name does not contain directory separators, the PATH will be searched.")
-	geckoDriverPath        = flag.String("geckodriver_path", "vendor/geckodriver-v0.18.0-linux64", "The path to the geckodriver binary. If empty of the file is not present, the Geckodriver tests will not be run.")
+	geckoDriverPath        = flag.String("geckodriver_path", "", "The path to the geckodriver binary. If empty of the file is not present, the Geckodriver tests will not be run.")
 	javaPath               = flag.String("java_path", "", "The path to the Java runtime binary to invoke. If not specified, 'java' will be used.")
 
-	chromeDriverPath = flag.String("chrome_driver_path", "vendor/chromedriver-linux64-2.31", "The path to the ChromeDriver binary. If empty of the file is not present, Chrome tests will not be run.")
+	chromeDriverPath = flag.String("chrome_driver_path", "", "The path to the ChromeDriver binary. If empty of the file is not present, Chrome tests will not be run.")
 	chromeBinary     = flag.String("chrome_binary", "vendor/chrome-linux/chrome", "The name of the Chrome binary or the path to it. If name is not an exact path, the PATH will be searched.")
 
 	useDocker          = flag.Bool("docker", false, "If set, run the tests in a Docker container.")
@@ -44,10 +44,52 @@ var (
 
 func TestMain(m *testing.M) {
 	flag.Parse()
+	if err := setDriverPaths(); err != nil {
+		fmt.Fprint(os.Stderr, fmt.Sprintf("Exiting early: unable to get the driver paths -- %s", err.Error()))
+		os.Exit(1)
+	}
+
 	s := httptest.NewServer(http.HandlerFunc(handler))
 	serverURL = s.URL
 	defer s.Close()
 	os.Exit(m.Run())
+}
+
+func setDriverPaths() error {
+	if *selenium3Path == "" {
+		matches, err := filepath.Glob("vendor/selenium-server-standalone-*")
+		if err != nil {
+			return err
+		}
+
+		if len(matches) > 0 {
+			*selenium3Path = matches[0]
+		}
+	}
+
+	if *geckoDriverPath == "" {
+		matches, err := filepath.Glob("vendor/geckodriver-v*")
+		if err != nil {
+			return err
+		}
+
+		if len(matches) > 0 {
+			*geckoDriverPath = matches[0]
+		}
+	}
+
+	if *chromeDriverPath == "" {
+		matches, err := filepath.Glob("vendor/chromedriver-*")
+		if err != nil {
+			return err
+		}
+
+		if len(matches) > 0 {
+			*chromeDriverPath = matches[0]
+		}
+	}
+
+	return nil
 }
 
 func pickUnusedPort() (int, error) {
