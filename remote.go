@@ -1438,3 +1438,15 @@ func (elem *remoteWE) MarshalJSON() ([]byte, error) {
 		webElementIdentifier: elem.id,
 	})
 }
+
+func (elem *remoteWE) Screenshot(scroll bool) ([]byte, error) {
+	data, err := elem.parent.stringCommand(fmt.Sprintf("/session/%%s/element/%s/screenshot", elem.id))
+	if err != nil {
+		return nil, err
+	}
+
+	// Selenium returns a base64 encoded image.
+	buf := []byte(data)
+	decoder := base64.NewDecoder(base64.StdEncoding, bytes.NewBuffer(buf))
+	return ioutil.ReadAll(decoder)
+}
