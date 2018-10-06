@@ -145,7 +145,7 @@ func (s Service) FrameBuffer() *FrameBuffer {
 // NewSeleniumService starts a Selenium instance in the background.
 func NewSeleniumService(jarPath string, port int, opts ...ServiceOption) (*Service, error) {
 	cmd := exec.Command("java", "-jar", jarPath, "-port", strconv.Itoa(port))
-	s, err := newService(cmd, port, opts...)
+	s, err := newService(cmd, "/wd/hub", port, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -164,11 +164,11 @@ func NewSeleniumService(jarPath string, port int, opts ...ServiceOption) (*Servi
 // NewChromeDriverService starts a ChromeDriver instance in the background.
 func NewChromeDriverService(path string, port int, opts ...ServiceOption) (*Service, error) {
 	cmd := exec.Command(path, "--port="+strconv.Itoa(port), "--url-base=wd/hub", "--verbose")
-	s, err := newService(cmd, port, opts...)
+	s, err := newService(cmd, "/wd/hub", port, opts...)
 	if err != nil {
 		return nil, err
 	}
-	s.shutdownURLPath = "/wd/hub/shutdown"
+	s.shutdownURLPath = "/shutdown"
 	if err := s.start(port); err != nil {
 		return nil, err
 	}
@@ -178,7 +178,7 @@ func NewChromeDriverService(path string, port int, opts ...ServiceOption) (*Serv
 // NewGeckoDriverService starts a GeckoDriver instance in the background.
 func NewGeckoDriverService(path string, port int, opts ...ServiceOption) (*Service, error) {
 	cmd := exec.Command(path, "--port", strconv.Itoa(port))
-	s, err := newService(cmd, port, opts...)
+	s, err := newService(cmd, "", port, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -188,10 +188,10 @@ func NewGeckoDriverService(path string, port int, opts ...ServiceOption) (*Servi
 	return s, nil
 }
 
-func newService(cmd *exec.Cmd, port int, opts ...ServiceOption) (*Service, error) {
+func newService(cmd *exec.Cmd, urlPrefix string, port int, opts ...ServiceOption) (*Service, error) {
 	s := &Service{
 		port: port,
-		addr: fmt.Sprintf("http://localhost:%d", port),
+		addr: fmt.Sprintf("http://localhost:%d%s", port, urlPrefix),
 	}
 	for _, opt := range opts {
 		if err := opt(s); err != nil {
