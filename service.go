@@ -230,7 +230,8 @@ func (s *Service) start(port int) error {
 			switch resp.StatusCode {
 			// Selenium <3 returned Forbidden and BadRequest. ChromeDriver and
 			// Selenium 3 return OK.
-			case http.StatusForbidden, http.StatusBadRequest, http.StatusOK:
+			// Selenium 3.14 returned 404
+			case http.StatusForbidden, http.StatusBadRequest, http.StatusNotFound, http.StatusOK:
 				return nil
 			}
 		}
