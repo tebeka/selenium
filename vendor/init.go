@@ -1,4 +1,6 @@
-// Binary init downloads the necessary files to perform an integration test between this WebDriver client and multiple versions of Selenium and browsers.
+// Binary init downloads the necessary files to perform an integration test
+// between this WebDriver client and multiple versions of Selenium and
+// browsers.
 package main
 
 import (
@@ -47,10 +49,10 @@ var files = []file{
 		rename: []string{"chromedriver", "chromedriver-linux64-2.42"},
 	},
 	{
-		url:    "https://github.com/mozilla/geckodriver/releases/download/v0.21.0/geckodriver-v0.21.0-linux64.tar.gz",
-		name:   "geckodriver-v0.21.0-linux64.tar.gz",
-		hash:   "c9ae92348cf00aa719be6337a608fae8304691a95668e8e338d92623ba9e0ec6",
-		rename: []string{"geckodriver", "geckodriver-v0.21.0-linux64"},
+		url:    "https://github.com/mozilla/geckodriver/releases/download/v0.23.0/geckodriver-v0.23.0-linux64.tar.gz",
+		name:   "geckodriver-v0.23.0-linux64.tar.gz",
+		hash:   "2abf02cb69b48f2ba65ea344b752ff547e5431659aad80b03bf68cdb4f8df14b",
+		rename: []string{"geckodriver", "geckodriver-v0.23.0-linux64"},
 	},
 	{
 		// This is a recent nightly. Update this path periodically.
