@@ -114,6 +114,13 @@ func GeckoDriver(path string) ServiceOption {
 	}
 }
 
+func ChromeDriver(path string) ServiceOption {
+	return func(s *Service) error {
+		s.chromeDriverPath = path
+		return nil
+	}
+}
+
 // JavaPath specifies the path to the JRE for a Selenium service.
 func JavaPath(path string) ServiceOption {
 	return func(s *Service) error {
@@ -133,6 +140,7 @@ type Service struct {
 	xvfb               *FrameBuffer
 
 	geckoDriverPath, javaPath string
+	chromeDriverPath          string
 
 	output io.Writer
 }
@@ -158,6 +166,9 @@ func NewSeleniumService(jarPath string, port int, opts ...ServiceOption) (*Servi
 	}
 	if s.geckoDriverPath != "" {
 		s.cmd.Args = append([]string{"java", "-Dwebdriver.gecko.driver=" + s.geckoDriverPath}, cmd.Args[1:]...)
+	}
+	if s.chromeDriverPath != "" {
+		s.cmd.Args = append([]string{"java", "-Dwebdriver.chrome.driver=" + s.chromeDriverPath}, cmd.Args[1:]...)
 	}
 	if err := s.start(port); err != nil {
 		return nil, err
