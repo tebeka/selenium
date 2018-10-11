@@ -6,7 +6,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
+	"syscall"
 	"time"
 )
 
@@ -31,6 +33,10 @@ type Connect struct {
 	// See the following URL for details about available flags:
 	// https://wiki.saucelabs.com/pages/viewpage.action?pageId=48365781
 	Args []string
+
+	// If true and the current operating system is Linux, send SIGTERM to the
+	// proxy process when this parent process exits.
+	QuitProcessUponExit bool
 
 	cmd *exec.Cmd
 }
@@ -58,6 +64,12 @@ func (c *Connect) Start() error {
 	}
 	if c.LogFile != "" {
 		c.cmd.Args = append(c.cmd.Args, "--logfile", c.LogFile)
+	}
+	if c.QuitProcessUponExit && runtime.GOOS == "linux" {
+		c.cmd.SysProcAttr = &syscall.SysProcAttr{
+			// Deliver SIGTERM to process when we die.
+			Pdeathsig: syscall.SIGTERM,
+		}
 	}
 
 	dir, err := ioutil.TempDir("", "selenium-sauce-connect")

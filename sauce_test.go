@@ -38,10 +38,11 @@ func TestSauce(t *testing.T) {
 			t.Fatalf("pickUnusedPort() returned error: %s", err)
 		}
 		sc := sauce.Connect{
-			Path:         *sauceConnectPath,
-			UserName:     *sauceUserName,
-			AccessKey:    *sauceAccessKey,
-			SeleniumPort: port,
+			Path:                *sauceConnectPath,
+			UserName:            *sauceUserName,
+			AccessKey:           *sauceAccessKey,
+			SeleniumPort:        port,
+			QuitProcessUponExit: true,
 		}
 		if testing.Verbose() {
 			sc.ExtraVerbose = true
