@@ -63,10 +63,10 @@ var files = []file{
 		rename:  []string{"firefox", "firefox-nightly"},
 	},
 	{
-		url:    "https://saucelabs.com/downloads/sc-4.4.9-linux.tar.gz",
-		name:   "sauce-connect-4.4.9-linux.tar.gz",
-		hash:   "b1bedccc2690b48d6708ac71f23189c85b0da62c56ee943a1b20d8f17fa8bbde",
-		rename: []string{"sc-4.4.9-linux", "sauce-connect"},
+		url:    "https://saucelabs.com/downloads/sc-4.5.1-linux.tar.gz",
+		name:   "sauce-connect-4.5.1-linux.tar.gz",
+		hash:   "dd53f2cdcec489fbc2443942b853b51bf44af39f230600573119cdd315ddee52",
+		rename: []string{"sc-4.5.1-linux", "sauce-connect"},
 	},
 }
 
