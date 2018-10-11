@@ -198,8 +198,13 @@ Tests can be run using a browser located in the cloud via Sauce Labs.
 
 To run the tests under Sauce, run:
 
-    $ go test --test.run=TestSauce --experimental_enable_sauce \
-      --sauce_user_name=minusnine --sauce_access_key=[access key goes here]
+    $ go test --test.run=TestSauce --test.timeout=20m \
+      --experimental_enable_sauce \
+      --sauce_user_name=[username goes here] \
+      --sauce_access_key=[access key goes here]
+
+The Sauce access key can be obtained via
+[the Sauce Labs user settings page](https://saucelabs.com/beta/user-settings).
 
 Test results can be viewed through the
 [Sauce Labs Dashboard](https://saucelabs.com/beta/dashboard/tests).
