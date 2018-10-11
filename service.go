@@ -150,13 +150,9 @@ func (s Service) FrameBuffer() *FrameBuffer {
 	return s.xvfb
 }
 
-// This function is syntactically identical to `exec.Command`, but we want to be
-// able to switch it out for a different version for unit testing.
-var newExecCommand = exec.Command
-
 // NewSeleniumService starts a Selenium instance in the background.
 func NewSeleniumService(jarPath string, port int, opts ...ServiceOption) (*Service, error) {
-	cmd := newExecCommand("java", "-jar", jarPath, "-port", strconv.Itoa(port))
+	cmd := exec.Command("java", "-jar", jarPath, "-port", strconv.Itoa(port))
 	s, err := newService(cmd, "/wd/hub", port, opts...)
 	if err != nil {
 		return nil, err
@@ -323,7 +319,7 @@ func NewFrameBufferWithOptions(options FrameBufferOptions) (*FrameBuffer, error)
 		}
 		arguments = append(arguments, "-screen", "0", options.ScreenSize)
 	}
-	xvfb := newExecCommand("Xvfb", arguments...)
+	xvfb := exec.Command("Xvfb", arguments...)
 	xvfb.ExtraFiles = []*os.File{w}
 
 	// TODO(minusnine): plumb a way to set xvfb.Std{err,out} conditionally.
@@ -360,7 +356,7 @@ func NewFrameBufferWithOptions(options FrameBufferOptions) (*FrameBuffer, error)
 		return nil, errors.New("timeout waiting for Xvfb")
 	}
 
-	xauth := newExecCommand("xauth", "generate", ":"+display, ".", "trusted")
+	xauth := exec.Command("xauth", "generate", ":"+display, ".", "trusted")
 	xauth.Stderr = os.Stderr
 	xauth.Stdout = os.Stdout
 	xauth.Env = append(xauth.Env, "XAUTHORITY="+authPath)
