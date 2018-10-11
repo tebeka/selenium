@@ -22,6 +22,8 @@ type Connect struct {
 	// LogFile is the location of the log file that the proxy binary should
 	// create.
 	LogFile string
+	// PIDFile is the location of the file that will contain the SauceConnect Proxy process ID. If not specified, one will be generated to avoid collisions between multiple processes.
+	PIDFile string
 	// SeleniumPort is the port number that the Proxy binary should listen on for
 	// new Selenium WebDriver connections.
 	SeleniumPort int
@@ -80,10 +82,23 @@ func (c *Connect) Start() error {
 		os.RemoveAll(dir) // ignore error.
 	}()
 
+	var pidFilePath string
+	if c.PIDFile != "" {
+		pidFilePath = c.PIDFile
+	} else {
+		f, err := ioutil.TempFile("", "selenium-sauce-connect-pid.")
+		if err != nil {
+			return err
+		}
+		pidFilePath = f.Name()
+		f.Close() // ignore the error.
+	}
+
 	// The path specified here will be touched by the proxy process when it is
 	// ready to accept connections.
 	readyPath := filepath.Join(dir, "ready")
 	c.cmd.Args = append(c.cmd.Args, "--readyfile", readyPath)
+	c.cmd.Args = append(c.cmd.Args, "--pidfile", pidFilePath)
 
 	if err := c.cmd.Start(); err != nil {
 		return err
