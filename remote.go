@@ -260,6 +260,10 @@ func (wd *remoteWD) voidCommand(urlTemplate string, params interface{}) error {
 	_, err = wd.execute("POST", wd.requestURL(urlTemplate, wd.id), data)
 	return err
 }
+// add this func for action_builder.go perform() and so on.
+func (wd *remoteWD) VoidCommand(urlTemplate string, params interface{}) error {
+	return wd.voidCommand(urlTemplate, params)
+}
 
 func (wd remoteWD) stringsCommand(urlTemplate string) ([]string, error) {
 	url := wd.requestURL(urlTemplate, wd.id)
@@ -994,6 +998,12 @@ func (wd *remoteWD) DeleteCookie(name string) error {
 	_, err := wd.execute("DELETE", url, nil)
 	return err
 }
+// add this func for actions clear_action()
+func (wd *remoteWD) ClearActions() error{
+	url := wd.requestURL("/session/%s/actions", wd.id)
+	_, err := wd.execute("DELETE", url, nil)
+	return err
+}
 
 // TODO(minusnine): add a test for Click.
 func (wd *remoteWD) Click(button int) error {
@@ -1236,6 +1246,13 @@ func (wd *remoteWD) Log(typ log.Type) ([]log.Message, error) {
 
 	return val, nil
 }
+// add this func for actions.go Move_by_offset()
+func (wd *remoteWD) MoveBy(xOffset, yOffset int) error {
+	return wd.voidCommand("/session/%s/moveto", map[string]interface{}{
+		"xoffset": xOffset,
+		"yoffset": yOffset,
+	})
+}
 
 type remoteWE struct {
 	parent *remoteWD
@@ -1425,6 +1442,11 @@ func (elem *remoteWE) rect() (*rect, error) {
 		return nil, err
 	}
 	return &r.Value, nil
+}
+
+// add this func for pointer_actions.go move_to()
+func (elem *remoteWE) Rect() (*rect, error) {
+	return elem.rect()
 }
 
 func (elem *remoteWE) CSSProperty(name string) (string, error) {

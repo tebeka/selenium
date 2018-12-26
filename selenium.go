@@ -365,6 +365,11 @@ type WebDriver interface {
 
 	//Wait works like WaitWithTimeoutAndInterval, but using the default timeout and polling interval.
 	Wait(condition Condition) error
+
+	// MoveBy move the mouse
+	MoveBy(xOffset, yOffset int) error
+	// VoidCommand for direct use of webdriver protocol
+	VoidCommand(urlTemplate string, params interface{}) error
 }
 
 // WebElement defines method supported by web elements.
@@ -403,6 +408,8 @@ type WebElement interface {
 	// LocationInView returns the element's location once it has been scrolled
 	// into view.
 	LocationInView() (*Point, error)
+	// Rect get the element X,Y,Height,width
+	Rect()(*rect, error)
 	// Size returns the element's size.
 	Size() (*Size, error)
 	// CSSProperty returns the value of the specified CSS property of the
