@@ -99,15 +99,6 @@ to only be several days to a small number of weeks.
 
 Using Geckodriver without Selenium usually has the above known issues as well.
 
-### ChromeDriver
-
-1.  Various
-    [window-related commands are failing with v62+](https://bugs.chromium.org/p/chromedriver/issues/detail?id=1918).
-2.  GetCookies can
-    [return an incorrect expiration date in v62+](https://bugs.chromium.org/p/chromedriver/issues/detail?id=1949).
-3.  DeleteCookie
-    [doesn't work in v62+](https://bugs.chromium.org/p/chromedriver/issues/detail?id=1950).
-
 ## Breaking Changes
 
 There are a number of upcoming changes that break backward compatibility in an
