@@ -152,7 +152,7 @@ func (s Service) FrameBuffer() *FrameBuffer {
 
 // NewSeleniumService starts a Selenium instance in the background.
 func NewSeleniumService(jarPath string, port int, opts ...ServiceOption) (*Service, error) {
-	cmd := exec.Command("java", "-jar", jarPath, "-port", strconv.Itoa(port))
+	cmd := exec.Command("java", "-jar", jarPath, "-port", strconv.Itoa(port), "-debug")
 	s, err := newService(cmd, "/wd/hub", port, opts...)
 	if err != nil {
 		return nil, err

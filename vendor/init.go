@@ -38,35 +38,35 @@ type file struct {
 
 var files = []file{
 	{
-		url:  "https://selenium-release.storage.googleapis.com/3.14/selenium-server-standalone-3.14.0.jar",
-		name: "selenium-server-standalone-3.14.0.jar",
-		hash: "d38decb0a2ca9196e404838cd3866cd0129af5ee167c592b690e502f0b3d01ad",
+		url:  "https://selenium-release.storage.googleapis.com/3.141/selenium-server-standalone-3.141.59.jar",
+		name: "selenium-server-standalone-3.141.59.jar",
+		hash: "acf71b77d1b66b55db6fb0bed6d8bae2bbd481311bcbedfeff472c0d15e8f3cb",
 	},
 	{
-		url:    "https://chromedriver.storage.googleapis.com/2.42/chromedriver_linux64.zip",
-		name:   "chromedriver_2.42_linux64.zip",
-		hash:   "ced920ea978a658d915a960ed7bff62c37c9b7d62dfabbb42ffd7fe7cef7f082",
-		rename: []string{"chromedriver", "chromedriver-linux64-2.42"},
+		url:    "https://storage.googleapis.com/chromedriver-data/continuous/chromedriver_linux64_630664.zip",
+		name:   "chromedriver_linux64_630664.zip",
+		hash:   "7b8b95acc7fa1b146c37e4930839ad3d2d048330e6f630f8625568238f7d33fc",
+		rename: []string{"chromedriver", "chromedriver-linux64-630664"},
 	},
 	{
-		url:    "https://github.com/mozilla/geckodriver/releases/download/v0.23.0/geckodriver-v0.23.0-linux64.tar.gz",
-		name:   "geckodriver-v0.23.0-linux64.tar.gz",
-		hash:   "2abf02cb69b48f2ba65ea344b752ff547e5431659aad80b03bf68cdb4f8df14b",
-		rename: []string{"geckodriver", "geckodriver-v0.23.0-linux64"},
+		url:    "https://github.com/mozilla/geckodriver/releases/download/v0.24.0/geckodriver-v0.24.0-linux64.tar.gz",
+		name:   "geckodriver-v0.24.0-linux64.tar.gz",
+		hash:   "03be3d3b16b57e0f3e7e8ba7c1e4bf090620c147e6804f6c6f3203864f5e3784",
+		rename: []string{"geckodriver", "geckodriver-v0.24.0-linux64"},
 	},
 	{
 		// This is a recent nightly. Update this path periodically.
-		url:     "https://archive.mozilla.org/pub/firefox/nightly/2018/09/2018-09-14-10-01-56-mozilla-central/firefox-64.0a1.en-US.linux-x86_64.tar.bz2",
-		name:    "firefox-64.0a1.en-US.linux-x86_64.tar.bz2",
-		hash:    "8b7eb6a0c9985e9baf4adb6e557ec25e63cd6d55aa8c23718c1f126d3c5e6bc0",
+		url:     "http://archive.mozilla.org/pub/firefox/nightly/2019/02/2019-02-10-09-44-33-mozilla-central/firefox-67.0a1.en-US.linux-x86_64.tar.bz2",
+		name:    "firefox-67.0a1.en-US.linux-x86_64.tar.bz2",
+		hash:    "1de8f196cdb7e64a365bfc11a5d4e9a1e99545362a3cf8e6520573584af87238",
 		browser: true,
 		rename:  []string{"firefox", "firefox-nightly"},
 	},
 	{
-		url:    "https://saucelabs.com/downloads/sc-4.5.1-linux.tar.gz",
-		name:   "sauce-connect-4.5.1-linux.tar.gz",
-		hash:   "dd53f2cdcec489fbc2443942b853b51bf44af39f230600573119cdd315ddee52",
-		rename: []string{"sc-4.5.1-linux", "sauce-connect"},
+		url:    "https://saucelabs.com/downloads/sc-4.5.3-linux.tar.gz",
+		name:   "sauce-connect-4.5.3-linux.tar.gz",
+		hash:   "0de7fcbcb03ad400e886f2c4b34661eda55808e69c7bc4db6aa6aff85e4edb15",
+		rename: []string{"sc-4.5.3-linux", "sauce-connect"},
 	},
 }
 

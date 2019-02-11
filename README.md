@@ -39,7 +39,7 @@ Selenium WebDriver JARs, and the Sauce Connect proxy binary. This is primarily
 intended for testing.
 
     $ cd vendor
-    $ go get -d ./...
+    $ go get -d .
     $ go run init.go --alsologtostderr
     $ cd ..
 
@@ -140,6 +140,10 @@ See [the issue tracker][issues] for features that need implementing.
 [issues]: https://github.com/tebeka/selenium/issues
 
 ### Testing Locally
+
+Install `xvfb` and Java if they is not already installed, e.g.:
+
+    sudo apt-get install xvfb openjdk-11-jre
 
 Run the tests:
 

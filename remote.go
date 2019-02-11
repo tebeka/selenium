@@ -338,16 +338,25 @@ var w3cCapabilityNames = []string{
 	"unhandledPromptBehavior",
 }
 
-var isValidW3CCapability = map[string]bool{}
-
-func init() {
-	for _, name := range w3cCapabilityNames {
-		isValidW3CCapability[name] = true
-	}
+var chromeCapabilityNames = []string{
+	// This is not a standardized top-level capability name, but Chromedriver
+	// expects this capability here.
+	// https://cs.chromium.org/chromium/src/chrome/test/chromedriver/capabilities.cc?rcl=0754b5d0aad903439a628618f0e41845f1988f0c&l=759
+	"loggingPrefs",
 }
 
 // Create a W3C-compatible capabilities instance.
 func newW3CCapabilities(caps Capabilities) Capabilities {
+	isValidW3CCapability := map[string]bool{}
+	for _, name := range w3cCapabilityNames {
+		isValidW3CCapability[name] = true
+	}
+	if b, ok := caps["browserName"]; ok && b == "chrome" {
+		for _, name := range chromeCapabilityNames {
+			isValidW3CCapability[name] = true
+		}
+	}
+
 	alwaysMatch := make(Capabilities)
 	for name, value := range caps {
 		if isValidW3CCapability[name] || strings.Contains(name, ":") {
@@ -384,7 +393,7 @@ func (wd *remoteWD) NewSession() (string, error) {
 	// https://github.com/SeleniumHQ/selenium/issues/2827
 	//
 	// TODO(minusnine): audit which ones of these are still relevant. The W3C
-	// standard switched to the "alwaysMatch" version in  February 2017.
+	// standard switched to the "alwaysMatch" version in February 2017.
 	attempts := []struct {
 		params map[string]interface{}
 	}{
