@@ -4,6 +4,8 @@
 [![Travis](https://travis-ci.org/tebeka/selenium.svg?branch=master)](https://travis-ci.org/tebeka/selenium)
 [![Go Report Card](https://goreportcard.com/badge/github.com/tebeka/selenium)](https://goreportcard.com/report/github.com/tebeka/selenium)
 
+ISSUE
+
 ## About
 
 This is a [WebDriver][selenium] client for [Go][go]. It supports the
