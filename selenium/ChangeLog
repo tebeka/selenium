@@ -1,0 +1,84 @@
+2016-11-22 version 0.9.3
+* Pretty printing of JSON reponse (@crantok  in PR #44)
+
+2016-08-31 version 0.9.2
+* SwithFrame with nil id (@exjimsk in PR #34)
+
+2016-02-23 version 0.9.1
+* Log method (@wetherbeei in PR #21)
+
+2016-02-11 version 0.9.0
+* Testing on docker with go 1.5.3
+* Testing with Selenium 2.51.0
+* SwitchSession (@minusnine in PR #27)
+* KeyUp and KeyDown (@minusnine in PR #26)
+* Capability type (@minusnine in PR #25)
+
+2015-06-16 version 0.8.5
+* Fix URL in go.doc (@RaviTezu  in PR #15)
+
+2015-06-16 version 0.8.4
+* Make SetDebug visible (github PR #8 by dskora)
+
+2015-02-10 version 0.8.3
+* ResizeWindow (MR #3 by eide)
+
+2014-08-14 version 0.8.2
+* Fixed errors found by "go vet"
+
+2014-02-04 version 0.8.1
+* MaximizeWindow (issue #9)
+* VERSION -> Version
+    
+2014-01-28 version 0.8.0
+* GetHTTPClient for AppEngine support (issue #8)
+
+2013-11-02 version 0.7.0
+* Added SessionId to Selenium interface
+    
+2013-10-09 version 0.6.1
+* Fix panic when stringCommand return value is nil (issue #6)
+
+2012-04-10 version 0.6.0
+* ExecuteScriptRaw, ExecuteScriptAsyncRaw (Naitik Shah)
+* DecodeElement in API (Naitik Shah)
+
+2012-04-07 version 0.5.0
+* IsDiaplayed -> IsDisplayed (thanks Naitik Shah)
+* VERSION is a const now
+
+2012-03-29 version 0.4.0
+* Fix bug in /status
+* timeouts are in time.Duration
+
+2012-02-13 version 0.3.0
+* Go 1
+* Compatible with `go get`
+* README teaks
+
+2011-09-27 version 0.2.2
+* All keys from http://bit.ly/p8SIrD
+
+2011-09-27 version 0.2.1
+* Capabilities, SetAsyncScriptTimeout, SetImplicitWaitTimeout, CloseWindow
+* IME commands
+* Use selenium 2.7.0 for testing
+
+2011-09-21 version 0.2.0
+* Moved profileDir out of NewRemote
+
+2011-09-07 version 0.1.3
+* Local test server, SauceLabs disabled
+* Added run-tests.sh
+* Stop tests on first error (t.Error -> t.Fatal)
+
+2011-09-06 version 0.1.2
+* Tests running on SauceLabs
+* More lax content-type checking
+* Pass Capabilities (not *Capabilties)
+
+2011-09-04 version 0.1.1
+* Screenshot
+
+2011-09-04 version 0.1.0
+* Initial release

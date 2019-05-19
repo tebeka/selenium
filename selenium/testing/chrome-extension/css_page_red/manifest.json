@@ -1,0 +1,10 @@
+{
+  "name": "Make the page red",
+  "description": "Make the page red through CSS",
+  "version": "1.0",
+  "manifest_version": 2,
+  "content_scripts": [{
+    "matches": ["http://*/*"],
+    "css": ["red.css"]
+  }]
+}
