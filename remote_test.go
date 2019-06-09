@@ -87,15 +87,15 @@ func findBestPath(glob string, binary bool) string {
 
 func setDriverPaths() error {
 	if *selenium3Path == "" {
-		*selenium3Path = findBestPath("vendor/selenium-server-standalone-*" /*binary=*/, false)
+		*selenium3Path = findBestPath("vendor/selenium-server*" /*binary=*/, false)
 	}
 
 	if *geckoDriverPath == "" {
-		*geckoDriverPath = findBestPath("vendor/geckodriver-v*" /*binary=*/, true)
+		*geckoDriverPath = findBestPath("vendor/geckodriver*" /*binary=*/, true)
 	}
 
 	if *chromeDriverPath == "" {
-		*chromeDriverPath = findBestPath("vendor/chromedriver-*" /*binary=*/, true)
+		*chromeDriverPath = findBestPath("vendor/chromedriver*" /*binary=*/, true)
 	}
 
 	return nil

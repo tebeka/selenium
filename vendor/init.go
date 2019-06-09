@@ -6,6 +6,7 @@ package main
 import (
 	"context"
 	"crypto/md5"
+	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/hex"
 	"flag"
@@ -39,33 +40,32 @@ type file struct {
 var files = []file{
 	{
 		url:  "https://selenium-release.storage.googleapis.com/3.141/selenium-server-standalone-3.141.59.jar",
-		name: "selenium-server-standalone-3.141.59.jar",
-		hash: "acf71b77d1b66b55db6fb0bed6d8bae2bbd481311bcbedfeff472c0d15e8f3cb",
+		name: "selenium-server.jar",
+		// TODO(minusnine): reimplement hashing so that it is less annoying for maintenance.
+		// hash: "acf71b77d1b66b55db6fb0bed6d8bae2bbd481311bcbedfeff472c0d15e8f3cb",
 	},
 	{
-		url:    "https://storage.googleapis.com/chromedriver-data/continuous/chromedriver_linux64_630664.zip",
-		name:   "chromedriver_linux64_630664.zip",
-		hash:   "7b8b95acc7fa1b146c37e4930839ad3d2d048330e6f630f8625568238f7d33fc",
-		rename: []string{"chromedriver", "chromedriver-linux64-630664"},
+		url:  "https://chromedriver.storage.googleapis.com/76.0.3809.25/chromedriver_linux64.zip",
+		name: "chromedriver.zip",
+		// hash:   "7b8b95acc7fa1b146c37e4930839ad3d2d048330e6f630f8625568238f7d33fc",
 	},
 	{
-		url:    "https://github.com/mozilla/geckodriver/releases/download/v0.24.0/geckodriver-v0.24.0-linux64.tar.gz",
-		name:   "geckodriver-v0.24.0-linux64.tar.gz",
-		hash:   "03be3d3b16b57e0f3e7e8ba7c1e4bf090620c147e6804f6c6f3203864f5e3784",
-		rename: []string{"geckodriver", "geckodriver-v0.24.0-linux64"},
+		url:  "https://github.com/mozilla/geckodriver/releases/download/v0.24.0/geckodriver-v0.24.0-linux64.tar.gz",
+		name: "geckodriver.tar.gz",
+		// hash:   "03be3d3b16b57e0f3e7e8ba7c1e4bf090620c147e6804f6c6f3203864f5e3784",
+		// rename: []string{"geckodriver", "geckodriver24.0-linux64"},
 	},
 	{
 		// This is a recent nightly. Update this path periodically.
-		url:     "http://archive.mozilla.org/pub/firefox/nightly/2019/02/2019-02-10-09-44-33-mozilla-central/firefox-67.0a1.en-US.linux-x86_64.tar.bz2",
-		name:    "firefox-67.0a1.en-US.linux-x86_64.tar.bz2",
-		hash:    "1de8f196cdb7e64a365bfc11a5d4e9a1e99545362a3cf8e6520573584af87238",
+		url:  "https://download.mozilla.org/?product=firefox-nightly-latest-ssl&os=linux64&lang=en-US",
+		name: "firefox-nightly.tar.bz2",
+		// hash:    "1de8f196cdb7e64a365bfc11a5d4e9a1e99545362a3cf8e6520573584af87238",
 		browser: true,
 		rename:  []string{"firefox", "firefox-nightly"},
 	},
 	{
 		url:    "https://saucelabs.com/downloads/sc-4.5.3-linux.tar.gz",
-		name:   "sauce-connect-4.5.3-linux.tar.gz",
-		hash:   "0de7fcbcb03ad400e886f2c4b34661eda55808e69c7bc4db6aa6aff85e4edb15",
+		name:   "sauce-connect.tar.gz",
 		rename: []string{"sc-4.5.3-linux", "sauce-connect"},
 	},
 }
@@ -101,11 +101,11 @@ func addChrome(ctx context.Context) error {
 		return fmt.Errorf("cannot get the chrome package %s%s attrs: %v", gcsPath, latestChromePackage, err)
 	}
 	files = append(files, file{
-		name:     chromeFilename,
-		browser:  true,
-		hash:     hex.EncodeToString(cpAttrs.MD5),
-		hashType: "md5",
-		url:      cpAttrs.MediaLink,
+		name:    chromeFilename,
+		browser: true,
+		// hash:     hex.EncodeToString(cpAttrs.MD5),
+		// hashType: "md5",
+		url: cpAttrs.MediaLink,
 	})
 	return nil
 }
@@ -137,13 +137,13 @@ func handleFile(file file) error {
 		glog.Infof("Skipping %q because --download_browser is not set.", file.name)
 		return nil
 	}
-	if !fileSameHash(file) {
+	if file.hash != "" && fileSameHash(file) {
+		glog.Infof("Skipping file %q which has already been downloaded.", file.name)
+	} else {
 		glog.Infof("Downloading %q from %q", file.name, file.url)
 		if err := downloadFile(file); err != nil {
 			return err
 		}
-	} else {
-		glog.Infof("Skipping file %q which has already been downloaded.", file.name)
 	}
 
 	switch path.Ext(file.name) {
@@ -189,18 +189,26 @@ func downloadFile(file file) (err error) {
 		return fmt.Errorf("%s: error downloading %q: %v", file.name, file.url, err)
 	}
 	defer resp.Body.Close()
-	var h hash.Hash
-	switch strings.ToLower(file.hashType) {
-	case "md5":
-		h = md5.New()
-	default:
-		h = sha256.New()
-	}
-	if _, err := io.Copy(io.MultiWriter(f, h), resp.Body); err != nil {
-		return fmt.Errorf("%s: error downloading %q: %v", file.name, file.url, err)
-	}
-	if h := hex.EncodeToString(h.Sum(nil)); h != file.hash {
-		return fmt.Errorf("%s: got %s hash %q, want %q", file.name, file.hashType, h, file.hash)
+	if file.hash != "" {
+		var h hash.Hash
+		switch strings.ToLower(file.hashType) {
+		case "md5":
+			h = md5.New()
+		case "sha1":
+			h = sha1.New()
+		default:
+			h = sha256.New()
+		}
+		if _, err := io.Copy(io.MultiWriter(f, h), resp.Body); err != nil {
+			return fmt.Errorf("%s: error downloading %q: %v", file.name, file.url, err)
+		}
+		if h := hex.EncodeToString(h.Sum(nil)); h != file.hash {
+			return fmt.Errorf("%s: got %s hash %q, want %q", file.name, file.hashType, h, file.hash)
+		}
+	} else {
+		if _, err := io.Copy(f, resp.Body); err != nil {
+			return fmt.Errorf("%s: error downloading %q: %v", file.name, file.url, err)
+		}
 	}
 	return nil
 }
