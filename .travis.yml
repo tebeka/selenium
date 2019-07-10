@@ -3,19 +3,35 @@ go:
     - 1.12.x
 
 jdk:
+    # The Java 8 SDK is a requirement for Selenium.
     - openjdk8
 
 before_script:
-    - "export DISPLAY=:99.0"
-    - "sh -e /etc/init.d/xvfb start"
-    - sleep 3 # give xvfb some time to start
-    - cd vendor && go run init.go --alsologtostderr --download_browsers && cd ..
+  # Start an X frame buffer in which to run the web browsers.
+  - "export DISPLAY=:99.0"
+  - "sh -e /etc/init.d/xvfb start"
+  # give xvfb some time to start
+  - sleep 3
+  # Download all of the binary dependencies needed to run the tests.
+  - cd vendor && go run init.go --alsologtostderr --download_browsers && cd ..
+
+env:
+  # For 1.12, this environment variable still defaults to auto. This can
+  # be removed in some future Go release.
+  - GO111MODULE=on
+
+# Use Go's module support to install dependencies instead of Travis's
+# travis_install_go_dependencies.
+install: true
 
 script: 
-    - ./testing/travis-ci-gofmt.sh
-    - ./testing/travis-ci-test.sh
+  # Ensure that the code has been formatted with gofmt.
+  - ./testing/travis-ci-gofmt.sh
+  # Run the tests.
+  - ./testing/travis-ci-test.sh
 
 after_success:
+  # Upload the code coverage report to Codecov.
   - bash <(curl -s https://codecov.io/bash) -- -v
 
 sudo: false
