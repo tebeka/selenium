@@ -29,14 +29,25 @@ Run
 
 to fetch the package.
 
-The package requires a working WebDriver installation, which can include recent
+The package requires a working WebDriver installation, which should include recent
 versions of a web browser being driven by Selenium WebDriver.
+
+See the next section for a way to download the browser-related binary
+dependencies to be able to test this package.
 
 ### Downloading Dependencies
 
-We provide a means to download the ChromeDriver binary, the Firefox binary, the
-Selenium WebDriver JARs, and the Sauce Connect proxy binary. This is primarily
-intended for testing.
+We provide a means to download the recent versions of:
+
+* the Selenium WebDriver JAR,
+* the Chrome and the ChromeDriver binaries,
+* the Firefox and Geckodriver binaries, and
+* the Sauce Connect proxy binary. 
+
+This is primarily intended for testing this package. Your production
+environment should likely manage these dependencies differently.
+
+To obtain the binary dependencies, run:
 
     $ cd vendor
     $ go get -d .
@@ -67,10 +78,6 @@ expected.
 
 Below are known issues that affect the usage of this API. There are likely
 others filed on the respective issue trackers.
-
-### Selenium 2
-
-1.  Selenium 2 does not support versions of Firefox newer than 47.0.2.
 
 ### Selenium 3 and Geckodriver
 
