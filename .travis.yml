@@ -11,6 +11,13 @@ before_script:
     - sleep 3 # give xvfb some time to start
     - cd vendor && go run init.go --alsologtostderr --download_browsers && cd ..
 
+env:
+    - GO111MODULE=on
+
+# Use Go's module support to install dependencies instead of Travis's
+# travis_install_go_dependencies.
+install: true
+
 script: 
     - ./testing/travis-ci-gofmt.sh
     - ./testing/travis-ci-test.sh
