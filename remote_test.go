@@ -1,6 +1,7 @@
 package selenium
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"math"
@@ -12,27 +13,26 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
-	"sort"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/blang/semver"
-	"github.com/golang/glog"
 	"github.com/google/go-cmp/cmp"
 	"github.com/tebeka/selenium/chrome"
 	"github.com/tebeka/selenium/firefox"
+	"github.com/tebeka/selenium/internal/download"
 	"github.com/tebeka/selenium/log"
 	"github.com/tebeka/selenium/sauce"
 )
 
 var (
-	selenium3Path          = flag.String("selenium3_path", "", "The path to the Selenium 3 server JAR. If empty or the file is not present, Firefox tests using Selenium 3 will not be run.")
+	selenium3Path          = flag.String("selenium3_path", "vendor/selenium-server.jar", "The path to the Selenium 3 server JAR. If empty or the file is not present, Firefox tests using Selenium 3 will not be run.")
 	firefoxBinarySelenium3 = flag.String("firefox_binary_for_selenium3", "vendor/firefox-nightly/firefox", "The name of the Firefox binary for Selenium 3 tests or the path to it. If the name does not contain directory separators, the PATH will be searched.")
-	geckoDriverPath        = flag.String("geckodriver_path", "", "The path to the geckodriver binary. If empty or the file is not present, the Geckodriver tests will not be run.")
+	geckoDriverPath        = flag.String("geckodriver_path", "vendor/geckodriver", "The path to the geckodriver binary. If empty or the file is not present, the Geckodriver tests will not be run.")
 	javaPath               = flag.String("java_path", "", "The path to the Java runtime binary to invoke. If not specified, 'java' will be used.")
 
-	chromeDriverPath = flag.String("chrome_driver_path", "", "The path to the ChromeDriver binary. If empty or the file is not present, Chrome tests will not be run.")
+	chromeDriverPath = flag.String("chrome_driver_path", "vendor/chromedriver", "The path to the ChromeDriver binary. If empty or the file is not present, Chrome tests will not be run.")
 	chromeBinary     = flag.String("chrome_binary", "vendor/chrome-linux/chrome", "The name of the Chrome binary or the path to it. If name is not an exact path, the PATH will be searched.")
 
 	useDocker          = flag.Bool("docker", false, "If set, run the tests in a Docker container.")
@@ -40,65 +40,25 @@ var (
 
 	startFrameBuffer = flag.Bool("start_frame_buffer", true, "If true, start an Xvfb subprocess and run the browsers in that X server.")
 
+	downloadDependencies = flag.Bool("download_dependencies", false, "If true, download any binary dependencies that are not present.")
+
 	serverURL string
 )
 
 func TestMain(m *testing.M) {
 	flag.Parse()
-	if err := setDriverPaths(); err != nil {
-		fmt.Fprint(os.Stderr, fmt.Sprintf("Exiting early: unable to get the driver paths -- %s", err.Error()))
-		os.Exit(1)
+
+	if *downloadDependencies {
+		if err := download.DownloadAll(context.Background(), "vendor/"); err != nil {
+			fmt.Fprint(os.Stderr, err.Error())
+			os.Exit(1)
+		}
 	}
 
 	s := httptest.NewServer(http.HandlerFunc(handler))
 	serverURL = s.URL
 	defer s.Close()
 	os.Exit(m.Run())
-}
-
-func findBestPath(glob string, binary bool) string {
-	matches, err := filepath.Glob(glob)
-	if err != nil {
-		glog.Warningf("Error globbing %q: %s", glob, err)
-		return ""
-	}
-	if len(matches) == 0 {
-		return ""
-	}
-	// Iterate backwards: newer versions should be sorted to the end.
-	sort.Strings(matches)
-	for i := len(matches) - 1; i >= 0; i-- {
-		path := matches[i]
-		fi, err := os.Stat(path)
-		if err != nil {
-			glog.Warningf("Error statting %q: %s", path, err)
-			continue
-		}
-		if !fi.Mode().IsRegular() {
-			continue
-		}
-		if binary && fi.Mode().Perm()&0111 == 0 {
-			continue
-		}
-		return path
-	}
-	return ""
-}
-
-func setDriverPaths() error {
-	if *selenium3Path == "" {
-		*selenium3Path = findBestPath("vendor/selenium-server*" /*binary=*/, false)
-	}
-
-	if *geckoDriverPath == "" {
-		*geckoDriverPath = findBestPath("vendor/geckodriver*" /*binary=*/, true)
-	}
-
-	if *chromeDriverPath == "" {
-		*chromeDriverPath = findBestPath("vendor/chromedriver*" /*binary=*/, true)
-	}
-
-	return nil
 }
 
 func pickUnusedPort() (int, error) {
