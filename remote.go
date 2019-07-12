@@ -1075,19 +1075,16 @@ func (wd *remoteWD) KeyUp(keys string) error {
 
 // TODO(minusnine): Implement PerformActions and ReleaseActions, for more
 // direct access to the W3C specification.
-
-// TODO(minusnine): update the Alert methods to the W3C specification and add a
-// test.
 func (wd *remoteWD) DismissAlert() error {
-	return wd.voidCommand("/session/%s/dismiss_alert", nil)
+	return wd.voidCommand("/session/%s/alert/dismiss", nil)
 }
 
 func (wd *remoteWD) AcceptAlert() error {
-	return wd.voidCommand("/session/%s/accept_alert", nil)
+	return wd.voidCommand("/session/%s/alert/accept", nil)
 }
 
 func (wd *remoteWD) AlertText() (string, error) {
-	return wd.stringCommand("/session/%s/alert_text")
+	return wd.stringCommand("/session/%s/alert/text")
 }
 
 func (wd *remoteWD) SetAlertText(text string) error {
@@ -1096,7 +1093,7 @@ func (wd *remoteWD) SetAlertText(text string) error {
 		return err
 	}
 
-	return wd.voidCommand("/session/%s/alert_text", data)
+	return wd.voidCommand("/session/%s/alert/text", data)
 }
 
 func (wd *remoteWD) execScriptRaw(script string, args []interface{}, suffix string) ([]byte, error) {
