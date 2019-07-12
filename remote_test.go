@@ -564,6 +564,8 @@ func runTests(t *testing.T, c config) {
 	t.Run("SwitchFrame", runTest(testSwitchFrame, c))
 	t.Run("Wait", runTest(testWait, c))
 	t.Run("ActiveElement", runTest(testActiveElement, c))
+	t.Run("AcceptAlert", runTest(testAcceptAlert, c))
+	t.Run("DismissAlert", runTest(testDismissAlert, c))
 }
 
 func testStatus(t *testing.T, c config) {
@@ -1798,6 +1800,45 @@ func testWait(t *testing.T, c config) {
 	}
 }
 
+func testAcceptAlert(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
+
+	alertPageURL := serverURL + "/alert"
+
+	if err := wd.Get(alertPageURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", alertPageURL, err)
+	}
+
+	alertText, err := wd.AlertText()
+	if err != nil {
+		t.Fatalf("wd.AlertText() returned error: %v", err)
+	}
+
+	if alertText != "Hello world" {
+		t.Fatalf("Expected 'Hello world' but got '%s'", alertText)
+	}
+
+	if err := wd.AcceptAlert(); err != nil {
+		t.Fatalf("wd.AcceptAlert() returned error: %v", err)
+	}
+}
+
+func testDismissAlert(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
+
+	alertPageURL := serverURL + "/alert"
+
+	if err := wd.Get(alertPageURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", alertPageURL, err)
+	}
+
+	if err := wd.DismissAlert(); err != nil {
+		t.Fatalf("wd.DismissAlert() returned error: %v", err)
+	}
+}
+
 var homePage = `
 <html>
 <head>
@@ -1893,6 +1934,21 @@ var titleChangePage = `
 </html>
 `
 
+var alertPage = `
+<html>
+<head>
+	<title>Go Selenium Test Suite - Alert Appear Page</title>
+</head>
+<body>
+	An alert will popup.
+
+	<script>
+		alert('Hello world');
+	</script>
+</body>
+</html>
+`
+
 func handler(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 	page, ok := map[string]string{
@@ -1902,6 +1958,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		"/log":    logPage,
 		"/frame":  framePage,
 		"/title":  titleChangePage,
+		"/alert":  alertPage,
 	}[path]
 	if !ok {
 		http.NotFound(w, r)
