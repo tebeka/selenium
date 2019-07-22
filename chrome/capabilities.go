@@ -113,10 +113,10 @@ type PerfLoggingPreferences struct {
 	// Timeline domain. When tracing is enabled, Timeline domain is implicitly
 	// disabled, unless enableTimeline is explicitly set to true.
 	EnableTimeline *bool `json:"enableTimeline,omitempty"`
-	// TracingCategories is a comma-separated string of Chrome tracing categories
+	// TraceCategories is a comma-separated string of Chrome tracing categories
 	// for which trace events should be collected. An unspecified or empty string
 	// disables tracing.
-	TracingCategories string `json:"tracingCategories,omitempty"`
+	TraceCategories string `json:"traceCategories,omitempty"`
 	// BufferUsageReportingIntervalMillis is the requested number of milliseconds
 	// between DevTools trace buffer usage events. For example, if 1000, then
 	// once per second, DevTools will report how full the trace buffer is. If a
