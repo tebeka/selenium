@@ -15,6 +15,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path"
@@ -26,7 +27,16 @@ import (
 	"google.golang.org/api/option"
 )
 
+// desiredChromeBuild is the known build of chromium to download.
+// Update this periodically.
+const desiredChromeBuild = "652428" // This corresponds to version "75.0.3770".
+
+// desiredFirefoxVersion is the known version of Firefox to download.
+// Update this periodically.
+const desiredFirefoxVersion = "68.0.1"
+
 var downloadBrowsers = flag.Bool("download_browsers", true, "If true, download the Firefox and Chrome browsers.")
+var downloadLatest = flag.Bool("download_latest", false, "If true, download the latest versions.")
 
 type file struct {
 	url      string
@@ -45,23 +55,10 @@ var files = []file{
 		// hash: "acf71b77d1b66b55db6fb0bed6d8bae2bbd481311bcbedfeff472c0d15e8f3cb",
 	},
 	{
-		url:  "https://chromedriver.storage.googleapis.com/76.0.3809.25/chromedriver_linux64.zip",
-		name: "chromedriver.zip",
-		// hash:   "7b8b95acc7fa1b146c37e4930839ad3d2d048330e6f630f8625568238f7d33fc",
-	},
-	{
 		url:  "https://github.com/mozilla/geckodriver/releases/download/v0.24.0/geckodriver-v0.24.0-linux64.tar.gz",
 		name: "geckodriver.tar.gz",
 		// hash:   "03be3d3b16b57e0f3e7e8ba7c1e4bf090620c147e6804f6c6f3203864f5e3784",
 		// rename: []string{"geckodriver", "geckodriver24.0-linux64"},
-	},
-	{
-		// This is a recent nightly. Update this path periodically.
-		url:  "https://download.mozilla.org/?product=firefox-nightly-latest-ssl&os=linux64&lang=en-US",
-		name: "firefox-nightly.tar.bz2",
-		// hash:    "1de8f196cdb7e64a365bfc11a5d4e9a1e99545362a3cf8e6520573584af87238",
-		browser: true,
-		rename:  []string{"firefox", "firefox-nightly"},
 	},
 	{
 		url:    "https://saucelabs.com/downloads/sc-4.5.3-linux.tar.gz",
@@ -70,13 +67,19 @@ var files = []file{
 	},
 }
 
-func addChrome(ctx context.Context) error {
+// addChrome adds the appropriate chromium files to the list.
+//
+// If `latestChromeBuild` is empty, then the latest build will be used.
+// Otherwise, that specific build will be used.
+func addChrome(ctx context.Context, latestChromeBuild string) error {
 	const (
 		// Bucket URL: https://console.cloud.google.com/storage/browser/chromium-browser-continuous/?pli=1
-		storageBktName = "chromium-browser-snapshots"
-		prefixLinux64  = "Linux_x64"
-		lastChangeFile = "Linux_x64/LAST_CHANGE"
-		chromeFilename = "chrome-linux.zip"
+		storageBktName             = "chromium-browser-snapshots"
+		prefixLinux64              = "Linux_x64"
+		lastChangeFile             = "Linux_x64/LAST_CHANGE"
+		chromeFilename             = "chrome-linux.zip"
+		chromeDriverFilename       = "chromedriver_linux64.zip"
+		chromeDriverTargetFilename = "chromedriver.zip" // For backward compatibility
 	)
 	gcsPath := fmt.Sprintf("gs://%s/", storageBktName)
 	client, err := storage.NewClient(ctx, option.WithHTTPClient(http.DefaultClient))
@@ -84,17 +87,19 @@ func addChrome(ctx context.Context) error {
 		return fmt.Errorf("cannot create a storage client for downloading the chrome browser: %v", err)
 	}
 	bkt := client.Bucket(storageBktName)
-	r, err := bkt.Object(lastChangeFile).NewReader(ctx)
-	if err != nil {
-		return fmt.Errorf("cannot create a reader for %s%s file: %v", gcsPath, lastChangeFile, err)
+	if latestChromeBuild == "" {
+		r, err := bkt.Object(lastChangeFile).NewReader(ctx)
+		if err != nil {
+			return fmt.Errorf("cannot create a reader for %s%s file: %v", gcsPath, lastChangeFile, err)
+		}
+		defer r.Close()
+		// Read the last change file content for the latest build directory name
+		data, err := ioutil.ReadAll(r)
+		if err != nil {
+			return fmt.Errorf("cannot read from %s%s file: %v", gcsPath, lastChangeFile, err)
+		}
+		latestChromeBuild = string(data)
 	}
-	defer r.Close()
-	// Read the last change file content for the latest build directory name
-	data, err := ioutil.ReadAll(r)
-	if err != nil {
-		return fmt.Errorf("cannot read from %s%s file: %v", gcsPath, lastChangeFile, err)
-	}
-	latestChromeBuild := string(data)
 	latestChromePackage := path.Join(prefixLinux64, latestChromeBuild, chromeFilename)
 	cpAttrs, err := bkt.Object(latestChromePackage).Attrs(ctx)
 	if err != nil {
@@ -103,20 +108,59 @@ func addChrome(ctx context.Context) error {
 	files = append(files, file{
 		name:    chromeFilename,
 		browser: true,
-		// hash:     hex.EncodeToString(cpAttrs.MD5),
-		// hashType: "md5",
-		url: cpAttrs.MediaLink,
+		url:     cpAttrs.MediaLink,
+	})
+	latestChromeDriverPackage := path.Join(prefixLinux64, latestChromeBuild, chromeDriverFilename)
+	cpAttrs, err = bkt.Object(latestChromeDriverPackage).Attrs(ctx)
+	if err != nil {
+		return fmt.Errorf("cannot get the chrome driver package %s%s attrs: %v", gcsPath, latestChromeDriverPackage, err)
+	}
+	files = append(files, file{
+		name: chromeDriverTargetFilename,
+		url:  cpAttrs.MediaLink,
+		rename: []string{"chromedriver_linux64/chromedriver", "chromedriver"},
 	})
 	return nil
+}
+
+// addFirefox adds the appropriate Firefox files to the list.
+//
+// If `desiredVersion` is empty, the the latest version will be used.
+// Otherwise, the specific version will be used.
+func addFirefox(desiredVersion string) {
+	if desiredVersion == "" {
+		files = append(files, file{
+			// This is a recent nightly. Update this path periodically.
+			url:     "https://download.mozilla.org/?product=firefox-nightly-latest-ssl&os=linux64&lang=en-US",
+			name:    "firefox-nightly.tar.bz2",
+			browser: true,
+			rename:  []string{"firefox", "firefox-nightly"},
+		})
+	} else {
+		files = append(files, file{
+			// This is a recent nightly. Update this path periodically.
+			url:     "https://download-installer.cdn.mozilla.net/pub/firefox/releases/" + url.PathEscape(desiredVersion) + "/linux-x86_64/en-US/firefox-" + url.PathEscape(desiredVersion) + ".tar.bz2",
+			name:    "firefox.tar.bz2",
+			browser: true,
+		})
+	}
 }
 
 func main() {
 	flag.Parse()
 	ctx := context.Background()
 	if *downloadBrowsers {
-		if err := addChrome(ctx); err != nil {
+		chromeBuild := desiredChromeBuild
+		firefoxVersion := desiredFirefoxVersion
+		if *downloadLatest {
+			chromeBuild = ""
+			firefoxVersion = ""
+		}
+
+		if err := addChrome(ctx, chromeBuild); err != nil {
 			glog.Errorf("unable to Download Google Chrome browser: %v", err)
 		}
+		addFirefox(firefoxVersion)
 	}
 	var wg sync.WaitGroup
 	for _, file := range files {
