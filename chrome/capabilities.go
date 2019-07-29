@@ -67,7 +67,7 @@ type Capabilities struct {
 	// Android Chrome WebDriver path "com.android.chrome"
 	AndroidPackage string `json:"androidPackage,omitempty"`
 	// Use W3C mode, if true.
-	W3C bool `json:"w3c"`
+	W3C bool `json:"w3c,omitempty"`
 }
 
 // TODO(minusnine): https://bugs.chromium.org/p/chromedriver/issues/detail?id=1625
