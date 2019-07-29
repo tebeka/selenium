@@ -66,7 +66,7 @@ type Capabilities struct {
 	WindowTypes []string `json:"windowTypes,omitempty"`
 	// Android Chrome WebDriver path "com.android.chrome"
 	AndroidPackage string `json:"androidPackage,omitempty"`
-	// Must be true; not useful to consume.
+	// Use W3C mode, if true.
 	W3C bool `json:"w3c"`
 }
 
