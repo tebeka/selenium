@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"reflect"
 	"sort"
@@ -28,7 +29,7 @@ import (
 
 var (
 	selenium3Path          = flag.String("selenium3_path", "", "The path to the Selenium 3 server JAR. If empty or the file is not present, Firefox tests using Selenium 3 will not be run.")
-	firefoxBinarySelenium3 = flag.String("firefox_binary_for_selenium3", "vendor/firefox-nightly/firefox", "The name of the Firefox binary for Selenium 3 tests or the path to it. If the name does not contain directory separators, the PATH will be searched.")
+	firefoxBinarySelenium3 = flag.String("firefox_binary_for_selenium3", "vendor/firefox/firefox", "The name of the Firefox binary for Selenium 3 tests or the path to it. If the name does not contain directory separators, the PATH will be searched.")
 	geckoDriverPath        = flag.String("geckodriver_path", "", "The path to the geckodriver binary. If empty or the file is not present, the Geckodriver tests will not be run.")
 	javaPath               = flag.String("java_path", "", "The path to the Java runtime binary to invoke. If not specified, 'java' will be used.")
 
@@ -674,6 +675,8 @@ func testExtendedErrorMessage(t *testing.T, c config) {
 		want = "unknown error:"
 	case c.browser == "firefox" && c.seleniumVersion.Major == 0:
 		want = "unknown command"
+	case c.browser == "chrome":
+		want = "invalid session id:"
 	default:
 		want = "invalid session ID:"
 	}
@@ -749,30 +752,43 @@ func testWindows(t *testing.T, c config) {
 	if err != nil {
 		t.Fatalf("wd.FindElement(%q, %q) returned error: %v", ByLinkText, linkText, err)
 	}
-	newWindowModifier := ShiftKey
-	if c.browser == "firefox" && c.seleniumVersion.Major == 0 {
+
+	switch c.browser {
+	case "firefox":
 		// Firefox+Geckodriver doesn't handle control characters without appending
 		// a terminating null key.
 		// https://github.com/mozilla/geckodriver/issues/665
-		newWindowModifier = ShiftKey + NullKey
-	}
-	if err := wd.SendModifier(newWindowModifier /*isDown=*/, true); err != nil {
-		t.Fatalf("wd.SendModifer(ShiftKey) returned error: %v", err)
-	}
-	if c.browser == "firefox" && c.seleniumVersion.Major != 2 {
+		newWindowModifier := ShiftKey + NullKey
+		if err := wd.SendModifier(newWindowModifier /*isDown=*/, true); err != nil {
+			t.Fatalf("wd.SendModifer(ShiftKey) returned error: %v", err)
+		}
 		// Firefox and Geckodriver doesn't handle clicking on an element.
 		//
-		// https://github.com/mozilla/geckodriver/issues/322
+		// https://github.com/mozilla/geckodriver/issues/1007
 		if err := link.SendKeys(EnterKey); err != nil {
 			t.Fatalf("link.SendKeys(EnterKey) returned error: %v", err)
 		}
-	} else {
+		if err := wd.SendModifier(newWindowModifier /*isDown=*/, false); err != nil {
+			t.Fatalf("wd.SendKeys(ShiftKey) returned error: %v", err)
+		}
+	case "htmlunit":
+		newWindowModifier := ShiftKey
+		if err := wd.SendModifier(newWindowModifier /*isDown=*/, true); err != nil {
+			t.Fatalf("wd.SendModifer(ShiftKey) returned error: %v", err)
+		}
 		if err := link.Click(); err != nil {
 			t.Fatalf("link.Click() returned error: %v", err)
 		}
-	}
-	if err := wd.SendModifier(newWindowModifier /*isDown=*/, false); err != nil {
-		t.Fatalf("wd.SendKeys(ShiftKey) returned error: %v", err)
+		if err := wd.SendModifier(newWindowModifier /*isDown=*/, false); err != nil {
+			t.Fatalf("wd.SendKeys(ShiftKey) returned error: %v", err)
+		}
+	case "chrome":
+		// Chrome doesn't support handling key events at the browser level.
+		// https://crbug.com/chromedriver/30
+		otherURL := path.Join(serverURL, "other")
+		if _, err := wd.ExecuteScript(fmt.Sprintf("window.open(%q)", otherURL), nil); err != nil {
+			t.Fatalf("opening a new window via Javascript returned error: %v", err)
+		}
 	}
 
 	// Starting a new window can take a while. Try a few times before failing.
@@ -824,12 +840,6 @@ func testWindows(t *testing.T, c config) {
 	})
 
 	t.Run("MaximizeWindow", func(t *testing.T) {
-		if c.browser == "firefox" && c.seleniumVersion.Major != 2 {
-			t.Skip("Skipping test due to https://github.com/mozilla/geckodriver/issues/703")
-		}
-		if c.browser == "chrome" {
-			t.Skip("Skipping due to bug: https://bugs.chromium.org/p/chromedriver/issues/detail?id=1918")
-		}
 		if err := wd.MaximizeWindow(otherHandle); err != nil {
 			t.Fatalf("error maximizing window: %s", err)
 		}
