@@ -647,7 +647,10 @@ func testError(t *testing.T, c config) {
 
 	var wantCode, wantLegacyCode int
 	switch c.browser {
-	case "chrome", "firefox":
+	case "chrome":
+		wantCode = 200
+		wantLegacyCode = 7
+	case "firefox":
 		wantCode = 404
 	case "htmlunit":
 		wantCode = 500
