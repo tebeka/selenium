@@ -36,6 +36,8 @@ var (
 	chromeDriverPath = flag.String("chrome_driver_path", "", "The path to the ChromeDriver binary. If empty or the file is not present, Chrome tests will not be run.")
 	chromeBinary     = flag.String("chrome_binary", "vendor/chrome-linux/chrome", "The name of the Chrome binary or the path to it. If name is not an exact path, the PATH will be searched.")
 
+	htmlUnitDriverPath = flag.String("htmlunit_driver_path", "vendor/htmlunit-driver.jar", "The path to the HTMLUnit Driver JAR.")
+
 	useDocker          = flag.Bool("docker", false, "If set, run the tests in a Docker container.")
 	runningUnderDocker = flag.Bool("running_under_docker", false, "This is set by the Docker test harness and should not be needed otherwise.")
 
@@ -256,9 +258,7 @@ func TestHTMLUnit(t *testing.T) {
 	c := config{
 		browser:         "htmlunit",
 		seleniumVersion: semver.MustParse("3.0.0"),
-	}
-	if *startFrameBuffer {
-		c.serviceOptions = append(c.serviceOptions, StartFrameBuffer())
+		serviceOptions:  []ServiceOption{HTMLUnit(*htmlUnitDriverPath)},
 	}
 
 	port, err := pickUnusedPort()
@@ -464,6 +464,9 @@ func newTestCapabilities(t *testing.T, c config) Capabilities {
 				// This flag is needed to test against Chrome binaries that are not the
 				// default installation. The sandbox requires a setuid binary.
 				"--no-sandbox",
+				// Allow Chrome to use the specified proxy for localhost, which is
+				// needed for the Proxy test. https://crbug.com/899126
+				"--proxy-bypass-list=<-loopback>",
 			},
 		}
 		caps.AddChrome(chrCaps)
@@ -616,7 +619,7 @@ func testNewSession(t *testing.T, c config) {
 		t.Fatalf("Got session id mismatch %s != %s", sid, wd.SessionID())
 	}
 
-	if wd.browserVersion.Major == 0 {
+	if c.browser != "htmlunit" && wd.browserVersion.Major == 0 {
 		t.Fatalf("wd.browserVersion.Major = %d, expected > 0", wd.browserVersion.Major)
 	}
 }
@@ -685,6 +688,8 @@ func testExtendedErrorMessage(t *testing.T, c config) {
 	}
 }
 
+// TODO(ekg): does this method work anymore in any browser? It is not part of
+// the W3C standard.
 func testCapabilities(t *testing.T, c config) {
 	if c.browser == "firefox" {
 		t.Skip("This method is not supported by Geckodriver.")
@@ -1595,7 +1600,7 @@ func testActiveElement(t *testing.T, c config) {
 		t.Fatalf("wd.ActiveElement().GetAttribute() returned error: %v", err)
 	}
 	if name != "q" {
-		t.Fatalf("wd.ActiveElement().GetAttribute() returned element wht name = %q, expected name = 'q'", name)
+		t.Fatalf("wd.ActiveElement().GetAttribute() returned element with name = %q, expected name = 'q'", name)
 	}
 }
 

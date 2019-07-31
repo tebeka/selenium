@@ -870,10 +870,7 @@ func (wd *remoteWD) SwitchFrame(frame interface{}) error {
 
 func (wd *remoteWD) ActiveElement() (WebElement, error) {
 	verb := "GET"
-	if wd.browser == "chrome" || (wd.browser == "firefox" && wd.browserVersion.Major < 47) {
-		// The W3C specification says that GET is the right verb, but Chrome
-		// implements only POST.
-		// https://github.com/seleniumhq/selenium/issues/2751
+	if wd.browser == "firefox" && wd.browserVersion.Major < 47 {
 		verb = "POST"
 	}
 	url := wd.requestURL("/session/%s/element/active", wd.id)

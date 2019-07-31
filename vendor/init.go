@@ -19,11 +19,13 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"regexp"
 	"strings"
 	"sync"
 
 	"cloud.google.com/go/storage"
 	"github.com/golang/glog"
+	"github.com/google/go-github/v27/github"
 	"google.golang.org/api/option"
 )
 
@@ -74,6 +76,38 @@ var files = []file{
 		name:   "sauce-connect.tar.gz",
 		rename: []string{"sc-4.5.3-linux", "sauce-connect"},
 	},
+}
+
+// addLatestGithubRelease adds a file to the list of files to download from the
+// latest release of the specified Github repository that matches the asset
+// name. The file will be downloaded to localFileName.
+func addLatestGithubRelease(ctx context.Context, owner, repo, assetName, localFileName string) error {
+	client := github.NewClient(nil)
+
+	rel, _, err := client.Repositories.GetLatestRelease(ctx, owner, repo)
+	if err != nil {
+		return err
+	}
+	assetNameRE, err := regexp.Compile(assetName)
+	if err != nil {
+		return fmt.Errorf("invalid asset name regular expression %q: %s", assetName, err)
+	}
+	for _, a := range rel.Assets {
+		if !assetNameRE.MatchString(a.GetName()) {
+			continue
+		}
+		u := a.GetBrowserDownloadURL()
+		if u == "" {
+			return fmt.Errorf("%s does not have a download URL", a.Name)
+		}
+		files = append(files, file{
+			name: localFileName,
+			url:  u,
+		})
+		return nil
+	}
+
+	return fmt.Errorf("Release for %s not found at http://github.com/%s/%s/releases", assetName, owner, repo)
 }
 
 // addChrome adds the appropriate chromium files to the list.
@@ -167,10 +201,15 @@ func main() {
 		}
 
 		if err := addChrome(ctx, chromeBuild); err != nil {
-			glog.Errorf("unable to Download Google Chrome browser: %v", err)
+			glog.Errorf("Unable to download Google Chrome browser: %v", err)
 		}
 		addFirefox(firefoxVersion)
 	}
+
+	if err := addLatestGithubRelease(ctx, "SeleniumHQ", "htmlunit-driver", "htmlunit-driver-.*-jar-with-dependencies.jar", "htmlunit-driver.jar"); err != nil {
+		glog.Errorf("Unable to download HTMLUnit Driver: %s", err)
+	}
+
 	var wg sync.WaitGroup
 	for _, file := range files {
 		wg.Add(1)
