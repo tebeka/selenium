@@ -171,7 +171,6 @@ func addFirefox(desiredVersion string) {
 			url:     "https://download.mozilla.org/?product=firefox-nightly-latest-ssl&os=linux64&lang=en-US",
 			name:    "firefox-nightly.tar.bz2",
 			browser: true,
-			rename:  []string{"firefox", "firefox-nightly"},
 		})
 	} else {
 		files = append(files, file{
