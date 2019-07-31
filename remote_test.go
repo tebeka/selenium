@@ -1542,13 +1542,14 @@ func testIsDisplayed(t *testing.T, c config) {
 	if err := wd.Get(serverURL); err != nil {
 		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
 	}
-	elem, err := wd.FindElement(ByID, "chuk")
+	const id = "chuk"
+	elem, err := wd.FindElement(ByID, id)
 	if err != nil {
-		t.Fatal("Can't find element")
+		t.Fatalf("wd.FindElement(ByID, %s) return error %v", id, err)
 	}
 	displayed, err := elem.IsDisplayed()
 	if err != nil {
-		t.Fatal("Can't check for displayed")
+		t.Fatalf("elem.IsDisplayed() returned error: %v", err)
 	}
 
 	if !displayed {
