@@ -1689,6 +1689,7 @@ func testProxy(t *testing.T, c config) {
 			ff.Prefs = make(map[string]interface{})
 		}
 		ff.Prefs["network.proxy.no_proxies_on"] = ""
+		ff.Prefs["network.proxy.allow_hijacking_localhost"] = true
 		caps[firefox.CapabilitiesKey] = ff
 	}
 	caps.AddProxy(proxy)
