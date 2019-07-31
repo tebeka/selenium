@@ -66,12 +66,6 @@ var files = []file{
 		// hash: "acf71b77d1b66b55db6fb0bed6d8bae2bbd481311bcbedfeff472c0d15e8f3cb",
 	},
 	{
-		url:  "https://github.com/mozilla/geckodriver/releases/download/v0.24.0/geckodriver-v0.24.0-linux64.tar.gz",
-		name: "geckodriver.tar.gz",
-		// hash:   "03be3d3b16b57e0f3e7e8ba7c1e4bf090620c147e6804f6c6f3203864f5e3784",
-		// rename: []string{"geckodriver", "geckodriver24.0-linux64"},
-	},
-	{
 		url:    "https://saucelabs.com/downloads/sc-4.5.3-linux.tar.gz",
 		name:   "sauce-connect.tar.gz",
 		rename: []string{"sc-4.5.3-linux", "sauce-connect"},
@@ -207,7 +201,11 @@ func main() {
 	}
 
 	if err := addLatestGithubRelease(ctx, "SeleniumHQ", "htmlunit-driver", "htmlunit-driver-.*-jar-with-dependencies.jar", "htmlunit-driver.jar"); err != nil {
-		glog.Errorf("Unable to download HTMLUnit Driver: %s", err)
+		glog.Errorf("Unable to find the latest HTMLUnit Driver: %s", err)
+	}
+
+	if err := addLatestGithubRelease(ctx, "mozilla", "geckodriver", "geckodriver-.*linux64.tar.gz", "geckodriver.tar.gz"); err != nil {
+		glog.Errorf("Unable to find the latest Geckodriver: %s", err)
 	}
 
 	var wg sync.WaitGroup
