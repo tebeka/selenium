@@ -27,16 +27,25 @@ import (
 	"google.golang.org/api/option"
 )
 
-// desiredChromeBuild is the known build of chromium to download.
-// Update this periodically.
-const desiredChromeBuild = "652428" // This corresponds to version "75.0.3770".
+const (
+	// desiredChromeBuild is the known build of Chromium to download from the
+	// chromium-browser-snapshots/Linux_x64 bucket.
+	//
+	// See https://omahaproxy.appspot.com for a list of current releases.
+	//
+	// Update this periodically.
+	desiredChromeBuild = "664981" // This corresponds to version 76.0.3809.0
 
-// desiredFirefoxVersion is the known version of Firefox to download.
-// Update this periodically.
-const desiredFirefoxVersion = "68.0.1"
+	// desiredFirefoxVersion is the known version of Firefox to download.
+	//
+	// Update this periodically.
+	desiredFirefoxVersion = "68.0.1"
+)
 
-var downloadBrowsers = flag.Bool("download_browsers", true, "If true, download the Firefox and Chrome browsers.")
-var downloadLatest = flag.Bool("download_latest", false, "If true, download the latest versions.")
+var (
+	downloadBrowsers = flag.Bool("download_browsers", true, "If true, download the Firefox and Chrome browsers.")
+	downloadLatest   = flag.Bool("download_latest", false, "If true, download the latest versions.")
+)
 
 type file struct {
 	url      string
@@ -116,8 +125,8 @@ func addChrome(ctx context.Context, latestChromeBuild string) error {
 		return fmt.Errorf("cannot get the chrome driver package %s%s attrs: %v", gcsPath, latestChromeDriverPackage, err)
 	}
 	files = append(files, file{
-		name: chromeDriverTargetFilename,
-		url:  cpAttrs.MediaLink,
+		name:   chromeDriverTargetFilename,
+		url:    cpAttrs.MediaLink,
 		rename: []string{"chromedriver_linux64/chromedriver", "chromedriver"},
 	})
 	return nil
