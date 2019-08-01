@@ -40,8 +40,8 @@ const (
 // Chrome 75, "loggingPrefs" has been changed to "goog:loggingPrefs"
 const CapabilitiesKey = "goog:loggingPrefs"
 
-// Capability is the map to include in the WebDriver capabilities structure to
-// configure logging.
+// Capabilities is the map to include in the WebDriver capabilities structure
+// to configure logging.
 type Capabilities map[Type]Level
 
 // Message is a log message returned from the Log method.

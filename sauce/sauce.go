@@ -95,20 +95,20 @@ type Capabilities struct {
 	WebDriverScreenshot *bool `json:"webdriverRemoteQuietExceptions,omitempty"`
 }
 
-// A visibility level for a test.
+// Visibility is a visibility level for a test.
 type Visibility string
 
 const (
-	// The test is accessible to everyone.
+	// Public is the visibility to specify that the result is accessible to everyone.
 	Public Visibility = "public"
-	// Allow anonymous users access to the result page and video, but not the
-	// logs.
+	// PublicRestricted is the visibility to specify that anonymous users have
+	// access to the result page and video, but not the logs.
 	PublicRestricted Visibility = "public restricted"
-	// Make the test be only accessible to people under the same root account as
-	// you.
+	// Team is the visibility to specify that the results are only accessible to
+	// people under the same root account as the executor's.
 	Team Visibility = "team"
-	// Only the owner of the test will be able to view assets and test result
-	// page.
+	// Private is the visibility to specify that only the owner of the test will
+	// be able to view assets and test result page.
 	Private Visibility = "private"
 )
 
