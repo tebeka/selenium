@@ -471,6 +471,7 @@ func newTestCapabilities(t *testing.T, c config) Capabilities {
 				// default installation. The sandbox requires a setuid binary.
 				"--no-sandbox",
 			},
+			W3C: true,
 		}
 		caps.AddChrome(chrCaps)
 	case "firefox":
@@ -651,8 +652,13 @@ func testError(t *testing.T, c config) {
 	var wantCode, wantLegacyCode int
 	switch c.browser {
 	case "chrome":
-		wantCode = 200
-		wantLegacyCode = 7
+		if wd.(*remoteWD).w3cCompatible {
+			wantCode = 404
+			wantLegacyCode = 0
+		} else {
+			wantCode = 200
+			wantLegacyCode = 7
+		}
 	case "firefox":
 		wantCode = 404
 	case "htmlunit":
