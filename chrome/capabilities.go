@@ -37,7 +37,7 @@ type Capabilities struct {
 	// the ChromeDriver-supplied default flags. The strings included here should
 	// not include a preceding '--'.
 	ExcludeSwitches []string `json:"excludeSwitches,omitempty"`
-	// Extensions are the list of extentions to install at startup. The
+	// Extensions are the list of extensions to install at startup. The
 	// elements of this list should be the base-64, padded contents of a Chrome
 	// extension file (.crx). Use the AddExtension method to add a local file.
 	Extensions []string `json:"extensions,omitempty"`
