@@ -12,6 +12,8 @@ import (
 	"io/ioutil"
 	"mime"
 	"net/http"
+	"net/url"
+	"path"
 	"strings"
 	"time"
 
@@ -122,6 +124,10 @@ func (e *Error) Error() string {
 // encoded by the remote end in a JSON structure. If no error is present, the
 // entire, raw request payload is returned.
 func (wd *remoteWD) execute(method, url string, data []byte) (json.RawMessage, error) {
+	return executeCommand(method, url, data)
+}
+
+func executeCommand(method, url string, data []byte) (json.RawMessage, error) {
 	debugLog("-> %s %s\n%s", method, filteredURL(url), data)
 	request, err := newRequest(method, url, data)
 	if err != nil {
@@ -213,7 +219,7 @@ const DefaultURLPrefix = "http://127.0.0.1:4444/wd/hub"
 // Providing an empty string for urlPrefix causes the DefaultURLPrefix to be
 // used.
 func NewRemote(capabilities Capabilities, urlPrefix string) (WebDriver, error) {
-	if len(urlPrefix) == 0 {
+	if urlPrefix == "" {
 		urlPrefix = DefaultURLPrefix
 	}
 
@@ -228,6 +234,17 @@ func NewRemote(capabilities Capabilities, urlPrefix string) (WebDriver, error) {
 		return nil, err
 	}
 	return wd, nil
+}
+
+// DeleteSession deletes an existing session at the WebDriver instance
+// specified by the urlPrefix and the session ID.
+func DeleteSession(urlPrefix, id string) error {
+	u, err := url.Parse(urlPrefix)
+	if err != nil {
+		return err
+	}
+	u.Path = path.Join(u.Path, "session", id)
+	return voidCommand("DELETE", u.String(), nil)
 }
 
 func (wd *remoteWD) stringCommand(urlTemplate string) (string, error) {
@@ -249,7 +266,7 @@ func (wd *remoteWD) stringCommand(urlTemplate string) (string, error) {
 	return *reply.Value, nil
 }
 
-func (wd *remoteWD) voidCommand(urlTemplate string, params interface{}) error {
+func voidCommand(method, url string, params interface{}) error {
 	if params == nil {
 		params = make(map[string]interface{})
 	}
@@ -257,8 +274,12 @@ func (wd *remoteWD) voidCommand(urlTemplate string, params interface{}) error {
 	if err != nil {
 		return err
 	}
-	_, err = wd.execute("POST", wd.requestURL(urlTemplate, wd.id), data)
+	_, err = executeCommand(method, url, data)
 	return err
+}
+
+func (wd *remoteWD) voidCommand(urlTemplate string, params interface{}) error {
+	return voidCommand("POST", wd.requestURL(urlTemplate, wd.id), params)
 }
 
 func (wd remoteWD) stringsCommand(urlTemplate string) ([]string, error) {

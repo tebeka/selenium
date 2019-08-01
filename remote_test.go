@@ -536,6 +536,7 @@ func runTest(f func(*testing.T, config), c config) func(*testing.T) {
 func runTests(t *testing.T, c config) {
 	t.Run("Status", runTest(testStatus, c))
 	t.Run("NewSession", runTest(testNewSession, c))
+	t.Run("DeleteSession", runTest(testDeleteSession, c))
 	t.Run("Error", runTest(testError, c))
 	t.Run("ExtendedErrorMessage", runTest(testExtendedErrorMessage, c))
 	t.Run("Capabilities", runTest(testCapabilities, c))
@@ -625,6 +626,15 @@ func testNewSession(t *testing.T, c config) {
 
 	if c.browser != "htmlunit" && wd.browserVersion.Major == 0 {
 		t.Fatalf("wd.browserVersion.Major = %d, expected > 0", wd.browserVersion.Major)
+	}
+}
+
+func testDeleteSession(t *testing.T, c config) {
+	wd := newRemote(t, c)
+	defer quitRemote(t, wd)
+
+	if err := DeleteSession(c.addr, wd.SessionID()); err != nil {
+		t.Fatalf("DeleteSession(%s, %s) returned error: %v", c.addr, wd.SessionID(), err)
 	}
 }
 
