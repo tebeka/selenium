@@ -1,7 +1,6 @@
-FROM golang:1.8-stretch
-MAINTAINER Miki Tebeka <miki.tebeka@gmail.com>
+FROM golang:1.12-buster
+MAINTAINER Eric Garrido <eric@ericgar.com>
 
 RUN apt-get update
-RUN apt-get install -y xvfb openjdk-8-jre unzip libgconf-2-4 chromium iceweasel bzip2
+RUN apt-get install -y xvfb default-jre unzip chromium firefox-esr bzip2
 VOLUME /code
-ENV GOPATH /code

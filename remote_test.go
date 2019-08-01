@@ -438,17 +438,14 @@ func TestDocker(t *testing.T) {
 		t.Fatalf("Building Docker container failed: %v", err)
 	}
 
-	pathToMount := os.Getenv("GOPATH")
-	if strings.Contains(pathToMount, ":") {
-		cwd, err := os.Getwd()
-		if err != nil {
-			t.Fatalf("os.Getwd() returned error: %v", err)
-		}
-		pathToMount = filepath.Join(cwd, "../../../..")
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("os.Getwd() returned error: %v", err)
 	}
+
 	// TODO(minusnine): pass through relevant flags to docker-test.sh to be
 	// passed to go test.
-	cmd := exec.Command("docker", "run", fmt.Sprintf("--volume=%s:/code", pathToMount), "--workdir=/code/src/github.com/tebeka/selenium", "go-selenium", "testing/docker-test.sh")
+	cmd := exec.Command("docker", "run", fmt.Sprintf("--volume=%s:/code", cwd), "--workdir=/code/", "go-selenium", "testing/docker-test.sh")
 	if testing.Verbose() {
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr

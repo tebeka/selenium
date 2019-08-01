@@ -39,8 +39,7 @@ Selenium WebDriver JARs, and the Sauce Connect proxy binary. This is primarily
 intended for testing.
 
     $ cd vendor
-    $ go get -d .
-    $ go run init.go --alsologtostderr
+    $ go run init.go --alsologtostderr  --download_browsers --download_latest
     $ cd ..
 
 Re-run this periodically to get up-to-date versions of these binaries.
@@ -70,7 +69,7 @@ others filed on the respective issue trackers.
 
 ### Selenium 2
 
-1.  Selenium 2 does not support versions of Firefox newer than 47.0.2.
+No longer supported.
 
 ### Selenium 3 and Geckodriver
 
@@ -185,7 +184,9 @@ within the Docker container).
 For debugging Docker directly, run the following commands:
 
     $ docker build -t go-selenium testing/
-    $ docker run --volume=${GOPATH?}:/code --workdir=/code/src/github.com/tebeka/selenium -it go-selenium bash
+    $ docker run --volume=$(pwd):/code --workdir=/code -it go-selenium bash
+    root@6c7951e41db6:/code# testing/docker-test.sh
+    ... lots of testing output ...
 
 ### Testing With Sauce Labs
 
