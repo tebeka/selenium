@@ -631,8 +631,6 @@ func testNewSession(t *testing.T, c config) {
 
 func testDeleteSession(t *testing.T, c config) {
 	wd := newRemote(t, c)
-	defer quitRemote(t, wd)
-
 	if err := DeleteSession(c.addr, wd.SessionID()); err != nil {
 		t.Fatalf("DeleteSession(%s, %s) returned error: %v", c.addr, wd.SessionID(), err)
 	}
