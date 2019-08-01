@@ -92,7 +92,7 @@ func addLatestGithubRelease(ctx context.Context, owner, repo, assetName, localFi
 		}
 		u := a.GetBrowserDownloadURL()
 		if u == "" {
-			return fmt.Errorf("%s does not have a download URL", a.Name)
+			return fmt.Errorf("%s does not have a download URL", a.GetName())
 		}
 		files = append(files, file{
 			name: localFileName,
