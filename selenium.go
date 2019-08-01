@@ -141,6 +141,7 @@ type Proxy struct {
 	HTTP          string `json:"httpProxy,omitempty"`
 	SSL           string `json:"sslProxy,omitempty"`
 	SOCKS         string `json:"socksProxy,omitempty"`
+	SOCKSVersion  int    `json:"socksVersion,omitempty"`
 	SOCKSUsername string `json:"socksUsername,omitempty"`
 	SOCKSPassword string `json:"socksPassword,omitempty"`
 	NoProxy       string `json:"noProxy,omitempty"`
