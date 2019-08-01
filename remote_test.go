@@ -1,6 +1,7 @@
 package selenium
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"math"
@@ -14,10 +15,12 @@ import (
 	"path/filepath"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/armon/go-socks5"
 	"github.com/blang/semver"
 	"github.com/golang/glog"
 	"github.com/google/go-cmp/cmp"
@@ -467,9 +470,6 @@ func newTestCapabilities(t *testing.T, c config) Capabilities {
 				// This flag is needed to test against Chrome binaries that are not the
 				// default installation. The sandbox requires a setuid binary.
 				"--no-sandbox",
-				// Allow Chrome to use the specified proxy for localhost, which is
-				// needed for the Proxy test. https://crbug.com/899126
-				"--proxy-bypass-list=<-loopback>",
 			},
 		}
 		caps.AddChrome(chrCaps)
@@ -1665,15 +1665,31 @@ func testCSSProperty(t *testing.T, c config) {
 	t.Fatalf(`e.CSSProperty("color") = %q, want one of %q`, color, wantColors)
 }
 
+const proxyPageContents = "You are viewing a proxied page"
+
+// addrRewriter rewrites all requsted addresses to the one specified by the
+// URL.
+type addrRewriter struct{ u *url.URL }
+
+func (a *addrRewriter) Rewrite(ctx context.Context, _ *socks5.Request) (context.Context, *socks5.AddrSpec) {
+	port, err := strconv.Atoi(a.u.Port())
+	if err != nil {
+		panic(err)
+	}
+	return ctx, &socks5.AddrSpec{
+		FQDN: a.u.Hostname(),
+		Port: port,
+	}
+}
+
 func testProxy(t *testing.T, c config) {
 	if c.sauce != nil {
 		t.Skip("Testing a proxy on Sauce Labs doesn't work.")
 	}
 
 	// Create a different web server that should be used if HTTP proxying is enabled.
-	const pageContents = "You are viewing a proxied page"
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		fmt.Fprintf(w, pageContents)
+		fmt.Fprintf(w, proxyPageContents)
 	}))
 	defer s.Close()
 
@@ -1682,23 +1698,67 @@ func testProxy(t *testing.T, c config) {
 		t.Fatalf("url.Parse(%q) returned error: %v", s.URL, err)
 	}
 
-	caps := newTestCapabilities(t, c)
-	proxy := Proxy{
-		Type: Manual,
-		HTTP: u.Host,
-	}
-	if c.browser == "firefox" {
-		// By default, Firefox explicitly does not use a proxy for connection to
-		// localhost and 127.0.0.1. Clear this preference to reach our test proxy.
-		ff := caps[firefox.CapabilitiesKey].(firefox.Capabilities)
-		if ff.Prefs == nil {
-			ff.Prefs = make(map[string]interface{})
+	t.Run("HTTP", func(t *testing.T) {
+		caps := newTestCapabilities(t, c)
+		caps.AddProxy(Proxy{
+			Type: Manual,
+			HTTP: u.Host,
+		})
+		runTestProxy(t, c, caps)
+	})
+
+	t.Run("SOCKS", func(t *testing.T) {
+		if c.seleniumVersion.Major == 3 {
+			// Selenium 3 fails when converting SOCKSVersion with: "unknown error:
+			// java.lang.Long cannot be cast to java.lang.Integer"
+			// The fix for this is committed, but not yet in a release.
+			//
+			// https://github.com/SeleniumHQ/selenium/issues/6917
+			t.Skip("Selenium 3 throws an exception with SOCKSVersion type conversion")
 		}
-		ff.Prefs["network.proxy.no_proxies_on"] = ""
-		ff.Prefs["network.proxy.allow_hijacking_localhost"] = true
-		caps[firefox.CapabilitiesKey] = ff
-	}
-	caps.AddProxy(proxy)
+		socks, err := socks5.New(&socks5.Config{
+			Rewriter: &addrRewriter{u},
+		})
+		if err != nil {
+			t.Fatalf("socks5.New(_) returned error: %v", err)
+		}
+		l, err := net.Listen("tcp", "127.0.0.1:0")
+		if err != nil {
+			t.Fatalf("net.Listen(_, _) return error: %v", err)
+		}
+
+		// Start serving SOCKS connections, but don't fail the test once the
+		// listener is closed at the end of execution.
+		done := make(chan struct{})
+		go func() {
+			err := socks.Serve(l)
+			select {
+			case <-done:
+				return
+			default:
+			}
+			if err != nil {
+				t.Fatalf("s.ListenAndServe(_) returned error: %v", err)
+			}
+		}()
+		defer func() {
+			close(done)
+			l.Close()
+		}()
+
+		caps := newTestCapabilities(t, c)
+		caps.AddProxy(Proxy{
+			Type:         Manual,
+			SOCKS:        l.Addr().String(),
+			SOCKSVersion: 5,
+		})
+
+		runTestProxy(t, c, caps)
+	})
+}
+
+func runTestProxy(t *testing.T, c config, caps Capabilities) {
+	allowProxyForLocalhost(c.browser, caps)
 
 	wd := &remoteWD{
 		capabilities: caps,
@@ -1722,11 +1782,33 @@ func testProxy(t *testing.T, c config) {
 		t.Fatalf("wd.PageSource() returned error: %v", err)
 	}
 
-	if !strings.Contains(source, pageContents) {
+	if !strings.Contains(source, proxyPageContents) {
 		if strings.Contains(source, "Go Selenium Test Suite") {
 			t.Fatal("Got non-proxied page.")
 		}
-		t.Fatalf("Got page: %s\n\nExpected: %q", source, pageContents)
+		t.Fatalf("Got page: %s\n\nExpected: %q", source, proxyPageContents)
+	}
+}
+
+func allowProxyForLocalhost(browser string, caps Capabilities) {
+	switch browser {
+	case "firefox":
+		// By default, Firefox explicitly does not use a proxy for connection to
+		// localhost and 127.0.0.1. Clear this preference to reach our test proxy.
+		ff := caps[firefox.CapabilitiesKey].(firefox.Capabilities)
+		if ff.Prefs == nil {
+			ff.Prefs = make(map[string]interface{})
+		}
+		ff.Prefs["network.proxy.no_proxies_on"] = ""
+		ff.Prefs["network.proxy.allow_hijacking_localhost"] = true
+		caps.AddFirefox(ff)
+
+	case "chrome":
+		ch := caps[chrome.CapabilitiesKey].(chrome.Capabilities)
+		// Allow Chrome to use the specified proxy for localhost, which is
+		// needed for the Proxy test. https://crbug.com/899126
+		ch.Args = append(ch.Args, "--proxy-bypass-list=<-loopback>")
+		caps.AddChrome(ch)
 	}
 }
 
