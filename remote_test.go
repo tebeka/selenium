@@ -1236,13 +1236,6 @@ func testAddCookie(t *testing.T, c config) {
 	// Firefox and Geckodriver now returns an empty string for the path.
 	if c.browser == "firefox" {
 		want.Path = ""
-		r := wd.(*remoteWD)
-		switch {
-		// https://github.com/mozilla/geckodriver/issues/463
-		case r.browserVersion.LT(v("56.0.0")):
-		case c.sauce != nil:
-			want.Expiry = 0
-		}
 	}
 
 	cookies, err := wd.GetCookies()

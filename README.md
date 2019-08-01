@@ -71,32 +71,19 @@ others filed on the respective issue trackers.
 
 No longer supported.
 
-### Selenium 3 and Geckodriver
+### Selenium 3
 
-1.  [Geckodriver GetAllCookies does not return the expiration date of the cookie](https://github.com/mozilla/geckodriver/issues/463).
-2.  [Selenium 3 NewSession does not implement the W3C-specified parameters](https://github.com/SeleniumHQ/selenium/issues/2827).
-3.  [The Proxy object is misinterpreted](https://github.com/mozilla/geckodriver/issues/490)
-    by Geckodriver when passed through by Selenium 3.
-4.  [Maximizing the browser window hangs](https://github.com/mozilla/geckodriver/issues/703).
-5.  [Geckodriver does not support the Log API](https://github.com/mozilla/geckodriver/issues/284)
-    because it
-    [hasn't been defined in the spec yet](https://github.com/w3c/webdriver/issues/406).
-6.  Firefox via Geckodriver (and also through Selenium)
-    [doesn't handle clicking on an element](https://github.com/mozilla/geckodriver/issues/322).
-7.  Firefox via Geckodriver doesn't handle sending control characters
-    [without appending a terminating null key](https://github.com/mozilla/geckodriver/issues/665).
-
-The Geckodriver team recommends using the newest available Firefox version, as
-the integration is actively being developed and is constantly improving.
+1.  [Selenium 3 NewSession does not implement the W3C-specified parameters](https://github.com/SeleniumHQ/selenium/issues/2827).
 
 ### Geckodriver (Standalone)
 
-The Geckodriver team are actively iterating on support for the W3C standard and
-routinely break the existing API. Support for the newest Geckodriver version
-within this API will likely lag for a time after its release; we expect the lag
-to only be several days to a small number of weeks.
-
-Using Geckodriver without Selenium usually has the above known issues as well.
+1.  [Geckodriver does not support the Log API](https://github.com/mozilla/geckodriver/issues/284)
+    because it
+    [hasn't been defined in the spec yet](https://github.com/w3c/webdriver/issues/406).
+2.  Firefox via Geckodriver (and also through Selenium)
+    [doesn't handle clicking on an element](https://github.com/mozilla/geckodriver/issues/1007).
+3.  Firefox via Geckodriver doesn't handle sending control characters
+    [without appending a terminating null key](https://github.com/mozilla/geckodriver/issues/665).
 
 ## Breaking Changes
 
