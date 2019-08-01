@@ -1521,6 +1521,11 @@ func testLog(t *testing.T, c config) {
 				if len(l.Level) == 0 || l.Timestamp.Unix() == 0 || len(l.Message) == 0 {
 					t.Errorf("wd.Log(Browser) returned malformed message: %+v", l)
 				}
+				// Make sure the timestamp conversion is vaguely correct. In
+				// practice, this difference should be in the milliseconds range.
+				if time.Now().Sub(l.Timestamp) > time.Hour {
+					t.Errorf("Message has timestamp %s > 1 hour ago: %v", l.Timestamp, l)
+				}
 			}
 		}
 	}

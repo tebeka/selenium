@@ -1252,7 +1252,9 @@ func (wd *remoteWD) Log(typ log.Type) ([]log.Message, error) {
 	val := make([]log.Message, len(c.Value))
 	for i, v := range c.Value {
 		val[i] = log.Message{
-			Timestamp: time.Unix(0, v.Timestamp*1000),
+			// n.b.: Chrome, which is the only browser that supports this API,
+			// supplies timestamps in milliseconds since the Epoch.
+			Timestamp: time.Unix(0, v.Timestamp*int64(time.Millisecond)),
 			Level:     log.Level(v.Level),
 			Message:   v.Message,
 		}
