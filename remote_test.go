@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/armon/go-socks5"
+	socks5 "github.com/armon/go-socks5"
 	"github.com/blang/semver"
 	"github.com/golang/glog"
 	"github.com/google/go-cmp/cmp"
@@ -44,7 +44,8 @@ var (
 	useDocker          = flag.Bool("docker", false, "If set, run the tests in a Docker container.")
 	runningUnderDocker = flag.Bool("running_under_docker", false, "This is set by the Docker test harness and should not be needed otherwise.")
 
-	startFrameBuffer = flag.Bool("start_frame_buffer", true, "If true, start an Xvfb subprocess and run the browsers in that X server.")
+	startFrameBuffer = flag.Bool("start_frame_buffer", false, "If true, start an Xvfb subprocess and run the browsers in that X server.")
+	headless         = flag.Bool("headless", true, "If true, run Chrome and Firefox in headless mode, not requiring a frame buffer.")
 
 	serverURL string
 )
@@ -194,6 +195,11 @@ func testChromeExtension(t *testing.T, c config) {
 		t.Fatalf("NewRemote(_, _) returned error: %v", err)
 	}
 	defer wd.Quit()
+
+	if *headless {
+		// https://crbug.com/706008
+		t.Skip("Chrome does not support extensions in headless mode.")
+	}
 
 	if err := wd.Get(serverURL); err != nil {
 		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
@@ -470,6 +476,9 @@ func newTestCapabilities(t *testing.T, c config) Capabilities {
 			},
 			W3C: true,
 		}
+		if *headless {
+			chrCaps.Args = append(chrCaps.Args, "--headless")
+		}
 		caps.AddChrome(chrCaps)
 	case "firefox":
 		f := firefox.Capabilities{}
@@ -486,6 +495,9 @@ func newTestCapabilities(t *testing.T, c config) Capabilities {
 			f.Log = &firefox.Log{
 				Level: firefox.Trace,
 			}
+		}
+		if *headless {
+			f.Args = append(f.Args, "-headless")
 		}
 		caps.AddFirefox(f)
 	case "htmlunit":

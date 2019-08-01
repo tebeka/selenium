@@ -98,6 +98,10 @@ to only be several days to a small number of weeks.
 
 Using Geckodriver without Selenium usually has the above known issues as well.
 
+### Chromedriver
+
+1. [Headless Chrome does not support running extensions](https://crbug.com/706008).
+
 ## Breaking Changes
 
 There are a number of upcoming changes that break backward compatibility in an
