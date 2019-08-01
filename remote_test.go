@@ -248,7 +248,10 @@ func TestHTMLUnit(t *testing.T) {
 		t.Skip("Skipping tests because they will be run under a Docker container")
 	}
 	if _, err := os.Stat(*selenium3Path); err != nil {
-		t.Skipf("Skipping Firefox tests using Selenium 3 because Selenium WebDriver JAR not found at path %q", *selenium3Path)
+		t.Skipf("Skipping HTMLUnit tests because the Selenium WebDriver JAR was not found at path %q", *selenium3Path)
+	}
+	if _, err := os.Stat(*htmlUnitDriverPath); err != nil {
+		t.Skipf("Skipping HTMLUnit tests because the HTMLUnit Driver JAR not found at path %q", *htmlUnitDriverPath)
 	}
 
 	if testing.Verbose() {
@@ -647,7 +650,10 @@ func testError(t *testing.T, c config) {
 
 	var wantCode, wantLegacyCode int
 	switch c.browser {
-	case "chrome", "firefox":
+	case "chrome":
+		wantCode = 200
+		wantLegacyCode = 7
+	case "firefox":
 		wantCode = 404
 	case "htmlunit":
 		wantCode = 500

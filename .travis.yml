@@ -13,7 +13,7 @@ before_script:
   # give xvfb some time to start
   - sleep 3
   # Download all of the binary dependencies needed to run the tests.
-  - cd vendor && go run init.go --alsologtostderr --download_browsers && cd ..
+  - cd vendor && go run init.go --alsologtostderr --download_browsers --download_latest && cd ..
 
 env:
   # For 1.12, this environment variable still defaults to auto. This can
@@ -24,7 +24,7 @@ env:
 # travis_install_go_dependencies.
 install: true
 
-script: 
+script:
   # Ensure that the code has been formatted with gofmt.
   - ./testing/travis-ci-gofmt.sh
   # Run the tests.
