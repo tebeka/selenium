@@ -147,6 +147,23 @@ func TestChrome(t *testing.T) {
 		t.Skipf("Skipping Chrome tests because ChromeDriver not found at path %q", *chromeDriverPath)
 	}
 
+	t.Run("Chromedriver", func(t *testing.T) {
+		runChromeTests(t, config{
+			path: *chromeBinary,
+		})
+	})
+
+	t.Run("Selenium3", func(t *testing.T) {
+		runChromeTests(t, config{
+			path:            *chromeBinary,
+			seleniumVersion: semver.MustParse("3.0.0"),
+		})
+	})
+}
+
+func runChromeTests(t *testing.T, c config) {
+	c.browser = "chrome"
+
 	var opts []ServiceOption
 	if *startFrameBuffer {
 		opts = append(opts, StartFrameBuffer())
@@ -160,15 +177,17 @@ func TestChrome(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pickUnusedPort() returned error: %v", err)
 	}
+	c.addr = fmt.Sprintf("http://127.0.0.1:%d/wd/hub", port)
 
-	s, err := NewChromeDriverService(*chromeDriverPath, port, opts...)
-	if err != nil {
-		t.Fatalf("Error starting the ChromeDriver server: %v", err)
+	var s *Service
+	if c.seleniumVersion.Major == 3 {
+		c.serviceOptions = append(c.serviceOptions, ChromeDriver(*chromeDriverPath))
+		s, err = NewSeleniumService(*selenium3Path, port, c.serviceOptions...)
+	} else {
+		s, err = NewChromeDriverService(*chromeDriverPath, port, c.serviceOptions...)
 	}
-	c := config{
-		addr:    fmt.Sprintf("http://127.0.0.1:%d/wd/hub", port),
-		browser: "chrome",
-		path:    *chromeBinary,
+	if err != nil {
+		t.Fatalf("Error starting the server: %v", err)
 	}
 
 	runTests(t, c)
@@ -221,34 +240,33 @@ func testChromeExtension(t *testing.T, c config) {
 	}
 }
 
-func TestFirefoxSelenium3(t *testing.T) {
+func TestFirefox(t *testing.T) {
 	if *useDocker {
 		t.Skip("Skipping tests because they will be run under a Docker container")
-	}
-	if _, err := os.Stat(*selenium3Path); err != nil {
-		t.Skipf("Skipping Firefox tests using Selenium 3 because Selenium WebDriver JAR not found at path %q", *selenium3Path)
 	}
 	if _, err := os.Stat(*geckoDriverPath); err != nil {
 		t.Skipf("Skipping Firefox tests on Selenium 3 because geckodriver binary %q not found", *geckoDriverPath)
 	}
 
-	runFirefoxTests(t, *selenium3Path, config{
-		seleniumVersion: semver.MustParse("3.0.0"),
-		serviceOptions:  []ServiceOption{GeckoDriver(*geckoDriverPath)},
-		path:            *firefoxBinarySelenium3,
+	if s, err := os.Stat(*firefoxBinarySelenium3); err != nil || !s.Mode().IsRegular() {
+		if p, err := exec.LookPath(*firefoxBinarySelenium3); err == nil {
+			*firefoxBinarySelenium3 = p
+		} else {
+			t.Skipf("Skipping Firefox tests because binary %q not found", *firefoxBinarySelenium3)
+		}
+	}
+
+	t.Run("Selenium3", func(t *testing.T) {
+		runFirefoxTests(t, *selenium3Path, config{
+			seleniumVersion: semver.MustParse("3.0.0"),
+			serviceOptions:  []ServiceOption{GeckoDriver(*geckoDriverPath)},
+			path:            *firefoxBinarySelenium3,
+		})
 	})
-}
-
-func TestFirefoxGeckoDriver(t *testing.T) {
-	if *useDocker {
-		t.Skip("Skipping tests because they will be run under a Docker container")
-	}
-	if _, err := os.Stat(*geckoDriverPath); err != nil {
-		t.Skipf("Skipping Firefox tests on Selenium 3 because geckodriver binary %q not found", *geckoDriverPath)
-	}
-
-	runFirefoxTests(t, *geckoDriverPath, config{
-		path: *firefoxBinarySelenium3,
+	t.Run("Geckodriver", func(t *testing.T) {
+		runFirefoxTests(t, *geckoDriverPath, config{
+			path: *firefoxBinarySelenium3,
+		})
 	})
 }
 
@@ -293,14 +311,6 @@ func TestHTMLUnit(t *testing.T) {
 func runFirefoxTests(t *testing.T, webDriverPath string, c config) {
 	c.browser = "firefox"
 
-	if s, err := os.Stat(c.path); err != nil || !s.Mode().IsRegular() {
-		if path, err := exec.LookPath(c.path); err == nil {
-			c.path = path
-		} else {
-			t.Skipf("Skipping Firefox tests because binary %q not found", c.path)
-		}
-	}
-
 	if *startFrameBuffer {
 		c.serviceOptions = append(c.serviceOptions, StartFrameBuffer())
 	}
@@ -319,18 +329,18 @@ func runFirefoxTests(t *testing.T, webDriverPath string, c config) {
 
 	var s *Service
 	if c.seleniumVersion.Major == 0 {
+		c.addr = fmt.Sprintf("http://127.0.0.1:%d", port)
 		s, err = NewGeckoDriverService(webDriverPath, port, c.serviceOptions...)
 	} else {
+		c.addr = fmt.Sprintf("http://127.0.0.1:%d/wd/hub", port)
+		if _, err := os.Stat(*selenium3Path); err != nil {
+			t.Skipf("Skipping Firefox tests using Selenium 3 because Selenium WebDriver JAR not found at path %q", *selenium3Path)
+		}
+
 		s, err = NewSeleniumService(webDriverPath, port, c.serviceOptions...)
 	}
 	if err != nil {
 		t.Fatalf("Error starting the WebDriver server with binary %q: %v", webDriverPath, err)
-	}
-
-	if c.seleniumVersion.Major == 0 {
-		c.addr = fmt.Sprintf("http://127.0.0.1:%d", port)
-	} else {
-		c.addr = fmt.Sprintf("http://127.0.0.1:%d/wd/hub", port)
 	}
 
 	runFirefoxSubTests(t, c)
