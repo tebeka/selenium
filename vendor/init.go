@@ -66,9 +66,9 @@ var files = []file{
 		// hash: "acf71b77d1b66b55db6fb0bed6d8bae2bbd481311bcbedfeff472c0d15e8f3cb",
 	},
 	{
-		url:    "https://saucelabs.com/downloads/sc-4.5.3-linux.tar.gz",
+		url:    "https://saucelabs.com/downloads/sc-4.5.4-linux.tar.gz",
 		name:   "sauce-connect.tar.gz",
-		rename: []string{"sc-4.5.3-linux", "sauce-connect"},
+		rename: []string{"sc-4.5.4-linux", "sauce-connect"},
 	},
 }
 

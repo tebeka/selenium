@@ -85,6 +85,10 @@ No longer supported.
 3.  Firefox via Geckodriver doesn't handle sending control characters
     [without appending a terminating null key](https://github.com/mozilla/geckodriver/issues/665).
 
+### Chromedriver
+
+1. [Headless Chrome does not support running extensions](https://crbug.com/706008).
+
 ## Breaking Changes
 
 There are a number of upcoming changes that break backward compatibility in an
