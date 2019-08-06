@@ -203,7 +203,7 @@ func runChromeTests(t *testing.T, c config) {
 func testChromeExtension(t *testing.T, c config) {
 	caps := newTestCapabilities(t, c)
 	co := caps[chrome.CapabilitiesKey].(chrome.Capabilities)
-	const path = "testing/chrome-extension/css_page_red"
+	const path = "testing/chrome_extension/css_page_red"
 	if err := co.AddUnpackedExtension(path); err != nil {
 		t.Fatalf("co.AddExtension(%q) returned error: %v", path, err)
 	}
@@ -407,7 +407,7 @@ func testFirefoxProfile(t *testing.T, c config) {
 	}
 	caps := newTestCapabilities(t, c)
 	f := caps[firefox.CapabilitiesKey].(firefox.Capabilities)
-	const path = "testing/firefox-profile"
+	const path = "testing/firefox_profile"
 	if err := f.SetProfile(path); err != nil {
 		t.Fatalf("f.SetProfile(%q) returned error: %v", path, err)
 	}
