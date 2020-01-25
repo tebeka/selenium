@@ -203,12 +203,13 @@ type Size struct {
 
 // Cookie represents an HTTP cookie.
 type Cookie struct {
-	Name   string `json:"name"`
-	Value  string `json:"value"`
-	Path   string `json:"path"`
-	Domain string `json:"domain"`
-	Secure bool   `json:"secure"`
-	Expiry uint   `json:"expiry"`
+	Name     string `json:"name"`
+	Value    string `json:"value"`
+	Path     string `json:"path"`
+	Domain   string `json:"domain"`
+	Secure   bool   `json:"secure"`
+	Expiry   uint   `json:"expiry"`
+	HTTPOnly bool   `json:"httpOnly"`
 }
 
 // WebDriver defines methods supported by WebDriver drivers.
