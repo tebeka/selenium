@@ -905,12 +905,13 @@ func (wd *remoteWD) ActiveElement() (WebElement, error) {
 // ChromeDriver returns the expiration date as a float. Handle both formats
 // via a type switch.
 type cookie struct {
-	Name   string      `json:"name"`
-	Value  string      `json:"value"`
-	Path   string      `json:"path"`
-	Domain string      `json:"domain"`
-	Secure bool        `json:"secure"`
-	Expiry interface{} `json:"expiry"`
+	Name     string      `json:"name"`
+	Value    string      `json:"value"`
+	Path     string      `json:"path"`
+	Domain   string      `json:"domain"`
+	Secure   bool        `json:"secure"`
+	Expiry   interface{} `json:"expiry"`
+	HTTPOnly bool        `json:"httpOnly"`
 }
 
 func (c cookie) sanitize() Cookie {
@@ -984,11 +985,12 @@ func (wd *remoteWD) GetCookies() ([]Cookie, error) {
 	cookies := make([]Cookie, len(reply.Value))
 	for i, c := range reply.Value {
 		sanitized := Cookie{
-			Name:   c.Name,
-			Value:  c.Value,
-			Path:   c.Path,
-			Domain: c.Domain,
-			Secure: c.Secure,
+			Name:     c.Name,
+			Value:    c.Value,
+			Path:     c.Path,
+			Domain:   c.Domain,
+			Secure:   c.Secure,
+			HTTPOnly: c.HTTPOnly,
 		}
 		switch expiry := c.Expiry.(type) {
 		case int:
