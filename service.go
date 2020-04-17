@@ -114,6 +114,8 @@ func GeckoDriver(path string) ServiceOption {
 	}
 }
 
+// ChromeDriver sets the path for Chromedriver for the Selenium Server.  This
+// ServiceOption is only useful when calling NewSeleniumService.
 func ChromeDriver(path string) ServiceOption {
 	return func(s *Service) error {
 		s.chromeDriverPath = path
@@ -121,10 +123,21 @@ func ChromeDriver(path string) ServiceOption {
 	}
 }
 
-// JavaPath specifies the path to the JRE for a Selenium service.
+// JavaPath specifies the path to the JRE.
 func JavaPath(path string) ServiceOption {
 	return func(s *Service) error {
 		s.javaPath = path
+		return nil
+	}
+}
+
+// HTMLUnit specifies the path to the JAR for the HTMLUnit driver (compiled
+// with its dependencies).
+//
+// https://github.com/SeleniumHQ/htmlunit-driver/releases
+func HTMLUnit(path string) ServiceOption {
+	return func(s *Service) error {
+		s.htmlUnitPath = path
 		return nil
 	}
 }
@@ -141,6 +154,7 @@ type Service struct {
 
 	geckoDriverPath, javaPath string
 	chromeDriverPath          string
+	htmlUnitPath              string
 
 	output io.Writer
 }
@@ -152,8 +166,7 @@ func (s Service) FrameBuffer() *FrameBuffer {
 
 // NewSeleniumService starts a Selenium instance in the background.
 func NewSeleniumService(jarPath string, port int, opts ...ServiceOption) (*Service, error) {
-	cmd := exec.Command("java", "-jar", jarPath, "-port", strconv.Itoa(port))
-	s, err := newService(cmd, "/wd/hub", port, opts...)
+	s, err := newService(exec.Command("java"), "/wd/hub", port, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -161,11 +174,20 @@ func NewSeleniumService(jarPath string, port int, opts ...ServiceOption) (*Servi
 		s.cmd.Path = s.javaPath
 	}
 	if s.geckoDriverPath != "" {
-		s.cmd.Args = append([]string{"java", "-Dwebdriver.gecko.driver=" + s.geckoDriverPath}, cmd.Args[1:]...)
+		s.cmd.Args = append([]string{"java", "-Dwebdriver.gecko.driver=" + s.geckoDriverPath}, s.cmd.Args[1:]...)
 	}
 	if s.chromeDriverPath != "" {
-		s.cmd.Args = append([]string{"java", "-Dwebdriver.chrome.driver=" + s.chromeDriverPath}, cmd.Args[1:]...)
+		s.cmd.Args = append([]string{"java", "-Dwebdriver.chrome.driver=" + s.chromeDriverPath}, s.cmd.Args[1:]...)
 	}
+
+	var classpath []string
+	if s.htmlUnitPath != "" {
+		classpath = append(classpath, s.htmlUnitPath)
+	}
+	classpath = append(classpath, jarPath)
+	s.cmd.Args = append(s.cmd.Args, "-cp", strings.Join(classpath, ":"))
+	s.cmd.Args = append(s.cmd.Args, "org.openqa.grid.selenium.GridLauncherV3", "-port", strconv.Itoa(port), "-debug")
+
 	if err := s.start(port); err != nil {
 		return nil, err
 	}

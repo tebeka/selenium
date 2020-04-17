@@ -12,6 +12,8 @@ import (
 	"io/ioutil"
 	"mime"
 	"net/http"
+	"net/url"
+	"path"
 	"strings"
 	"time"
 
@@ -122,6 +124,10 @@ func (e *Error) Error() string {
 // encoded by the remote end in a JSON structure. If no error is present, the
 // entire, raw request payload is returned.
 func (wd *remoteWD) execute(method, url string, data []byte) (json.RawMessage, error) {
+	return executeCommand(method, url, data)
+}
+
+func executeCommand(method, url string, data []byte) (json.RawMessage, error) {
 	debugLog("-> %s %s\n%s", method, filteredURL(url), data)
 	request, err := newRequest(method, url, data)
 	if err != nil {
@@ -213,7 +219,7 @@ const DefaultURLPrefix = "http://127.0.0.1:4444/wd/hub"
 // Providing an empty string for urlPrefix causes the DefaultURLPrefix to be
 // used.
 func NewRemote(capabilities Capabilities, urlPrefix string) (WebDriver, error) {
-	if len(urlPrefix) == 0 {
+	if urlPrefix == "" {
 		urlPrefix = DefaultURLPrefix
 	}
 
@@ -228,6 +234,17 @@ func NewRemote(capabilities Capabilities, urlPrefix string) (WebDriver, error) {
 		return nil, err
 	}
 	return wd, nil
+}
+
+// DeleteSession deletes an existing session at the WebDriver instance
+// specified by the urlPrefix and the session ID.
+func DeleteSession(urlPrefix, id string) error {
+	u, err := url.Parse(urlPrefix)
+	if err != nil {
+		return err
+	}
+	u.Path = path.Join(u.Path, "session", id)
+	return voidCommand("DELETE", u.String(), nil)
 }
 
 func (wd *remoteWD) stringCommand(urlTemplate string) (string, error) {
@@ -249,7 +266,7 @@ func (wd *remoteWD) stringCommand(urlTemplate string) (string, error) {
 	return *reply.Value, nil
 }
 
-func (wd *remoteWD) voidCommand(urlTemplate string, params interface{}) error {
+func voidCommand(method, url string, params interface{}) error {
 	if params == nil {
 		params = make(map[string]interface{})
 	}
@@ -257,8 +274,12 @@ func (wd *remoteWD) voidCommand(urlTemplate string, params interface{}) error {
 	if err != nil {
 		return err
 	}
-	_, err = wd.execute("POST", wd.requestURL(urlTemplate, wd.id), data)
+	_, err = executeCommand(method, url, data)
 	return err
+}
+
+func (wd *remoteWD) voidCommand(urlTemplate string, params interface{}) error {
+	return voidCommand("POST", wd.requestURL(urlTemplate, wd.id), params)
 }
 
 func (wd remoteWD) stringsCommand(urlTemplate string) ([]string, error) {
@@ -338,16 +359,25 @@ var w3cCapabilityNames = []string{
 	"unhandledPromptBehavior",
 }
 
-var isValidW3CCapability = map[string]bool{}
-
-func init() {
-	for _, name := range w3cCapabilityNames {
-		isValidW3CCapability[name] = true
-	}
+var chromeCapabilityNames = []string{
+	// This is not a standardized top-level capability name, but Chromedriver
+	// expects this capability here.
+	// https://cs.chromium.org/chromium/src/chrome/test/chromedriver/capabilities.cc?rcl=0754b5d0aad903439a628618f0e41845f1988f0c&l=759
+	"loggingPrefs",
 }
 
 // Create a W3C-compatible capabilities instance.
 func newW3CCapabilities(caps Capabilities) Capabilities {
+	isValidW3CCapability := map[string]bool{}
+	for _, name := range w3cCapabilityNames {
+		isValidW3CCapability[name] = true
+	}
+	if b, ok := caps["browserName"]; ok && b == "chrome" {
+		for _, name := range chromeCapabilityNames {
+			isValidW3CCapability[name] = true
+		}
+	}
+
 	alwaysMatch := make(Capabilities)
 	for name, value := range caps {
 		if isValidW3CCapability[name] || strings.Contains(name, ":") {
@@ -384,7 +414,7 @@ func (wd *remoteWD) NewSession() (string, error) {
 	// https://github.com/SeleniumHQ/selenium/issues/2827
 	//
 	// TODO(minusnine): audit which ones of these are still relevant. The W3C
-	// standard switched to the "alwaysMatch" version in  February 2017.
+	// standard switched to the "alwaysMatch" version in February 2017.
 	attempts := []struct {
 		params map[string]interface{}
 	}{
@@ -861,10 +891,7 @@ func (wd *remoteWD) SwitchFrame(frame interface{}) error {
 
 func (wd *remoteWD) ActiveElement() (WebElement, error) {
 	verb := "GET"
-	if wd.browser == "chrome" || (wd.browser == "firefox" && wd.browserVersion.Major < 47) {
-		// The W3C specification says that GET is the right verb, but Chrome
-		// implements only POST.
-		// https://github.com/seleniumhq/selenium/issues/2751
+	if wd.browser == "firefox" && wd.browserVersion.Major < 47 {
 		verb = "POST"
 	}
 	url := wd.requestURL("/session/%s/element/active", wd.id)
@@ -1066,19 +1093,16 @@ func (wd *remoteWD) KeyUp(keys string) error {
 
 // TODO(minusnine): Implement PerformActions and ReleaseActions, for more
 // direct access to the W3C specification.
-
-// TODO(minusnine): update the Alert methods to the W3C specification and add a
-// test.
 func (wd *remoteWD) DismissAlert() error {
-	return wd.voidCommand("/session/%s/dismiss_alert", nil)
+	return wd.voidCommand("/session/%s/alert/dismiss", nil)
 }
 
 func (wd *remoteWD) AcceptAlert() error {
-	return wd.voidCommand("/session/%s/accept_alert", nil)
+	return wd.voidCommand("/session/%s/alert/accept", nil)
 }
 
 func (wd *remoteWD) AlertText() (string, error) {
-	return wd.stringCommand("/session/%s/alert_text")
+	return wd.stringCommand("/session/%s/alert/text")
 }
 
 func (wd *remoteWD) SetAlertText(text string) error {
@@ -1087,7 +1111,7 @@ func (wd *remoteWD) SetAlertText(text string) error {
 		return err
 	}
 
-	return wd.voidCommand("/session/%s/alert_text", data)
+	return wd.voidCommand("/session/%s/alert/text", data)
 }
 
 func (wd *remoteWD) execScriptRaw(script string, args []interface{}, suffix string) ([]byte, error) {
@@ -1228,7 +1252,9 @@ func (wd *remoteWD) Log(typ log.Type) ([]log.Message, error) {
 	val := make([]log.Message, len(c.Value))
 	for i, v := range c.Value {
 		val[i] = log.Message{
-			Timestamp: time.Unix(0, v.Timestamp*1000),
+			// n.b.: Chrome, which is the only browser that supports this API,
+			// supplies timestamps in milliseconds since the Epoch.
+			Timestamp: time.Unix(0, v.Timestamp*int64(time.Millisecond)),
 			Level:     log.Level(v.Level),
 			Message:   v.Message,
 		}

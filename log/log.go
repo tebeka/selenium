@@ -35,10 +35,13 @@ const (
 
 // CapabilitiesKey is the key for the logging preferences entry in the JSON
 // structure representing WebDriver capabilities.
-const CapabilitiesKey = "loggingPrefs"
+//
+// Note that the W3C spec does not include logging right now, and starting with
+// Chrome 75, "loggingPrefs" has been changed to "goog:loggingPrefs"
+const CapabilitiesKey = "goog:loggingPrefs"
 
-// Capability is the map to include in the WebDriver capabilities structure to
-// configure logging.
+// Capabilities is the map to include in the WebDriver capabilities structure
+// to configure logging.
 type Capabilities map[Type]Level
 
 // Message is a log message returned from the Log method.

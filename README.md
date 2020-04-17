@@ -39,8 +39,7 @@ Selenium WebDriver JARs, and the Sauce Connect proxy binary. This is primarily
 intended for testing.
 
     $ cd vendor
-    $ go get -d ./...
-    $ go run init.go --alsologtostderr
+    $ go run init.go --alsologtostderr  --download_browsers --download_latest
     $ cd ..
 
 Re-run this periodically to get up-to-date versions of these binaries.
@@ -70,43 +69,25 @@ others filed on the respective issue trackers.
 
 ### Selenium 2
 
-1.  Selenium 2 does not support versions of Firefox newer than 47.0.2.
+No longer supported.
 
-### Selenium 3 and Geckodriver
+### Selenium 3
 
-1.  [Geckodriver GetAllCookies does not return the expiration date of the cookie](https://github.com/mozilla/geckodriver/issues/463).
-2.  [Selenium 3 NewSession does not implement the W3C-specified parameters](https://github.com/SeleniumHQ/selenium/issues/2827).
-3.  [The Proxy object is misinterpreted](https://github.com/mozilla/geckodriver/issues/490)
-    by Geckodriver when passed through by Selenium 3.
-4.  [Maximizing the browser window hangs](https://github.com/mozilla/geckodriver/issues/703).
-5.  [Geckodriver does not support the Log API](https://github.com/mozilla/geckodriver/issues/284)
-    because it
-    [hasn't been defined in the spec yet](https://github.com/w3c/webdriver/issues/406).
-6.  Firefox via Geckodriver (and also through Selenium)
-    [doesn't handle clicking on an element](https://github.com/mozilla/geckodriver/issues/322).
-7.  Firefox via Geckodriver doesn't handle sending control characters
-    [without appending a terminating null key](https://github.com/mozilla/geckodriver/issues/665).
-
-The Geckodriver team recommends using the newest available Firefox version, as
-the integration is actively being developed and is constantly improving.
+1.  [Selenium 3 NewSession does not implement the W3C-specified parameters](https://github.com/SeleniumHQ/selenium/issues/2827).
 
 ### Geckodriver (Standalone)
 
-The Geckodriver team are actively iterating on support for the W3C standard and
-routinely break the existing API. Support for the newest Geckodriver version
-within this API will likely lag for a time after its release; we expect the lag
-to only be several days to a small number of weeks.
+1.  [Geckodriver does not support the Log API](https://github.com/mozilla/geckodriver/issues/284)
+    because it
+    [hasn't been defined in the spec yet](https://github.com/w3c/webdriver/issues/406).
+2.  Firefox via Geckodriver (and also through Selenium)
+    [doesn't handle clicking on an element](https://github.com/mozilla/geckodriver/issues/1007).
+3.  Firefox via Geckodriver doesn't handle sending control characters
+    [without appending a terminating null key](https://github.com/mozilla/geckodriver/issues/665).
 
-Using Geckodriver without Selenium usually has the above known issues as well.
+### Chromedriver
 
-### ChromeDriver
-
-1.  Various
-    [window-related commands are failing with v62+](https://bugs.chromium.org/p/chromedriver/issues/detail?id=1918).
-2.  GetCookies can
-    [return an incorrect expiration date in v62+](https://bugs.chromium.org/p/chromedriver/issues/detail?id=1949).
-3.  DeleteCookie
-    [doesn't work in v62+](https://bugs.chromium.org/p/chromedriver/issues/detail?id=1950).
+1. [Headless Chrome does not support running extensions](https://crbug.com/706008).
 
 ## Breaking Changes
 
@@ -140,6 +121,10 @@ See [the issue tracker][issues] for features that need implementing.
 [issues]: https://github.com/tebeka/selenium/issues
 
 ### Testing Locally
+
+Install `xvfb` and Java if they is not already installed, e.g.:
+
+    sudo apt-get install xvfb openjdk-11-jre
 
 Run the tests:
 
@@ -190,7 +175,9 @@ within the Docker container).
 For debugging Docker directly, run the following commands:
 
     $ docker build -t go-selenium testing/
-    $ docker run --volume=${GOPATH?}:/code --workdir=/code/src/github.com/tebeka/selenium -it go-selenium bash
+    $ docker run --volume=$(pwd):/code --workdir=/code -it go-selenium bash
+    root@6c7951e41db6:/code# testing/docker-test.sh
+    ... lots of testing output ...
 
 ### Testing With Sauce Labs
 

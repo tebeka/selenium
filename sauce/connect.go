@@ -70,7 +70,11 @@ func (c *Connect) Start() error {
 	if c.QuitProcessUponExit && runtime.GOOS == "linux" {
 		c.cmd.SysProcAttr = &syscall.SysProcAttr{
 			// Deliver SIGTERM to process when we die.
-			Pdeathsig: syscall.SIGTERM,
+			//
+			// TODO(minusnine): Pdeathsig is only supported on Linux. Somehow, make
+			// sure process cleanup happens as gracefully as possible.
+			//
+			// Pdeathsig: syscall.SIGTERM,
 		}
 	}
 

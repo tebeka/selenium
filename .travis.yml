@@ -1,29 +1,32 @@
 language: go
 go:
-    - 1.8.x
+    - 1.12.x
 
 jdk:
-    - openjdk8
-
-# Needed to update java8 to a more recent version.
-# https://github.com/travis-ci/travis-ci/issues/3259#issuecomment-130860338
-addons:
-  apt:
-    packages:
-      - oracle-java8-installer
-      - oracle-java8-set-default
+    # The Java JRE is a requirement for Selenium and HTMLUnit.
+    - openjdk11
 
 before_script:
-    - "export DISPLAY=:99.0"
-    - "sh -e /etc/init.d/xvfb start"
-    - sleep 3 # give xvfb some time to start
-    - cd vendor && go run init.go --alsologtostderr --download_browsers && cd ..
+  # Download all of the binary dependencies needed to run the tests.
+  - cd vendor && go run init.go --alsologtostderr --download_browsers --download_latest && cd ..
 
-script: 
-    - ./testing/travis-ci-gofmt.sh
-    - ./testing/travis-ci-test.sh
+env:
+  # For 1.12, this environment variable still defaults to auto. This can
+  # be removed in some future Go release.
+  - GO111MODULE=on
+
+# Use Go's module support to install dependencies instead of Travis's
+# travis_install_go_dependencies.
+install: true
+
+script:
+  # Ensure that the code has been formatted with gofmt.
+  - ./testing/travis-ci-gofmt.sh
+  # Run the tests.
+  - ./testing/travis-ci-test.sh
 
 after_success:
+  # Upload the code coverage report to Codecov.
   - bash <(curl -s https://codecov.io/bash) -- -v
 
 sudo: false

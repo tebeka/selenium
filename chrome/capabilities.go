@@ -17,14 +17,16 @@ import (
 	"github.com/tebeka/selenium/internal/zip"
 )
 
-// DeprecatedCapabilitiesKey and CapabilitiesKey are the key in the top-level Capabilities map under which
+// CapabilitiesKey is the key in the top-level Capabilities map under which
 // ChromeDriver expects the Chrome-specific options to be set.
-const DeprecatedCapabilitiesKey = "chromeOptions"
 const CapabilitiesKey = "goog:chromeOptions"
+
+// DeprecatedCapabilitiesKey is the legacy version of CapabilitiesKey.
+const DeprecatedCapabilitiesKey = "chromeOptions"
 
 // Capabilities defines the Chrome-specific desired capabilities when using
 // ChromeDriver. An instance of this struct can be stored in the Capabilities
-// map with a key of `chromeOptions`.  See
+// map with a key of CapabilitiesKey ("goog:chromeOptions").  See
 // https://sites.google.com/a/chromium.org/chromedriver/capabilities
 type Capabilities struct {
 	// Path is the file path to the Chrome binary to use.
@@ -36,7 +38,7 @@ type Capabilities struct {
 	// the ChromeDriver-supplied default flags. The strings included here should
 	// not include a preceding '--'.
 	ExcludeSwitches []string `json:"excludeSwitches,omitempty"`
-	// Extensions are the list of extentions to install at startup. The
+	// Extensions are the list of extensions to install at startup. The
 	// elements of this list should be the base-64, padded contents of a Chrome
 	// extension file (.crx). Use the AddExtension method to add a local file.
 	Extensions []string `json:"extensions,omitempty"`
@@ -65,6 +67,8 @@ type Capabilities struct {
 	WindowTypes []string `json:"windowTypes,omitempty"`
 	// Android Chrome WebDriver path "com.android.chrome"
 	AndroidPackage string `json:"androidPackage,omitempty"`
+	// Use W3C mode, if true.
+	W3C bool `json:"w3c"`
 }
 
 // TODO(minusnine): https://bugs.chromium.org/p/chromedriver/issues/detail?id=1625
@@ -110,10 +114,10 @@ type PerfLoggingPreferences struct {
 	// Timeline domain. When tracing is enabled, Timeline domain is implicitly
 	// disabled, unless enableTimeline is explicitly set to true.
 	EnableTimeline *bool `json:"enableTimeline,omitempty"`
-	// TracingCategories is a comma-separated string of Chrome tracing categories
+	// TraceCategories is a comma-separated string of Chrome tracing categories
 	// for which trace events should be collected. An unspecified or empty string
 	// disables tracing.
-	TracingCategories string `json:"tracingCategories,omitempty"`
+	TraceCategories string `json:"traceCategories,omitempty"`
 	// BufferUsageReportingIntervalMillis is the requested number of milliseconds
 	// between DevTools trace buffer usage events. For example, if 1000, then
 	// once per second, DevTools will report how full the trace buffer is. If a

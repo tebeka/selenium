@@ -1,4 +1,4 @@
-package selenium
+package selenium_test
 
 import (
 	"flag"
@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/blang/semver"
+	"github.com/tebeka/selenium"
+	"github.com/tebeka/selenium/internal/seleniumtest"
 	"github.com/tebeka/selenium/sauce"
 )
 
@@ -22,7 +24,7 @@ func TestSauce(t *testing.T) {
 		t.Skip("Skipping Sauce tests. Enable via --experimental_sauce_tests")
 	}
 	if testing.Verbose() {
-		SetDebug(true)
+		selenium.SetDebug(true)
 	}
 	if *sauceUserName == "" {
 		t.Fatalf("--sauce_user_name is required.")
@@ -69,17 +71,19 @@ func TestSauce(t *testing.T) {
 		browser, version := strings.ToLower(browser), strings.ToLower(tc.version)
 
 		t.Run(name, func(t *testing.T) {
-			runFirefoxSubTests(t, config{
-				browser:         browser,
-				seleniumVersion: semver.MustParse(tc.selenium),
-				sauce: &sauce.Capabilities{
+			c := seleniumtest.Config{
+				Browser:         browser,
+				SeleniumVersion: semver.MustParse(tc.selenium),
+				Sauce: &sauce.Capabilities{
 					Browser:         browser,
 					Version:         version,
 					Platform:        tc.platform,
 					SeleniumVersion: tc.selenium,
 				},
-				addr: addr,
-			})
+				Addr: addr,
+			}
+			seleniumtest.RunCommonTests(t, c)
+			seleniumtest.RunFirefoxTests(t, c)
 		})
 	}
 }
