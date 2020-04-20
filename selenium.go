@@ -382,6 +382,10 @@ type WebElement interface {
 	// the element is not visible, it will be scrolled into view.
 	MoveTo(xOffset, yOffset int) error
 
+	// Scroll on the touch screen using finger based motion events.
+	// Use this command to start scrolling at a particular screen location.
+	ScrollTo(xOffset, yOffset int) error
+
 	// FindElement finds a child element.
 	FindElement(by, value string) (WebElement, error)
 	// FindElement finds multiple children elements.
