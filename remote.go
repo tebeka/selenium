@@ -1323,7 +1323,7 @@ func (elem *remoteWE) MoveTo(xOffset, yOffset int) error {
 }
 
 func (elem *remoteWE) ScrollTo(xOffset, yOffset int) error {
-	return elem.parent.voidCommand("/session/%s/scroll", map[string]interface{}{
+	return elem.parent.voidCommand("/session/%s/touch/scroll", map[string]interface{}{
 		"element": elem.id,
 		"xoffset": xOffset,
 		"yoffset": yOffset,
