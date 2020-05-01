@@ -1655,11 +1655,9 @@ func testChromeExtension(t *testing.T, c Config) {
 	cmd.Stdout = os.Stdout
 	cmd.Run()
 
-	cmd = exec.Command("ls")
-	cmd.Stdout = os.Stdout
 	cmd.Run()
 	const path = "testing/chrome_extension/css_page_red"
-	if err := co.AddUnpackedExtension(path); err != nil {
+	if err := co.AddUnpackedExtensionCRX3(path); err != nil {
 		t.Fatalf("co.AddExtension(%q) returned error: %v", path, err)
 	}
 	caps[chrome.CapabilitiesKey] = co

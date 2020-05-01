@@ -8,13 +8,16 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha1"
+	"crypto/sha256"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/binary"
 	"io"
 	"os"
 
+	crxpb "github.com/tebeka/selenium/internal/crx_file"
 	"github.com/tebeka/selenium/internal/zip"
+	"google.golang.org/protobuf/proto"
 )
 
 // CapabilitiesKey is the key in the top-level Capabilities map under which
@@ -151,9 +154,22 @@ func (c *Capabilities) addExtension(r io.Reader) error {
 	return nil
 }
 
+// AddUnpackedExtensionCRX3 creates a packaged Chrome extension with the files
+// below the provided directory path and causes the browser to load that
+// extension at startup.
+func (c *Capabilities) AddUnpackedExtensionCRX3(basePath string) error {
+	buf, _, err := NewExtensionCRX3(basePath)
+	if err != nil {
+		return err
+	}
+	return c.addExtension(bytes.NewBuffer(buf))
+}
+
 // AddUnpackedExtension creates a packaged Chrome extension with the files
 // below the provided directory path and causes the browser to load that
 // extension at startup.
+//
+// Deprecated: After Chrome 73, use AddUnpackedExtensionCRX3.
 func (c *Capabilities) AddUnpackedExtension(basePath string) error {
 	buf, _, err := NewExtension(basePath)
 	if err != nil {
@@ -164,6 +180,8 @@ func (c *Capabilities) AddUnpackedExtension(basePath string) error {
 
 // NewExtension creates the payload of a Chrome extension file which is signed
 // using the returned private key.
+//
+// Deprecated: After Chrome 73, use NewExtensionCRX3.
 func NewExtension(basePath string) ([]byte, *rsa.PrivateKey, error) {
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -178,6 +196,8 @@ func NewExtension(basePath string) ([]byte, *rsa.PrivateKey, error) {
 
 // NewExtensionWithKey creates the payload of a Chrome extension file which is
 // signed by the provided private key.
+//
+// Deprecated: After Chrome 73, use NewExtensionWithKeyCRX3.
 func NewExtensionWithKey(basePath string, key *rsa.PrivateKey) ([]byte, error) {
 	zip, err := zip.New(basePath)
 	if err != nil {
@@ -202,7 +222,8 @@ func NewExtensionWithKey(basePath string, key *rsa.PrivateKey) ([]byte, error) {
 
 	// This format is documented at https://developer.chrome.com/extensions/crx .
 	buf := new(bytes.Buffer)
-	if _, err := buf.Write([]byte("Cr24")); err != nil { // Magic number.
+	// Magic number.
+	if _, err := buf.Write([]byte("Cr24")); err != nil {
 		return nil, err
 	}
 
@@ -233,6 +254,97 @@ func NewExtensionWithKey(basePath string, key *rsa.PrivateKey) ([]byte, error) {
 	// Zipped extension directory payload.
 	if err := binary.Write(buf, binary.LittleEndian, zip.Bytes()); err != nil {
 		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+// NewExtension creates the payload of a Chrome extension file which is signed
+// using the returned private key.
+func NewExtensionCRX3(basePath string) ([]byte, *rsa.PrivateKey, error) {
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return nil, nil, err
+	}
+	data, err := NewExtensionCRX3WithKey(basePath, key)
+	if err != nil {
+		return nil, nil, err
+	}
+	return data, key, nil
+}
+
+// NewExtensionWithKey creates the payload of a Chrome extension file which is
+// signed by the provided private key.
+func NewExtensionCRX3WithKey(basePath string, key *rsa.PrivateKey) ([]byte, error) {
+	pubKey, err := x509.MarshalPKIXPublicKey(key.Public())
+	if err != nil {
+		return nil, err
+	}
+	pubKeyHash := sha256.Sum256(pubKey)
+	//pubKeyHashEnc := hex.EncodeToString(pubKeyHash[:])
+
+	signedDataBuf, err := proto.Marshal(&crxpb.SignedData{
+		CrxId: pubKeyHash[0:16],
+		//CrxId: []byte(pubKeyHashEnc[0:16]),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	zip, err := zip.New(basePath)
+	if err != nil {
+		return nil, err
+	}
+	zipData := zip.Bytes()
+
+	h := sha256.New()
+	for _, b := range []interface{}{
+		// Purpose.
+		[]byte("CRX3 SignedData\x00"),
+		// Length of the SignedData proto.
+		uint32(len(signedDataBuf)),
+		// The SignedData payload.
+		signedDataBuf,
+		// Zipped extension directory payload.
+		zipData,
+	} {
+		if err := binary.Write(h, binary.LittleEndian, b); err != nil {
+			return nil, err
+		}
+	}
+	signature, err := rsa.SignPSS(rand.Reader, key, crypto.SHA256, h.Sum(nil), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	headerData, err := proto.Marshal(&crxpb.CrxFileHeader{
+		Sha256WithRsa: []*crxpb.AsymmetricKeyProof{{
+			PublicKey: pubKey,
+			Signature: signature,
+		}},
+		SignedHeaderData: signedDataBuf,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// This format is documented at https://chromium.googlesource.com/chromium/src/+/refs/heads/master/components/crx_file/crx3.proto
+	buf := new(bytes.Buffer)
+	for _, b := range []interface{}{
+		// Magic number.
+		[]byte("Cr24"),
+		// Version.
+		uint32(3),
+		// Header length.
+		uint32(len(headerData)),
+		// Header payload.
+		headerData,
+		// Zipped extension directory payload.
+		zipData,
+	} {
+		if err := binary.Write(buf, binary.LittleEndian, b); err != nil {
+			return nil, err
+		}
 	}
 
 	return buf.Bytes(), nil
