@@ -69,7 +69,7 @@ func Example() {
 		import "fmt"
 
 		func main() {
-			fmt.Println("Hello WebDriver!\n")
+			fmt.Println("Hello WebDriver!")
 		}
 	`)
 	if err != nil {
