@@ -164,6 +164,11 @@ func (s Service) FrameBuffer() *FrameBuffer {
 	return s.xvfb
 }
 
+//PID returns the service pid
+func (s Service) PID() int {
+	return s.cmd.Process.Pid
+}
+
 // NewSeleniumService starts a Selenium instance in the background.
 func NewSeleniumService(jarPath string, port int, opts ...ServiceOption) (*Service, error) {
 	s, err := newService(exec.Command("java"), "/wd/hub", port, opts...)
