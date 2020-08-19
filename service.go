@@ -166,7 +166,11 @@ func (s Service) FrameBuffer() *FrameBuffer {
 
 //PID returns the service pid
 func (s Service) PID() int {
-	return s.cmd.Process.Pid
+	if s.cmd != nil {
+		return s.cmd.Process.Pid
+	}
+
+	return 0
 }
 
 // NewSeleniumService starts a Selenium instance in the background.
