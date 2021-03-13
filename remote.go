@@ -912,25 +912,44 @@ type cookie struct {
 	Secure   bool        `json:"secure"`
 	Expiry   interface{} `json:"expiry"`
 	HTTPOnly bool        `json:"httpOnly"`
+	SameSite string      `json:"sameSite",omitempty`
 }
 
 func (c cookie) sanitize() Cookie {
-	sanitized := Cookie{
-		Name:   c.Name,
-		Value:  c.Value,
-		Path:   c.Path,
-		Domain: c.Domain,
-		Secure: c.Secure,
-	}
-	switch expiry := c.Expiry.(type) {
-	case int:
-		if expiry > 0 {
-			sanitized.Expiry = uint(expiry)
+	parseExpiry := func(e interface{}) uint {
+		switch expiry := c.Expiry.(type) {
+		case int:
+			if expiry > 0 {
+				return uint(expiry)
+			}
+		case float64:
+			return uint(expiry)
 		}
-	case float64:
-		sanitized.Expiry = uint(expiry)
+		return 0
 	}
-	return sanitized
+
+	parseSameSite := func(s string) SameSite {
+		if s == "" {
+			return ""
+		}
+		for _, v := range []SameSite{SameSiteNone, SameSiteLax, SameSiteStrict} {
+			if strings.ToLower(string(v)) == strings.ToLower(s) {
+				return v
+			}
+		}
+		return SameSiteLax
+	}
+
+	return Cookie{
+		Name:     c.Name,
+		Value:    c.Value,
+		Path:     c.Path,
+		Domain:   c.Domain,
+		Secure:   c.Secure,
+		Expiry:   parseExpiry(c.Expiry),
+		HTTPOnly: c.HTTPOnly,
+		SameSite: parseSameSite(c.SameSite),
+	}
 }
 
 func (wd *remoteWD) GetCookie(name string) (Cookie, error) {
@@ -984,25 +1003,8 @@ func (wd *remoteWD) GetCookies() ([]Cookie, error) {
 
 	cookies := make([]Cookie, len(reply.Value))
 	for i, c := range reply.Value {
-		sanitized := Cookie{
-			Name:     c.Name,
-			Value:    c.Value,
-			Path:     c.Path,
-			Domain:   c.Domain,
-			Secure:   c.Secure,
-			HTTPOnly: c.HTTPOnly,
-		}
-		switch expiry := c.Expiry.(type) {
-		case int:
-			if expiry > 0 {
-				sanitized.Expiry = uint(expiry)
-			}
-		case float64:
-			sanitized.Expiry = uint(expiry)
-		}
-		cookies[i] = sanitized
+		cookies[i] = c.sanitize()
 	}
-
 	return cookies, nil
 }
 
