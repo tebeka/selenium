@@ -181,12 +181,12 @@ func NewExtension(basePath string) ([]byte, *rsa.PrivateKey, error) {
 // NewExtensionWithKey creates the payload of a Chrome extension file which is
 // signed by the provided private key.
 func NewExtensionWithKey(basePath string, key *rsa.PrivateKey) ([]byte, error) {
-	zip, err := zip.New(basePath)
+	archiveBuf, err := zip.New(basePath)
 	if err != nil {
 		return nil, err
 	}
 
-	header, err := crx3Header(zip.Bytes(), key)
+	header, err := crx3Header(archiveBuf.Bytes(), key)
 	if err != nil {
 		return nil, err
 	}
@@ -212,7 +212,7 @@ func NewExtensionWithKey(basePath string, key *rsa.PrivateKey) ([]byte, error) {
 	}
 
 	// Zipped extension directory payload.
-	if err := binary.Write(buf, binary.LittleEndian, zip.Bytes()); err != nil {
+	if err := binary.Write(buf, binary.LittleEndian, archiveBuf.Bytes()); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
