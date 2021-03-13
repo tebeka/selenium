@@ -7,13 +7,15 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha1"
+	"crypto/sha256"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/binary"
 	"io"
 	"os"
 
+	"github.com/golang/protobuf/proto"
+	"github.com/mediabuyerbot/go-crx3/pb"
 	"github.com/tebeka/selenium/internal/zip"
 )
 
@@ -184,18 +186,7 @@ func NewExtensionWithKey(basePath string, key *rsa.PrivateKey) ([]byte, error) {
 		return nil, err
 	}
 
-	h := sha1.New()
-	if _, err := io.Copy(h, bytes.NewReader(zip.Bytes())); err != nil {
-		return nil, err
-	}
-	hashed := h.Sum(nil)
-
-	signature, err := rsa.SignPKCS1v15(rand.Reader, key, crypto.SHA1, hashed[:])
-	if err != nil {
-		return nil, err
-	}
-
-	pubKey, err := x509.MarshalPKIXPublicKey(key.Public())
+	header, err := crx3Header(zip.Bytes(), key)
 	if err != nil {
 		return nil, err
 	}
@@ -207,26 +198,16 @@ func NewExtensionWithKey(basePath string, key *rsa.PrivateKey) ([]byte, error) {
 	}
 
 	// Version.
-	if err := binary.Write(buf, binary.LittleEndian, uint32(2)); err != nil {
+	if err := binary.Write(buf, binary.LittleEndian, uint32(3)); err != nil {
 		return nil, err
 	}
 
-	// Public key length.
-	if err := binary.Write(buf, binary.LittleEndian, uint32(len(pubKey))); err != nil {
+	// header length.
+	if err := binary.Write(buf, binary.LittleEndian, uint32(len(header))); err != nil {
 		return nil, err
 	}
-	// Signature length.
-	if err := binary.Write(buf, binary.LittleEndian, uint32(len(signature))); err != nil {
-		return nil, err
-	}
-
-	// Public key payload.
-	if err := binary.Write(buf, binary.LittleEndian, pubKey); err != nil {
-		return nil, err
-	}
-
-	// Signature payload.
-	if err := binary.Write(buf, binary.LittleEndian, signature); err != nil {
+	// header payload.
+	if err := binary.Write(buf, binary.LittleEndian, header); err != nil {
 		return nil, err
 	}
 
@@ -234,6 +215,69 @@ func NewExtensionWithKey(basePath string, key *rsa.PrivateKey) ([]byte, error) {
 	if err := binary.Write(buf, binary.LittleEndian, zip.Bytes()); err != nil {
 		return nil, err
 	}
-
 	return buf.Bytes(), nil
+}
+
+func crx3Header(archiveData []byte, key *rsa.PrivateKey) ([]byte, error) {
+	// Public Key
+	pubKey, err := x509.MarshalPKIXPublicKey(key.Public())
+	if err != nil {
+		return nil, err
+	}
+
+	// Signed Header
+
+	// From chromium / crx3.proto:
+	//
+	//  In the common case of a developer key proof, the first 128 bits of
+	//  the SHA-256 hash of the public key must equal the crx_id.
+	hash := sha256.New()
+	hash.Write(pubKey)
+	sdpb := &pb.SignedData{
+		CrxId: hash.Sum(nil)[0:16],
+	}
+	signedHeaderData, err := proto.Marshal(sdpb)
+	if err != nil {
+		return nil, err
+	}
+
+	// Signature
+	signature, err := crx3Signature(archiveData, signedHeaderData, key)
+	if err != nil {
+		return nil, err
+	}
+
+	header := &pb.CrxFileHeader{
+		Sha256WithRsa: []*pb.AsymmetricKeyProof{
+			&pb.AsymmetricKeyProof{
+				PublicKey: pubKey,
+				Signature: signature,
+			},
+		},
+		SignedHeaderData: signedHeaderData,
+	}
+	return proto.Marshal(header)
+}
+
+func crx3Signature(archiveData, signedHeaderData []byte, key *rsa.PrivateKey) ([]byte, error) {
+	// From chromium / crx3.proto:
+	//
+	// All proofs in this CrxFile message are on the value
+	// "CRX3 SignedData\x00" + signed_header_size + signed_header_data +
+	// archive, where "\x00" indicates an octet with value 0, "CRX3 SignedData"
+	// is encoded using UTF-8, signed_header_size is the size in octets of the
+	// contents of this field and is encoded using 4 octets in little-endian
+	// order, signed_header_data is exactly the content of this field, and
+	// archive is the remaining contents of the file following the header.
+
+	sign := sha256.New()
+	sign.Write([]byte("CRX3 SignedData\x00"))
+	if err := binary.Write(sign, binary.LittleEndian, uint32(len(signedHeaderData))); err != nil {
+		return nil, err
+	}
+	sign.Write(signedHeaderData)
+	if _, err := io.Copy(sign, bytes.NewReader(archiveData)); err != nil {
+		return nil, err
+	}
+	return rsa.SignPKCS1v15(rand.Reader, key, crypto.SHA256, sign.Sum(nil))
 }
