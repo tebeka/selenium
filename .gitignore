@@ -8,3 +8,4 @@ vendor/*
 !vendor/*.go
 coverage.txt
 coverage.out
+.idea/*
