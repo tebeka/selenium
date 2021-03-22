@@ -203,14 +203,25 @@ type Size struct {
 
 // Cookie represents an HTTP cookie.
 type Cookie struct {
-	Name     string `json:"name"`
-	Value    string `json:"value"`
-	Path     string `json:"path"`
-	Domain   string `json:"domain"`
-	Secure   bool   `json:"secure"`
-	Expiry   uint   `json:"expiry"`
-	HTTPOnly bool   `json:"httpOnly"`
+	Name     string   `json:"name"`
+	Value    string   `json:"value"`
+	Path     string   `json:"path"`
+	Domain   string   `json:"domain"`
+	Secure   bool     `json:"secure"`
+	Expiry   uint     `json:"expiry"`
+	HTTPOnly bool     `json:"httpOnly"`
+	SameSite SameSite `json:"sameSite,omitempty"`
 }
+
+// SameSite is the type for the SameSite field in Cookie.
+type SameSite string
+
+const (
+	SameSiteNone   SameSite = "None"
+	SameSiteLax             = "Lax"
+	SameSiteStrict          = "Strict"
+	SameSiteEmpty           = ""
+)
 
 // WebDriver defines methods supported by WebDriver drivers.
 type WebDriver interface {

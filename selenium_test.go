@@ -227,7 +227,10 @@ func TestHTMLUnit(t *testing.T) {
 		Browser:         "htmlunit",
 		SeleniumVersion: semver.MustParse("3.0.0"),
 		ServiceOptions:  []selenium.ServiceOption{selenium.HTMLUnit(*htmlUnitDriverPath)},
-	}
+		// HTMLUnit-Driver currently does not support the sameSite attribute
+		// See: https://github.com/SeleniumHQ/htmlunit-driver/issues/97
+		SameSiteUnsupported: true,
+  }
 
 	port, err := pickUnusedPort()
 	if err != nil {

@@ -38,6 +38,7 @@ type Config struct {
 	ServiceOptions                 []selenium.ServiceOption
 	Headless                       bool
 	SkipProxy                      bool
+	SameSiteUnsupported            bool
 }
 
 func runTest(f func(*testing.T, Config), c Config) func(*testing.T) {
@@ -725,10 +726,11 @@ func testAddCookie(t *testing.T, c Config) {
 		t.Fatalf("wd.Get(%q) returned error: %v", c.ServerURL, err)
 	}
 	want := &selenium.Cookie{
-		Name:   "the nameless cookie",
-		Value:  "I have nothing",
-		Expiry: math.MaxUint32,
-		Domain: "127.0.0.1", // Unlike real browsers, htmlunit requires this to be set.
+		Name:     "the nameless cookie",
+		Value:    "I have nothing",
+		Expiry:   math.MaxUint32,
+		Domain:   "127.0.0.1", // Unlike real browsers, htmlunit requires this to be set.
+		SameSite: selenium.SameSiteLax,
 	}
 	if err := wd.AddCookie(want); err != nil {
 		t.Fatal(err)
@@ -758,6 +760,9 @@ func testAddCookie(t *testing.T, c Config) {
 		t.Fatalf("wd.GetCookies() = %v, missing cookie %q", cookies, want.Name)
 	}
 
+	if c.SameSiteUnsupported {
+		want.SameSite = ""
+	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Fatalf("wd.GetCookies() returned diff (-want/+got):\n%s", diff)
 	}
