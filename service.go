@@ -15,6 +15,8 @@ import (
 	"time"
 )
 
+const InvalidPid = -1
+
 // ServiceOption configures a Service instance.
 type ServiceOption func(*Service) error
 
@@ -170,7 +172,7 @@ func (s Service) PID() int {
 		return s.cmd.Process.Pid
 	}
 
-	return 0
+	return InvalidPid
 }
 
 // NewSeleniumService starts a Selenium instance in the background.
