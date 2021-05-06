@@ -1095,6 +1095,35 @@ func (wd *remoteWD) KeyUp(keys string) error {
 	return wd.keyAction("keyUp", keys)
 }
 
+func (wd *remoteWD) PointerDown(button int) map[string]interface{} {
+	return map[string]interface{}{
+		"type":   "pointerDown",
+		"button": button,
+	}
+}
+
+func (wd *remoteWD) MovePointerTo(x, y, duration int) map[string]interface{} {
+
+	return map[string]interface{}{
+		"type":     "pointerMove",
+		"duration": duration,
+		"x":        x,
+		"y":        y,
+	}
+}
+
+func (wd *remoteWD) PerformActions(actionType string, actions []map[string]interface{}) error {
+
+	return wd.voidCommand("/session/%s/actions", map[string]interface{}{
+		"actions": []interface{}{
+			map[string]interface{}{
+				"type":    actionType,
+				"id":      "mouse1",
+				"actions": actions,
+			}},
+	})
+}
+
 // TODO(minusnine): Implement PerformActions and ReleaseActions, for more
 // direct access to the W3C specification.
 func (wd *remoteWD) DismissAlert() error {

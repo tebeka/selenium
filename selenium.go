@@ -330,6 +330,14 @@ type WebDriver interface {
 	// ButtonUp causes the left mouse button to be released.
 	ButtonUp() error
 
+	// MovePointerTo creates an action to move mouse to location x,y
+	MovePointerTo(x, y, duration int) map[string]interface{}
+
+	PointerDown(button int) map[string]interface{}
+
+	// PerformActions performs the supplied actions
+	PerformActions(actionType string, actions []map[string]interface{}) error
+
 	// SendModifier sends the modifier key to the active element. The modifier
 	// can be one of ShiftKey, ControlKey, AltKey, MetaKey.
 	//
