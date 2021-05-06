@@ -47,9 +47,9 @@ var remoteErrors = map[int]string{
 }
 
 type remoteWD struct {
-	id, urlPrefix string
-	capabilities  Capabilities
-
+	id, urlPrefix  string
+	capabilities   Capabilities
+	actions        Actions
 	w3cCompatible  bool
 	browser        string
 	browserVersion semver.Version
@@ -1095,32 +1095,64 @@ func (wd *remoteWD) KeyUp(keys string) error {
 	return wd.keyAction("keyUp", keys)
 }
 
-func (wd *remoteWD) PointerDown(button int) map[string]interface{} {
-	return map[string]interface{}{
+func (wd *remoteWD) PointerMove(duration time.Duration, offset Point, origin PointerMoveOrigin) Action {
+	return Action{
+		"type":     "pointerMove",
+		"duration": uint(duration / time.Millisecond),
+		"origin":   origin,
+		"x":        offset.X,
+		"y":        offset.Y,
+	}
+}
+
+func (wd *remoteWD) PointerDown(button MouseButton) Action {
+	return Action{
 		"type":   "pointerDown",
 		"button": button,
 	}
 }
 
-func (wd *remoteWD) MovePointerTo(x, y, duration int) map[string]interface{} {
-	return map[string]interface{}{
-		"type":     "pointerMove",
-		"duration": duration,
-		"x":        x,
-		"y":        y,
+func (wd *remoteWD) PointerUp(button MouseButton) Action {
+	return Action{
+		"type":   "pointerUp",
+		"button": button,
 	}
 }
 
-func (wd *remoteWD) PerformActions(actionType string, actions []map[string]interface{}) error {
+func (wd *remoteWD) PauseAction(duration time.Duration) Action {
+	return Action{
+		"type":     "pause",
+		"duration": uint(duration / time.Millisecond),
+	}
+}
 
-	return wd.voidCommand("/session/%s/actions", map[string]interface{}{
-		"actions": []interface{}{
-			map[string]interface{}{
-				"type":    actionType,
-				"id":      "mouse1",
-				"actions": actions,
-			}},
+func (wd *remoteWD) StoreActions(inputId string, actionType ActionType, parameters ActionParameter, actions ...Action) {
+
+	_actions := []Action{}
+	for _, action := range actions {
+		_actions = append(_actions, action)
+	}
+
+	action := map[string]interface{}{
+		"type":    actionType,
+		"id":      inputId,
+		"actions": _actions,
+	}
+
+	//can I just add a nil ["parameters"] field without having to check it ?
+	if parameters != nil {
+		action["parameters"] = parameters
+	}
+
+	wd.actions = append(wd.actions, action)
+}
+
+func (wd *remoteWD) PerformActions() error {
+	err := wd.voidCommand("/session/%s/actions", map[string]interface{}{
+		"actions": wd.actions,
 	})
+	wd.actions = nil
+	return err
 }
 
 func (wd *remoteWD) ReleaseActions() error {
