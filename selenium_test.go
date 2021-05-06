@@ -14,8 +14,8 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/golang/glog"
-	"github.com/tebeka/selenium"
-	"github.com/tebeka/selenium/internal/seleniumtest"
+	"github.com/x-Xymos/selenium"
+	"github.com/x-Xymos/selenium/internal/seleniumtest"
 )
 
 var (
@@ -230,7 +230,7 @@ func TestHTMLUnit(t *testing.T) {
 		// HTMLUnit-Driver currently does not support the sameSite attribute
 		// See: https://github.com/SeleniumHQ/htmlunit-driver/issues/97
 		SameSiteUnsupported: true,
-  }
+	}
 
 	port, err := pickUnusedPort()
 	if err != nil {

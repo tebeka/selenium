@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tebeka/selenium"
+	"github.com/x-Xymos/selenium"
 )
 
 // This example shows how to navigate to a http://play.golang.org page, input a
