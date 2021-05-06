@@ -1,4 +1,4 @@
-module github.com/x-Xymos/selenium/v1
+module github.com/x-Xymos/selenium/v1.0.4
 
 go 1.12
 
