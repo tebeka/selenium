@@ -335,8 +335,11 @@ type WebDriver interface {
 
 	PointerDown(button int) map[string]interface{}
 
-	// PerformActions performs the supplied actions
+	// PerformActions performs stored actions
 	PerformActions(actionType string, actions []map[string]interface{}) error
+
+	// ReleaseActions releases stored actions
+	ReleaseActions() error
 
 	// SendModifier sends the modifier key to the active element. The modifier
 	// can be one of ShiftKey, ControlKey, AltKey, MetaKey.

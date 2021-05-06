@@ -1103,7 +1103,6 @@ func (wd *remoteWD) PointerDown(button int) map[string]interface{} {
 }
 
 func (wd *remoteWD) MovePointerTo(x, y, duration int) map[string]interface{} {
-
 	return map[string]interface{}{
 		"type":     "pointerMove",
 		"duration": duration,
@@ -1122,6 +1121,10 @@ func (wd *remoteWD) PerformActions(actionType string, actions []map[string]inter
 				"actions": actions,
 			}},
 	})
+}
+
+func (wd *remoteWD) ReleaseActions() error {
+	return voidCommand("DELETE", wd.requestURL("/session/%s/actions", wd.id), nil)
 }
 
 // TODO(minusnine): Implement PerformActions and ReleaseActions, for more
