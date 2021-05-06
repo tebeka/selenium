@@ -48,8 +48,8 @@ var remoteErrors = map[int]string{
 
 type remoteWD struct {
 	id, urlPrefix  string
-	capabilities   Capabilities
 	actions        Actions
+	capabilities   Capabilities
 	w3cCompatible  bool
 	browser        string
 	browserVersion semver.Version
