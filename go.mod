@@ -1,8 +1,6 @@
-module github.com/x-Xymos/selenium/v1
+module github.com/tebeka/selenium
 
 go 1.12
-
-//replace github.com/x-Xymos/selenium v1.0.0 => /home/xymos/go/src/selenium
 
 require (
 	cloud.google.com/go v0.41.0
@@ -14,6 +12,5 @@ require (
 	github.com/google/go-cmp v0.5.5
 	github.com/google/go-github/v27 v27.0.4
 	github.com/mediabuyerbot/go-crx3 v1.3.1
-	github.com/x-Xymos/selenium v1.0.0
 	google.golang.org/api v0.7.0
 )
