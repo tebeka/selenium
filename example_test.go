@@ -104,9 +104,50 @@ func Example() {
 	}
 
 	fmt.Printf("%s", strings.Replace(output, "\n\n", "\n", -1))
-
 	// Example Output:
 	// Hello WebDriver!
 	//
 	// Program exited.
+
+	//Actions example
+	if err := wd.Get("http://play.golang.org/?simple=1"); err != nil {
+		panic(err)
+	}
+	time.Sleep(time.Second * 1)
+
+	offset := selenium.Point{X: 100, Y: 100}
+	wd.StorePointerActions("mouse1",
+		selenium.MousePointer,
+		wd.PointerMoveAction(0, offset, selenium.FromViewport),
+		wd.PointerPauseAction(250),
+		wd.PointerDownAction(selenium.LeftButton),
+		wd.PointerPauseAction(250),
+		wd.PointerUpAction(selenium.LeftButton),
+	)
+
+	wd.StoreKeyActions("keyboard1",
+		wd.KeyDownAction(selenium.ControlKey),
+		wd.KeyPauseAction(50),
+		wd.KeyDownAction("a"),
+		wd.KeyPauseAction(50),
+		wd.KeyUpAction("a"),
+		wd.KeyUpAction(selenium.ControlKey),
+		wd.KeyDownAction("h"),
+		wd.KeyDownAction("e"),
+		wd.KeyDownAction("l"),
+		wd.KeyDownAction("l"),
+		wd.KeyDownAction("o"),
+	)
+
+	err = wd.PerformActions()
+	if err != nil {
+		panic(err)
+	}
+
+	//calling ReleaseActions to release the KeyDownActions we've performed so we don't have to call KeyUpAction explicitly
+	err = wd.ReleaseActions()
+	if err != nil {
+		panic(err)
+	}
+
 }
