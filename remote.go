@@ -1095,8 +1095,36 @@ func (wd *remoteWD) KeyUp(keys string) error {
 	return wd.keyAction("keyUp", keys)
 }
 
-func (wd *remoteWD) PointerMove(duration time.Duration, offset Point, origin PointerMoveOrigin) Action {
-	return Action{
+func (wd *remoteWD) KeyPauseAction(duration time.Duration) KeyAction {
+	return KeyAction{
+		"type":     "pause",
+		"duration": uint(duration / time.Millisecond),
+	}
+}
+
+func (wd *remoteWD) KeyUpAction(key string) KeyAction {
+	return KeyAction{
+		"type":  "keyUp",
+		"value": key,
+	}
+}
+
+func (wd *remoteWD) KeyDownAction(key string) KeyAction {
+	return KeyAction{
+		"type":  "keyDown",
+		"value": key,
+	}
+}
+
+func (wd *remoteWD) PointerPauseAction(duration time.Duration) PointerAction {
+	return PointerAction{
+		"type":     "pause",
+		"duration": uint(duration / time.Millisecond),
+	}
+}
+
+func (wd *remoteWD) PointerMoveAction(duration time.Duration, offset Point, origin PointerMoveOrigin) PointerAction {
+	return PointerAction{
 		"type":     "pointerMove",
 		"duration": uint(duration / time.Millisecond),
 		"origin":   origin,
@@ -1105,46 +1133,44 @@ func (wd *remoteWD) PointerMove(duration time.Duration, offset Point, origin Poi
 	}
 }
 
-func (wd *remoteWD) PointerDown(button MouseButton) Action {
-	return Action{
-		"type":   "pointerDown",
-		"button": button,
-	}
-}
-
-func (wd *remoteWD) PointerUp(button MouseButton) Action {
-	return Action{
+func (wd *remoteWD) PointerUpAction(button MouseButton) PointerAction {
+	return PointerAction{
 		"type":   "pointerUp",
 		"button": button,
 	}
 }
 
-func (wd *remoteWD) PauseAction(duration time.Duration) Action {
-	return Action{
-		"type":     "pause",
-		"duration": uint(duration / time.Millisecond),
+func (wd *remoteWD) PointerDownAction(button MouseButton) PointerAction {
+	return PointerAction{
+		"type":   "pointerDown",
+		"button": button,
 	}
 }
 
-func (wd *remoteWD) StoreActions(inputId string, actionType ActionType, parameters ActionParameter, actions ...Action) {
+func (wd *remoteWD) StoreKeyActions(inputId string, actions ...KeyAction) {
+	_actions := []map[string]interface{}{}
+	for _, action := range actions {
+		_actions = append(_actions, action)
+	}
+	wd.actions = append(wd.actions, map[string]interface{}{
+		"type":    "key",
+		"id":      inputId,
+		"actions": _actions,
+	})
+}
 
-	_actions := []Action{}
+func (wd *remoteWD) StorePointerActions(inputId string, pointerType PointerType, actions ...PointerAction) {
+	_actions := []map[string]interface{}{}
 	for _, action := range actions {
 		_actions = append(_actions, action)
 	}
 
-	action := map[string]interface{}{
-		"type":    actionType,
-		"id":      inputId,
-		"actions": _actions,
-	}
-
-	//can I just add a nil ["parameters"] field without having to check it ?
-	if parameters != nil {
-		action["parameters"] = parameters
-	}
-
-	wd.actions = append(wd.actions, action)
+	wd.actions = append(wd.actions, map[string]interface{}{
+		"type":       "pointer",
+		"id":         inputId,
+		"parameters": map[string]string{"pointerType": string(pointerType)},
+		"actions":    _actions,
+	})
 }
 
 func (wd *remoteWD) PerformActions() error {
@@ -1159,8 +1185,6 @@ func (wd *remoteWD) ReleaseActions() error {
 	return voidCommand("DELETE", wd.requestURL("/session/%s/actions", wd.id), nil)
 }
 
-// TODO(minusnine): Implement PerformActions and ReleaseActions, for more
-// direct access to the W3C specification.
 func (wd *remoteWD) DismissAlert() error {
 	return wd.voidCommand("/session/%s/alert/dismiss", nil)
 }

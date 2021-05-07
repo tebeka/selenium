@@ -233,12 +233,6 @@ const (
 	TouchPointer             = "touch"
 )
 
-func PointerTypeParam(p PointerType) ActionParameter {
-	return ActionParameter{
-		"pointerType": string(p),
-	}
-}
-
 //controls how the offset for the pointer move action is calculated
 //
 // FromViewport: calculate the offset from the viewport at 0,0
@@ -253,21 +247,14 @@ const (
 	FromPointer                    = "pointer"
 )
 
-type ActionParameter map[string]interface{}
+//KeyAction
+type KeyAction map[string]interface{}
 
-type ActionType string
+//KeyAction
+type PointerAction map[string]interface{}
 
-const (
-	PointerAction ActionType = "pointer"
-	KeyAction                = "key"
-	NoneAction               = "none"
-)
-
-//Action
-type Action map[string]interface{}
-
-//Actions holds a map of stored actions
-type Actions []Action
+// //Actions holds a map of stored KeyActions and PointerActions
+type Actions []map[string]interface{}
 
 // WebDriver defines methods supported by WebDriver drivers.
 type WebDriver interface {
@@ -376,33 +363,40 @@ type WebDriver interface {
 	// ButtonUp causes the left mouse button to be released.
 	ButtonUp() error
 
-	// PauseAction build an action which pauses for the supplied duration
-	PauseAction(duration time.Duration) Action
-
-	// PointerMove build an action which moves the pointer
-	PointerMove(duration time.Duration, offset Point, origin PointerMoveOrigin) Action
-
-	// PointerDown build an action which presses and holds the specified
-	// pointer key until explicitly released by PointerUp or ReleaseActions
-	PointerDown(button MouseButton) Action
-
-	// PointerUp build an action which releases the specified pointer key
-	PointerUp(button MouseButton) Action
-
-	// StoreActions
+	// KeyPauseAction build a KeyAction which pauses for the supplied duration
+	KeyPauseAction(duration time.Duration) KeyAction
+	// KeyUpAction build a KeyAction press
+	KeyUpAction(key string) KeyAction
+	// KeyDownAction build a KeyAction which presses and holds the specified
+	// key until explicitly released by KeyUpAction or ReleaseActions
+	KeyDownAction(key string) KeyAction
+	// StoreKeyActions
 	//
 	// inputId: unique device identifier for the stored action
 	//
-	// actionType: accepts either PointerAction, KeyAction, or NoneAction
+	// actions: any number of KeyActions
+	StoreKeyActions(inputId string, actions ...KeyAction)
+
+	// PointerPause build a PointerAction which pauses for the supplied duration
+	PointerPauseAction(duration time.Duration) PointerAction
+	// PointerMove build a PointerAction which moves the pointer
+	PointerMoveAction(duration time.Duration, offset Point, origin PointerMoveOrigin) PointerAction
+	// PointerUp build an action which releases the specified pointer key
+	PointerUpAction(button MouseButton) PointerAction
+	// PointerDown build a PointerAction which presses and holds the specified
+	// pointer key until explicitly released by PointerUp or ReleaseActions
+	PointerDownAction(button MouseButton) PointerAction
+	// StorePointerActions
 	//
-	// parameters: optional map of parameters, currently only works with PointerTypeParam
+	// inputId: unique device identifier for the stored action
 	//
-	//actions: any number of Actions
-	StoreActions(inputId string, actionType ActionType, parameters ActionParameter, actions ...Action)
+	// pointerType: type of pointer - accepts: MousePointer, TouchPointer, PenPointer
+	//
+	//actions: any number of PointerActions
+	StorePointerActions(inputId string, pointerType PointerType, actions ...PointerAction)
 
 	// PerformActions performs stored actions
 	PerformActions() error
-
 	// ReleaseActions releases keys and pointer buttons if they are pressed,
 	// triggering any events as if they were performed by a regular action
 	ReleaseActions() error
