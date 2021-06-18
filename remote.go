@@ -5,6 +5,7 @@ package selenium
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -18,6 +19,8 @@ import (
 	"time"
 
 	"github.com/blang/semver"
+	"github.com/chromedp/cdproto/cdp"
+	"github.com/mailru/easyjson"
 	"github.com/tebeka/selenium/firefox"
 	"github.com/tebeka/selenium/log"
 )
@@ -1156,6 +1159,7 @@ func (wd *remoteWD) execCdpCommandRaw(data []byte) ([]byte, error) {
 // this interface didn't define in official wiki(https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol)
 // so I just refered to selenium in python (selenium.webdriver.chrome.remote_connection.ChromeRemoteConnection)
 func (wd *remoteWD) execCdpCommand(cmd string, params map[string]interface{}) (interface{}, error) {
+	// params can't be nil
 	if params == nil {
 		params = make(map[string]interface{})
 	}
@@ -1179,6 +1183,57 @@ func (wd *remoteWD) execCdpCommand(cmd string, params map[string]interface{}) (i
 	}
 
 	return reply.Value, nil
+}
+
+// CdpExecutor execute cdp command with cdproto
+type CdpExecutor struct {
+	*remoteWD
+}
+
+// Execute refer to https://github.com/chromedp/cdproto/blob/master/cdp/types.go
+func (wd CdpExecutor) Execute(ctx context.Context, cmd string, params easyjson.Marshaler, res easyjson.Unmarshaler) (err error) {
+	body := map[string]interface{}{"cmd": cmd}
+
+	if params == nil {
+		// params can't be nil
+		body["params"] = make(map[string]string)
+	} else {
+		body["params"] = params
+	}
+
+	data, err := json.Marshal(body)
+
+	if err != nil {
+		return
+	}
+
+	response, err := wd.execCdpCommandRaw(data)
+	if err != nil {
+		return
+	}
+
+	reply := new(struct{ Value easyjson.Unmarshaler })
+	reply.Value = res
+
+	if err = json.Unmarshal(response, reply); err != nil {
+		debugLog("cdproto value :%+v", res)
+		return
+	}
+
+	debugLog("cdproto return value is :%+v", res)
+
+	return
+}
+
+func (wd *remoteWD) generateCdprotoExecutor() cdp.Executor {
+	return CdpExecutor{wd}
+}
+
+func (wd *remoteWD) GenerateCdprotoContext(ctx context.Context) context.Context {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return cdp.WithExecutor(ctx, wd.generateCdprotoExecutor())
 }
 
 func (wd *remoteWD) ExecuteCdpCommand(cmd string, params map[string]interface{}) (interface{}, error) {
