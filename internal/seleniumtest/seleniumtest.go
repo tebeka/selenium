@@ -1700,7 +1700,29 @@ func testChromeExtension(t *testing.T, c Config) {
 	}
 }
 
+func testChromeCdp(t *testing.T, c Config) {
+	caps := newTestCapabilities(t, c)
+
+	wd, err := NewRemote(t, caps, c.Addr)
+	if err != nil {
+		t.Fatalf("newRemote(_, _) returned error: %v", err)
+	}
+	defer wd.Quit()
+
+	res, err := wd.ExecuteCdpCommand("Browser.getVersion", nil)
+	if err != nil {
+		t.Fatalf("cdp execute error: %s", err.Error())
+	}
+
+	if data, ok := res.(map[string]interface{}); !ok {
+		t.Fatalf("cdp execute failed with result: %v", res)
+	} else {
+		t.Log(data["product"])
+	}
+}
+
 func RunChromeTests(t *testing.T, c Config) {
 	// Chrome-specific tests.
 	t.Run("Extension", runTest(testChromeExtension, c))
+	t.Run("CDP", runTest(testChromeCdp, c))
 }

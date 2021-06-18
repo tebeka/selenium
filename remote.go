@@ -1148,6 +1148,46 @@ func (wd *remoteWD) execScript(script string, args []interface{}, suffix string)
 	return reply.Value, nil
 }
 
+func (wd *remoteWD) execCdpCommandRaw(data []byte) ([]byte, error) {
+	return wd.execute("POST", wd.requestURL("/session/%s/goog/cdp/execute", wd.id), data)
+}
+
+// execCdpCommand execute cdp command
+// this interface didn't define in official wiki(https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol)
+// so I just refered to selenium in python (selenium.webdriver.chrome.remote_connection.ChromeRemoteConnection)
+func (wd *remoteWD) execCdpCommand(cmd string, params map[string]interface{}) (interface{}, error) {
+	if params == nil {
+		params = make(map[string]interface{})
+	}
+
+	data, err := json.Marshal(map[string]interface{}{
+		"cmd":    cmd,
+		"params": params,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := wd.execCdpCommandRaw(data)
+	if err != nil {
+		return nil, err
+	}
+
+	reply := new(struct{ Value interface{} })
+	if err = json.Unmarshal(response, reply); err != nil {
+		return nil, err
+	}
+
+	return reply.Value, nil
+}
+
+func (wd *remoteWD) ExecuteCdpCommand(cmd string, params map[string]interface{}) (interface{}, error) {
+	if wd.browser != "chrome" {
+		return nil, fmt.Errorf("cdp command must execute in chrome not %s", wd.browser)
+	}
+	return wd.execCdpCommand(cmd, params)
+}
+
 func (wd *remoteWD) ExecuteScript(script string, args []interface{}) (interface{}, error) {
 	if !wd.w3cCompatible {
 		return wd.execScript(script, args, "")

@@ -370,6 +370,10 @@ type WebDriver interface {
 	// perform JSON decoding.
 	ExecuteScriptAsyncRaw(script string, args []interface{}) ([]byte, error)
 
+	// ExecuteCdpCommand execute Chrome Devtools Protocol command and get returned result
+	// refer to link https://chromedevtools.github.io/devtools-protocol/
+	ExecuteCdpCommand(cmd string, params map[string]interface{}) (interface{}, error)
+
 	// WaitWithTimeoutAndInterval waits for the condition to evaluate to true.
 	WaitWithTimeoutAndInterval(condition Condition, timeout, interval time.Duration) error
 
