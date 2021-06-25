@@ -230,7 +230,7 @@ func TestHTMLUnit(t *testing.T) {
 		// HTMLUnit-Driver currently does not support the sameSite attribute
 		// See: https://github.com/SeleniumHQ/htmlunit-driver/issues/97
 		SameSiteUnsupported: true,
-  }
+	}
 
 	port, err := pickUnusedPort()
 	if err != nil {

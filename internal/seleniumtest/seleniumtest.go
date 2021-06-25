@@ -1118,7 +1118,7 @@ func testGetProperty(t *testing.T, c Config) {
 
 	time.Sleep(500 * time.Millisecond)
 
-	val, err := input.GetProperty("no-such-property")
+	val, err := input.GetProperty("value")
 	if err != nil {
 		t.Fatalf("Error getting property: %v", err)
 	}
