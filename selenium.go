@@ -411,6 +411,8 @@ type WebElement interface {
 	IsDisplayed() (bool, error)
 	// GetAttribute returns the named attribute of the element.
 	GetAttribute(name string) (string, error)
+	// GetProperty returns the named attribute of the element.
+	GetProperty(name string) (string, error)
 	// Location returns the element's location.
 	Location() (*Point, error)
 	// LocationInView returns the element's location once it has been scrolled
