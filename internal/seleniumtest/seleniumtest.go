@@ -1101,6 +1101,9 @@ func testGetAttributeNotFound(t *testing.T, c Config) {
 }
 
 func testGetProperty(t *testing.T, c Config) {
+	if c.Browser == "htmlunit" {
+		t.Skip("Skipping on htmlunit")
+	}
 	wd := newRemote(t, newTestCapabilities(t, c), c)
 	defer quitRemote(t, wd)
 
@@ -1128,6 +1131,9 @@ func testGetProperty(t *testing.T, c Config) {
 }
 
 func testGetPropertyNotFound(t *testing.T, c Config) {
+	if c.Browser == "htmlunit" {
+		t.Skip("Skipping on htmlunit")
+	}
 	wd := newRemote(t, newTestCapabilities(t, c), c)
 	defer quitRemote(t, wd)
 
