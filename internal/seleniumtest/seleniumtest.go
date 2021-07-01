@@ -155,6 +155,8 @@ func RunCommonTests(t *testing.T, c Config) {
 	t.Run("IsSelected", runTest(testIsSelected, c))
 	t.Run("IsDisplayed", runTest(testIsDisplayed, c))
 	t.Run("GetAttributeNotFound", runTest(testGetAttributeNotFound, c))
+	t.Run("GetProperty", runTest(testGetProperty, c))
+	t.Run("GetPropertyNotFound", runTest(testGetPropertyNotFound, c))
 	t.Run("KeyDownUp", runTest(testKeyDownUp, c))
 	t.Run("CSSProperty", runTest(testCSSProperty, c))
 	if !c.SkipProxy {
@@ -1095,6 +1097,54 @@ func testGetAttributeNotFound(t *testing.T, c Config) {
 
 	if _, err = elem.GetAttribute("no-such-attribute"); err == nil {
 		t.Fatal("Got non existing attribute")
+	}
+}
+
+func testGetProperty(t *testing.T, c Config) {
+	if c.Browser == "htmlunit" {
+		t.Skip("Skipping on htmlunit")
+	}
+	wd := newRemote(t, newTestCapabilities(t, c), c)
+	defer quitRemote(t, wd)
+
+	if err := wd.Get(c.ServerURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", c.ServerURL, err)
+	}
+	input, err := wd.FindElement(selenium.ByName, "q")
+	if err != nil {
+		t.Fatalf("Can't find element: %v", err)
+	}
+	const query = "golang"
+	if err := input.SendKeys(query); err != nil {
+		t.Fatalf("Can't send keys: %v", err)
+	}
+
+	val, err := input.GetProperty("value")
+	if err != nil {
+		t.Fatalf("Error getting property: %v", err)
+	}
+	if val != query {
+		t.Fatalf("Unexpected property value: %q != %q", val, query)
+	}
+}
+
+func testGetPropertyNotFound(t *testing.T, c Config) {
+	if c.Browser == "htmlunit" {
+		t.Skip("Skipping on htmlunit")
+	}
+	wd := newRemote(t, newTestCapabilities(t, c), c)
+	defer quitRemote(t, wd)
+
+	if err := wd.Get(c.ServerURL); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", c.ServerURL, err)
+	}
+	elem, err := wd.FindElement(selenium.ByID, "chuk")
+	if err != nil {
+		t.Fatal("Can't find element")
+	}
+
+	if _, err = elem.GetProperty("no-such-property"); err == nil {
+		t.Fatal("Got non existing property")
 	}
 }
 
