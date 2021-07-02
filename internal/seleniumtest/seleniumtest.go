@@ -1230,7 +1230,7 @@ func testCSSProperty(t *testing.T, c Config) {
 
 const proxyPageContents = "You are viewing a proxied page"
 
-// addrRewriter rewrites all requsted addresses to the one specified by the
+// addrRewriter rewrites all requested addresses to the one specified by the
 // URL.
 type addrRewriter struct{ u *url.URL }
 
