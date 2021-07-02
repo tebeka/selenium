@@ -1637,7 +1637,7 @@ var Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			Value: fmt.Sprintf("value-%d", i),
 		})
 	}
-	fmt.Fprintf(w, page)
+	fmt.Fprint(w, page)
 })
 
 func RunFirefoxTests(t *testing.T, c Config) {
