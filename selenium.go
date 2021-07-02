@@ -371,12 +371,13 @@ type WebDriver interface {
 	// perform JSON decoding.
 	ExecuteScriptAsyncRaw(script string, args []interface{}) ([]byte, error)
 
-	// ExecuteCdpCommand execute Chrome Devtools Protocol command and get returned result
-	// refer to link https://chromedevtools.github.io/devtools-protocol/
-	ExecuteCdpCommand(cmd string, params map[string]interface{}) (interface{}, error)
-	// GenerateCdprotoContext execute cdp command with cdproto
-	// refer to https://github.com/chromedp/cdproto
-	GenerateCdprotoContext(ctx context.Context) context.Context
+	// ExecuteChromeDPCommand executes a Chrome DevTools Protocol command.
+	// See https://chromedevtools.github.io/devtools-protocol/ for available commands.
+	ExecuteChromeDPCommand(cmd string, params map[string]interface{}) (interface{}, error)
+	// GenerateCDProtoContext generates context with a executor
+	// which can execute a Chrome DevTools Protocol command through cdproto.
+	// See https://github.com/chromedp/cdproto for usage information.
+	GenerateCDProtoContext(ctx context.Context) context.Context
 
 	// WaitWithTimeoutAndInterval waits for the condition to evaluate to true.
 	WaitWithTimeoutAndInterval(condition Condition, timeout, interval time.Duration) error

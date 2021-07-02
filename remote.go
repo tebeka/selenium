@@ -1151,14 +1151,14 @@ func (wd *remoteWD) execScript(script string, args []interface{}, suffix string)
 	return reply.Value, nil
 }
 
-func (wd *remoteWD) execCdpCommandRaw(data []byte) ([]byte, error) {
+func (wd *remoteWD) execChromeDPCommandRaw(data []byte) ([]byte, error) {
 	return wd.execute("POST", wd.requestURL("/session/%s/goog/cdp/execute", wd.id), data)
 }
 
-// execCdpCommand execute cdp command
-// this interface didn't define in official wiki(https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol)
-// so I just refered to selenium in python (selenium.webdriver.chrome.remote_connection.ChromeRemoteConnection)
-func (wd *remoteWD) execCdpCommand(cmd string, params map[string]interface{}) (interface{}, error) {
+// This command is not defined in the Selenium or WebDriver documentation.
+// The functionality was ported from the Python Selenium driver
+// (selenium.webdriver.chrome.remote_connection.ChromeRemoteConnection).
+func (wd *remoteWD) execChromeDPCommand(cmd string, params map[string]interface{}) (interface{}, error) {
 	// params can't be nil
 	if params == nil {
 		params = make(map[string]interface{})
@@ -1172,7 +1172,7 @@ func (wd *remoteWD) execCdpCommand(cmd string, params map[string]interface{}) (i
 		return nil, err
 	}
 
-	response, err := wd.execCdpCommandRaw(data)
+	response, err := wd.execChromeDPCommandRaw(data)
 	if err != nil {
 		return nil, err
 	}
@@ -1185,13 +1185,27 @@ func (wd *remoteWD) execCdpCommand(cmd string, params map[string]interface{}) (i
 	return reply.Value, nil
 }
 
-// CdpExecutor execute cdp command with cdproto
-type CdpExecutor struct {
+// CDProtoExecutor execute Chrome DevTools Protocol command through cdproto
+type CDProtoExecutor struct {
 	*remoteWD
 }
 
-// Execute refer to https://github.com/chromedp/cdproto/blob/master/cdp/types.go
-func (wd CdpExecutor) Execute(ctx context.Context, cmd string, params easyjson.Marshaler, res easyjson.Unmarshaler) (err error) {
+var _ cdp.Executor = (*CDProtoExecutor)(nil)
+
+// Execute executes a Chrome DevTools Protocol command.
+// So that CDProtoExecutor can be executor for cdproto,
+// refer to https://github.com/chromedp/cdproto/blob/master/cdp/types.go
+func (e CDProtoExecutor) Execute(ctx context.Context, cmd string, params easyjson.Marshaler, res easyjson.Unmarshaler) (err error) {
+	if e.browser != "chrome" {
+		return fmt.Errorf("executing a Chrome DevTools command through cdproto is only supported in Chrome, not %s", e.browser)
+	}
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+
 	body := map[string]interface{}{"cmd": cmd}
 
 	if params == nil {
@@ -1202,12 +1216,11 @@ func (wd CdpExecutor) Execute(ctx context.Context, cmd string, params easyjson.M
 	}
 
 	data, err := json.Marshal(body)
-
 	if err != nil {
 		return
 	}
 
-	response, err := wd.execCdpCommandRaw(data)
+	response, err := e.execChromeDPCommandRaw(data)
 	if err != nil {
 		return
 	}
@@ -1216,31 +1229,31 @@ func (wd CdpExecutor) Execute(ctx context.Context, cmd string, params easyjson.M
 	reply.Value = res
 
 	if err = json.Unmarshal(response, reply); err != nil {
-		debugLog("cdproto value :%+v", res)
+		debugLog("cdproto value parse error :%+v", res)
 		return
 	}
 
-	debugLog("cdproto return value is :%+v", res)
+	debugLog("cdproto value return :%+v", res)
 
 	return
 }
 
-func (wd *remoteWD) generateCdprotoExecutor() cdp.Executor {
-	return CdpExecutor{wd}
+func (wd *remoteWD) generateCDProtoExecutor() cdp.Executor {
+	return CDProtoExecutor{wd}
 }
 
-func (wd *remoteWD) GenerateCdprotoContext(ctx context.Context) context.Context {
+func (wd *remoteWD) GenerateCDProtoContext(ctx context.Context) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	return cdp.WithExecutor(ctx, wd.generateCdprotoExecutor())
+	return cdp.WithExecutor(ctx, wd.generateCDProtoExecutor())
 }
 
-func (wd *remoteWD) ExecuteCdpCommand(cmd string, params map[string]interface{}) (interface{}, error) {
+func (wd *remoteWD) ExecuteChromeDPCommand(cmd string, params map[string]interface{}) (interface{}, error) {
 	if wd.browser != "chrome" {
-		return nil, fmt.Errorf("cdp command must execute in chrome not %s", wd.browser)
+		return nil, fmt.Errorf("executing a Chrome DevTools command is only supported in Chrome, not %s", wd.browser)
 	}
-	return wd.execCdpCommand(cmd, params)
+	return wd.execChromeDPCommand(cmd, params)
 }
 
 func (wd *remoteWD) ExecuteScript(script string, args []interface{}) (interface{}, error) {
