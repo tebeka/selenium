@@ -1252,7 +1252,7 @@ func testProxy(t *testing.T, c Config) {
 
 	// Create a different web server that should be used if HTTP proxying is enabled.
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		fmt.Fprintf(w, proxyPageContents)
+		fmt.Fprint(w, proxyPageContents)
 	}))
 	defer s.Close()
 
