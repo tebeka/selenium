@@ -1252,7 +1252,7 @@ func testProxy(t *testing.T, c Config) {
 
 	// Create a different web server that should be used if HTTP proxying is enabled.
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		fmt.Fprintf(w, proxyPageContents)
+		fmt.Fprint(w, proxyPageContents)
 	}))
 	defer s.Close()
 
@@ -1637,7 +1637,7 @@ var Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			Value: fmt.Sprintf("value-%d", i),
 		})
 	}
-	fmt.Fprintf(w, page)
+	fmt.Fprint(w, page)
 })
 
 func RunFirefoxTests(t *testing.T, c Config) {
