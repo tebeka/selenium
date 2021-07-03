@@ -221,6 +221,19 @@ func NewGeckoDriverService(path string, port int, opts ...ServiceOption) (*Servi
 	return s, nil
 }
 
+// NewIEDriverService starts a IEDriverServer instance in the background.
+func NewIEDriverService(path string, port int, opts ...ServiceOption) (*Service, error) {
+	cmd := exec.Command(path, "--port="+strconv.Itoa(port))
+	s, err := newService(cmd, "", port, opts...)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.start(port); err != nil {
+		return nil, err
+	}
+	return s, nil
+}
+
 func newService(cmd *exec.Cmd, urlPrefix string, port int, opts ...ServiceOption) (*Service, error) {
 	s := &Service{
 		port: port,
