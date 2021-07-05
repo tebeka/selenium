@@ -1,6 +1,7 @@
 package selenium
 
 import (
+	"context"
 	"time"
 
 	"github.com/tebeka/selenium/chrome"
@@ -369,6 +370,14 @@ type WebDriver interface {
 	// ExecuteScriptAsyncRaw asynchronously executes a script but does not
 	// perform JSON decoding.
 	ExecuteScriptAsyncRaw(script string, args []interface{}) ([]byte, error)
+
+	// ExecuteChromeDPCommand executes a Chrome DevTools Protocol command.
+	// See https://chromedevtools.github.io/devtools-protocol/ for available commands.
+	ExecuteChromeDPCommand(cmd string, params map[string]interface{}) (interface{}, error)
+	// GenerateCDProtoContext generates context with a executor
+	// which can execute a Chrome DevTools Protocol command through cdproto.
+	// See https://github.com/chromedp/cdproto for usage information.
+	GenerateCDProtoContext(ctx context.Context) context.Context
 
 	// WaitWithTimeoutAndInterval waits for the condition to evaluate to true.
 	WaitWithTimeoutAndInterval(condition Condition, timeout, interval time.Duration) error
