@@ -933,7 +933,7 @@ func (c cookie) sanitize() Cookie {
 			return ""
 		}
 		for _, v := range []SameSite{SameSiteNone, SameSiteLax, SameSiteStrict} {
-			if strings.ToLower(string(v)) == strings.ToLower(s) {
+			if strings.EqualFold(string(v), s) {
 				return v
 			}
 		}

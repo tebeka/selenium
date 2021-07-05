@@ -39,7 +39,7 @@ var (
 func TestMain(m *testing.M) {
 	flag.Parse()
 	if err := setDriverPaths(); err != nil {
-		fmt.Fprint(os.Stderr, fmt.Sprintf("Exiting early: unable to get the driver paths -- %s", err.Error()))
+		fmt.Fprintf(os.Stderr, "Exiting early: unable to get the driver paths -- %s", err.Error())
 		os.Exit(1)
 	}
 	os.Exit(m.Run())
@@ -140,13 +140,12 @@ func runChromeTests(t *testing.T, c seleniumtest.Config) {
 	c.Browser = "chrome"
 	c.Headless = *headless
 
-	var opts []selenium.ServiceOption
 	if *startFrameBuffer {
-		opts = append(opts, selenium.StartFrameBuffer())
+		c.ServiceOptions = append(c.ServiceOptions, selenium.StartFrameBuffer())
 	}
 	if testing.Verbose() {
 		selenium.SetDebug(true)
-		opts = append(opts, selenium.Output(os.Stderr))
+		c.ServiceOptions = append(c.ServiceOptions, selenium.Output(os.Stderr))
 	}
 
 	port, err := pickUnusedPort()

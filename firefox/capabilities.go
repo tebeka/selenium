@@ -65,12 +65,12 @@ type LogLevel string
 // Levels of logging that can be specified in the Log structure.
 const (
 	Trace  LogLevel = "trace"
-	Debug           = "debug"
-	Config          = "config"
-	Info            = "info"
-	Warn            = "warn"
-	Error           = "error"
-	Fatal           = "fatal"
+	Debug  LogLevel = "debug"
+	Config LogLevel = "config"
+	Info   LogLevel = "info"
+	Warn   LogLevel = "warn"
+	Error  LogLevel = "error"
+	Fatal  LogLevel = "fatal"
 )
 
 // Log specifies how Firefox should log debug data.
