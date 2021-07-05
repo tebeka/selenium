@@ -716,10 +716,6 @@ func testGetCookies(t *testing.T, c Config) {
 	}
 }
 
-func v(s string) semver.Version {
-	return semver.MustParse(s)
-}
-
 func testAddCookie(t *testing.T, c Config) {
 	wd := newRemote(t, newTestCapabilities(t, c), c)
 	defer quitRemote(t, wd)
@@ -1019,7 +1015,7 @@ func testLog(t *testing.T, c Config) {
 				}
 				// Make sure the timestamp conversion is vaguely correct. In
 				// practice, this difference should be in the milliseconds range.
-				if time.Now().Sub(l.Timestamp) > time.Hour {
+				if time.Since(l.Timestamp) > time.Hour {
 					t.Errorf("Message has timestamp %s > 1 hour ago: %v", l.Timestamp, l)
 				}
 			}
