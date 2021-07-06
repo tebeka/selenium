@@ -15,6 +15,8 @@ import (
 	"time"
 )
 
+const InvalidPid = -1
+
 // ServiceOption configures a Service instance.
 type ServiceOption func(*Service) error
 
@@ -162,6 +164,15 @@ type Service struct {
 // FrameBuffer returns the FrameBuffer if one was started by the service and nil otherwise.
 func (s Service) FrameBuffer() *FrameBuffer {
 	return s.xvfb
+}
+
+//PID returns the service pid
+func (s Service) PID() int {
+	if s.cmd != nil {
+		return s.cmd.Process.Pid
+	}
+
+	return InvalidPid
 }
 
 // NewSeleniumService starts a Selenium instance in the background.
