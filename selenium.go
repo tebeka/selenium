@@ -22,9 +22,11 @@ const (
 	ByCSSSelector     = "css selector"
 )
 
+type MouseButton int
+
 // Mouse buttons.
 const (
-	LeftButton = iota
+	LeftButton MouseButton = iota
 	MiddleButton
 	RightButton
 )
@@ -223,6 +225,37 @@ const (
 	SameSiteEmpty           = ""
 )
 
+type PointerType string
+
+const (
+	MousePointer PointerType = "mouse"
+	PenPointer               = "pen"
+	TouchPointer             = "touch"
+)
+
+//controls how the offset for the pointer move action is calculated
+//
+// FromViewport: calculate the offset from the viewport at 0,0
+//
+// FromPointer: calculate the offset from the current pointer position
+type PointerMoveOrigin string
+
+//todo: add FromElement which calculates the
+//offset from the provided element
+const (
+	FromViewport PointerMoveOrigin = "viewport"
+	FromPointer                    = "pointer"
+)
+
+//KeyAction
+type KeyAction map[string]interface{}
+
+//KeyAction
+type PointerAction map[string]interface{}
+
+// //Actions holds a map of stored KeyActions and PointerActions
+type Actions []map[string]interface{}
+
 // WebDriver defines methods supported by WebDriver drivers.
 type WebDriver interface {
 	// Status returns various pieces of information about the server environment.
@@ -329,6 +362,44 @@ type WebDriver interface {
 	ButtonDown() error
 	// ButtonUp causes the left mouse button to be released.
 	ButtonUp() error
+
+	// KeyPauseAction build a KeyAction which pauses for the supplied duration
+	KeyPauseAction(duration time.Duration) KeyAction
+	// KeyUpAction build a KeyAction press
+	KeyUpAction(key string) KeyAction
+	// KeyDownAction build a KeyAction which presses and holds the specified
+	// key until explicitly released by KeyUpAction or ReleaseActions
+	KeyDownAction(key string) KeyAction
+	// StoreKeyActions
+	//
+	// inputId: unique device identifier for the stored action
+	//
+	// actions: any number of KeyActions
+	StoreKeyActions(inputId string, actions ...KeyAction)
+
+	// PointerPause build a PointerAction which pauses for the supplied duration
+	PointerPauseAction(duration time.Duration) PointerAction
+	// PointerMove build a PointerAction which moves the pointer
+	PointerMoveAction(duration time.Duration, offset Point, origin PointerMoveOrigin) PointerAction
+	// PointerUp build an action which releases the specified pointer key
+	PointerUpAction(button MouseButton) PointerAction
+	// PointerDown build a PointerAction which presses and holds the specified
+	// pointer key until explicitly released by PointerUp or ReleaseActions
+	PointerDownAction(button MouseButton) PointerAction
+	// StorePointerActions
+	//
+	// inputId: unique device identifier for the stored action
+	//
+	// pointerType: type of pointer - accepts: MousePointer, TouchPointer, PenPointer
+	//
+	//actions: any number of PointerActions
+	StorePointerActions(inputId string, pointerType PointerType, actions ...PointerAction)
+
+	// PerformActions performs stored actions
+	PerformActions() error
+	// ReleaseActions releases keys and pointer buttons if they are pressed,
+	// triggering any events as if they were performed by a regular action
+	ReleaseActions() error
 
 	// SendModifier sends the modifier key to the active element. The modifier
 	// can be one of ShiftKey, ControlKey, AltKey, MetaKey.
