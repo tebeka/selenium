@@ -1110,11 +1110,7 @@ func (wd *remoteWD) AlertText() (string, error) {
 }
 
 func (wd *remoteWD) SetAlertText(text string) error {
-	data, err := json.Marshal(map[string]string{"text": text})
-	if err != nil {
-		return err
-	}
-
+	data := map[string]string{"text": text}
 	return wd.voidCommand("/session/%s/alert/text", data)
 }
 
