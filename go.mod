@@ -1,4 +1,4 @@
-module github.com/tebeka/selenium
+module github.com/wanmail/selenium
 
 go 1.12
 
@@ -14,5 +14,8 @@ require (
 	github.com/google/go-github/v27 v27.0.4
 	github.com/mailru/easyjson v0.7.0
 	github.com/mediabuyerbot/go-crx3 v1.3.1
+	github.com/tebeka/selenium v0.9.9 
 	google.golang.org/api v0.7.0
 )
+
+replace github.com/tebeka/selenium => github.com/wanmail/selenium
