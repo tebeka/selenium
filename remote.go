@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"mime"
 	"net/http"
 	"net/url"
@@ -1009,6 +1010,9 @@ func (wd *remoteWD) GetCookies() ([]Cookie, error) {
 }
 
 func (wd *remoteWD) AddCookie(cookie *Cookie) error {
+	if cookie.Expiry==0 {
+		cookie.Expiry = math.MaxUint32
+	}
 	return wd.voidCommand("/session/%s/cookie", map[string]*Cookie{
 		"cookie": cookie,
 	})
