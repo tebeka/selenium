@@ -23,6 +23,7 @@ import (
 
 	socks5 "github.com/armon/go-socks5"
 	"github.com/blang/semver"
+	"github.com/chromedp/cdproto/browser"
 	"github.com/google/go-cmp/cmp"
 	"github.com/tebeka/selenium"
 	"github.com/tebeka/selenium/chrome"
@@ -1746,7 +1747,60 @@ func testChromeExtension(t *testing.T, c Config) {
 	}
 }
 
+func testExecuteChromeDPCommand(t *testing.T, c Config) {
+	caps := newTestCapabilities(t, c)
+
+	wd, err := NewRemote(t, caps, c.Addr)
+	if err != nil {
+		t.Fatalf("newRemote(_, _) returned error: %v", err)
+	}
+	defer wd.Quit()
+
+	res, err := wd.ExecuteChromeDPCommand("Browser.getVersion", nil)
+	if err != nil {
+		t.Fatalf("cdp execute error: %s", err.Error())
+	}
+
+	version, ok := res.(map[string]interface{})
+	if !ok || version == nil {
+		t.Fatalf("cdp execute failed with result: %v", res)
+	}
+
+	product, ok := version["product"]
+	if !ok {
+		t.Fatalf("cdp execute [Browser.getVersion] failed with result: %v", res)
+	}
+
+	t.Log(product)
+}
+
+func testGenerateCDProtoContext(t *testing.T, c Config) {
+	caps := newTestCapabilities(t, c)
+
+	wd, err := NewRemote(t, caps, c.Addr)
+	if err != nil {
+		t.Fatalf("newRemote(_, _) returned error: %v", err)
+	}
+	defer wd.Quit()
+
+	version := browser.GetVersion()
+
+	_, product, _, _, _, err := version.Do(wd.GenerateCDProtoContext(context.Background()))
+
+	if err != nil {
+		t.Fatalf("cdproto execute error : %s", err.Error())
+	}
+
+	if strings.Index(product, "Chrome") > 0 {
+		t.Log(product)
+	} else {
+		t.Fatalf("invalid chrome version %s", product)
+	}
+}
+
 func RunChromeTests(t *testing.T, c Config) {
 	// Chrome-specific tests.
 	t.Run("Extension", runTest(testChromeExtension, c))
+	t.Run("ExecuteChromeDPCommand", runTest(testExecuteChromeDPCommand, c))
+	t.Run("GenerateCDProtoContext", runTest(testGenerateCDProtoContext, c))
 }
