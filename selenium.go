@@ -218,9 +218,9 @@ type SameSite string
 
 const (
 	SameSiteNone   SameSite = "None"
-	SameSiteLax             = "Lax"
-	SameSiteStrict          = "Strict"
-	SameSiteEmpty           = ""
+	SameSiteLax    SameSite = "Lax"
+	SameSiteStrict SameSite = "Strict"
+	SameSiteEmpty  SameSite = ""
 )
 
 // WebDriver defines methods supported by WebDriver drivers.
