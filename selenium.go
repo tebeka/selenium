@@ -3,9 +3,9 @@ package selenium
 import (
 	"time"
 
-	"github.com/x-Xymos/selenium/v2/chrome"
-	"github.com/x-Xymos/selenium/v2/firefox"
-	"github.com/x-Xymos/selenium/v2/log"
+	"github.com/tebeka/selenium/chrome"
+	"github.com/tebeka/selenium/firefox"
+	"github.com/tebeka/selenium/log"
 )
 
 // TODO(minusnine): make an enum type called FindMethod.
@@ -225,6 +225,8 @@ const (
 	SameSiteEmpty           = ""
 )
 
+// PointerType type of pointer used by StorePointerActions.
+// There are 3 different types according to the WC3 implementation.
 type PointerType string
 
 const (
@@ -233,27 +235,24 @@ const (
 	TouchPointer             = "touch"
 )
 
-//controls how the offset for the pointer move action is calculated
-//
-// FromViewport: calculate the offset from the viewport at 0,0
-//
-// FromPointer: calculate the offset from the current pointer position
+// PointerMoveOrigin controls how the offset for
+// the pointer move action is calculated.
 type PointerMoveOrigin string
 
-//todo: add FromElement which calculates the
-//offset from the provided element
 const (
+	// FromViewport calculates the offset from the viewport at 0,0.
 	FromViewport PointerMoveOrigin = "viewport"
-	FromPointer                    = "pointer"
+	// FromPointer calculates the offset from the current pointer position.
+	FromPointer = "pointer"
 )
 
-//KeyAction
+// KeyAction type used to store key value pairs.
 type KeyAction map[string]interface{}
 
-//KeyAction
+// KeyAction type used to store key value pairs.
 type PointerAction map[string]interface{}
 
-// //Actions holds a map of stored KeyActions and PointerActions
+// Actions array type used to store KeyActions and PointerActions.
 type Actions []map[string]interface{}
 
 // WebDriver defines methods supported by WebDriver drivers.
@@ -363,42 +362,10 @@ type WebDriver interface {
 	// ButtonUp causes the left mouse button to be released.
 	ButtonUp() error
 
-	// KeyPauseAction build a KeyAction which pauses for the supplied duration
-	KeyPauseAction(duration time.Duration) KeyAction
-	// KeyUpAction build a KeyAction press
-	KeyUpAction(key string) KeyAction
-	// KeyDownAction build a KeyAction which presses and holds the specified
-	// key until explicitly released by KeyUpAction or ReleaseActions
-	KeyDownAction(key string) KeyAction
-	// StoreKeyActions
-	//
-	// inputId: unique device identifier for the stored action
-	//
-	// actions: any number of KeyActions
-	StoreKeyActions(inputId string, actions ...KeyAction)
-
-	// PointerPause build a PointerAction which pauses for the supplied duration
-	PointerPauseAction(duration time.Duration) PointerAction
-	// PointerMove build a PointerAction which moves the pointer
-	PointerMoveAction(duration time.Duration, offset Point, origin PointerMoveOrigin) PointerAction
-	// PointerUp build an action which releases the specified pointer key
-	PointerUpAction(button MouseButton) PointerAction
-	// PointerDown build a PointerAction which presses and holds the specified
-	// pointer key until explicitly released by PointerUp or ReleaseActions
-	PointerDownAction(button MouseButton) PointerAction
-	// StorePointerActions
-	//
-	// inputId: unique device identifier for the stored action
-	//
-	// pointerType: type of pointer - accepts: MousePointer, TouchPointer, PenPointer
-	//
-	//actions: any number of PointerActions
-	StorePointerActions(inputId string, pointerType PointerType, actions ...PointerAction)
-
-	// PerformActions performs stored actions
+	// PerformActions executes stored actions.
 	PerformActions() error
 	// ReleaseActions releases keys and pointer buttons if they are pressed,
-	// triggering any events as if they were performed by a regular action
+	// triggering any events as if they were performed by a regular action.
 	ReleaseActions() error
 
 	// SendModifier sends the modifier key to the active element. The modifier

@@ -1,4 +1,4 @@
-module github.com/x-Xymos/selenium/v2
+module github.com/tebeka/selenium
 
 go 1.12
 
