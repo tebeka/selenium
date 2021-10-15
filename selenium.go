@@ -225,7 +225,7 @@ const (
 	SameSiteEmpty           = ""
 )
 
-// PointerType type of pointer used by StorePointerActions.
+// PointerType is the type of pointer used by StorePointerActions.
 // There are 3 different types according to the WC3 implementation.
 type PointerType string
 
@@ -246,13 +246,13 @@ const (
 	FromPointer = "pointer"
 )
 
-// KeyAction type used to store key value pairs.
+// KeyAction represents an activity involving a keyboard key.
 type KeyAction map[string]interface{}
 
-// KeyAction type used to store key value pairs.
+// PointerAction represents an activity involving a pointer.
 type PointerAction map[string]interface{}
 
-// Actions array type used to store KeyActions and PointerActions.
+// Actions stores KeyActions and PointerActions for later execution.
 type Actions []map[string]interface{}
 
 // WebDriver defines methods supported by WebDriver drivers.
@@ -362,7 +362,21 @@ type WebDriver interface {
 	// ButtonUp causes the left mouse button to be released.
 	ButtonUp() error
 
-	// PerformActions executes stored actions.
+	// StoreKeyActions store provided actions until they are executed
+	// by PerformActions or released by ReleaseActions.
+	// inputID is a string used as a unique virtual device identifier for this
+	// and future actions, the value can be set to any valid string
+	// and used to refer to this specific device in future calls.
+	StoreKeyActions(inputID string, actions ...KeyAction)
+
+	// StorePointerActions store provided actions until they are executed
+	// by PerformActions or released by ReleaseActions.
+	// inputID is a string used as a unique virtual device identifier for this
+	// and future actions, the value can be set to any valid string
+	// and used to refer to this specific device in future calls.
+	StorePointerActions(inputID string, pointer PointerType, actions ...PointerAction)
+
+	// PerformActions executes actions previously stored by calls to StorePointerActions and StoreKeyActions.
 	PerformActions() error
 	// ReleaseActions releases keys and pointer buttons if they are pressed,
 	// triggering any events as if they were performed by a regular action.

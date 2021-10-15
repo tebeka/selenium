@@ -47,9 +47,11 @@ var remoteErrors = map[int]string{
 }
 
 type remoteWD struct {
-	id, urlPrefix  string
-	capabilities   Capabilities
-	w3cCompatible  bool
+	id, urlPrefix string
+	capabilities  Capabilities
+	w3cCompatible bool
+	// storedActions stores KeyActions and PointerActions for later execution.
+	storedActions  Actions
 	browser        string
 	browserVersion semver.Version
 }
@@ -1095,7 +1097,7 @@ func (wd *remoteWD) KeyUp(keys string) error {
 	return wd.keyAction("keyUp", keys)
 }
 
-// KeyPauseAction build a KeyAction which pauses for the supplied duration.
+// KeyPauseAction builds a KeyAction which pauses for the supplied duration.
 func KeyPauseAction(duration time.Duration) KeyAction {
 	return KeyAction{
 		"type":     "pause",
@@ -1103,7 +1105,7 @@ func KeyPauseAction(duration time.Duration) KeyAction {
 	}
 }
 
-// KeyUpAction build a KeyAction press.
+// KeyUpAction builds a KeyAction press.
 func KeyUpAction(key string) KeyAction {
 	return KeyAction{
 		"type":  "keyUp",
@@ -1111,7 +1113,7 @@ func KeyUpAction(key string) KeyAction {
 	}
 }
 
-// KeyDownAction build a KeyAction which presses and holds
+// KeyDownAction builds a KeyAction which presses and holds
 // the specified key.
 func KeyDownAction(key string) KeyAction {
 	return KeyAction{
@@ -1120,7 +1122,7 @@ func KeyDownAction(key string) KeyAction {
 	}
 }
 
-// PointerPause build a PointerAction which pauses for the supplied duration.
+// PointerPause builds a PointerAction which pauses for the supplied duration.
 func PointerPauseAction(duration time.Duration) PointerAction {
 	return PointerAction{
 		"type":     "pause",
@@ -1128,7 +1130,7 @@ func PointerPauseAction(duration time.Duration) PointerAction {
 	}
 }
 
-// PointerMove build a PointerAction which moves the pointer.
+// PointerMove builds a PointerAction which moves the pointer.
 func PointerMoveAction(duration time.Duration, offset Point, origin PointerMoveOrigin) PointerAction {
 	return PointerAction{
 		"type":     "pointerMove",
@@ -1139,7 +1141,7 @@ func PointerMoveAction(duration time.Duration, offset Point, origin PointerMoveO
 	}
 }
 
-// PointerUp build an action which releases the specified pointer key.
+// PointerUp builds an action which releases the specified pointer key.
 func PointerUpAction(button MouseButton) PointerAction {
 	return PointerAction{
 		"type":   "pointerUp",
@@ -1147,7 +1149,7 @@ func PointerUpAction(button MouseButton) PointerAction {
 	}
 }
 
-// PointerDown build a PointerAction which presses
+// PointerDown builds a PointerAction which presses
 // and holds the specified pointer key.
 func PointerDownAction(button MouseButton) PointerAction {
 	return PointerAction{
@@ -1156,37 +1158,24 @@ func PointerDownAction(button MouseButton) PointerAction {
 	}
 }
 
-// storedActions an array used to store KeyActions and PointerActions.
-var storedActions Actions
-
-// StoreKeyActions store provided actions until they are executed
-// by PerformActions or released by ReleaseActions.
-// inputID is a string used as a unique virtual device identifier for this
-// and future actions, the value can be set to any valid string
-// and used to refer to this specific device in future calls.
-func StoreKeyActions(inputID string, actions ...KeyAction) {
+func (wd *remoteWD) StoreKeyActions(inputID string, actions ...KeyAction) {
 	rawActions := []map[string]interface{}{}
 	for _, action := range actions {
 		rawActions = append(rawActions, action)
 	}
-	storedActions = append(storedActions, map[string]interface{}{
+	wd.storedActions = append(wd.storedActions, map[string]interface{}{
 		"type":    "key",
 		"id":      inputID,
 		"actions": rawActions,
 	})
 }
 
-// StorePointerActions store provided actions until they are executed
-// by PerformActions or released by ReleaseActions.
-// inputID is a string used as a unique virtual device identifier for this
-// and future actions, the value can be set to any valid string
-// and used to refer to this specific device in future calls.
-func StorePointerActions(inputID string, pointer PointerType, actions ...PointerAction) {
+func (wd *remoteWD) StorePointerActions(inputID string, pointer PointerType, actions ...PointerAction) {
 	rawActions := []map[string]interface{}{}
 	for _, action := range actions {
 		rawActions = append(rawActions, action)
 	}
-	storedActions = append(storedActions, map[string]interface{}{
+	wd.storedActions = append(wd.storedActions, map[string]interface{}{
 		"type":       "pointer",
 		"id":         inputID,
 		"parameters": map[string]string{"pointerType": string(pointer)},
@@ -1196,9 +1185,9 @@ func StorePointerActions(inputID string, pointer PointerType, actions ...Pointer
 
 func (wd *remoteWD) PerformActions() error {
 	err := wd.voidCommand("/session/%s/actions", map[string]interface{}{
-		"actions": storedActions,
+		"actions": wd.storedActions,
 	})
-	storedActions = nil
+	wd.storedActions = nil
 	return err
 }
 
