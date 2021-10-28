@@ -49,8 +49,9 @@ var remoteErrors = map[int]string{
 type remoteWD struct {
 	id, urlPrefix string
 	capabilities  Capabilities
-
-	w3cCompatible  bool
+	w3cCompatible bool
+	// storedActions stores KeyActions and PointerActions for later execution.
+	storedActions  Actions
 	browser        string
 	browserVersion semver.Version
 }
@@ -230,6 +231,7 @@ func NewRemote(capabilities Capabilities, urlPrefix string) (WebDriver, error) {
 	if b := capabilities["browserName"]; b != nil {
 		wd.browser = b.(string)
 	}
+
 	if _, err := wd.NewSession(); err != nil {
 		return nil, err
 	}
@@ -1095,8 +1097,104 @@ func (wd *remoteWD) KeyUp(keys string) error {
 	return wd.keyAction("keyUp", keys)
 }
 
-// TODO(minusnine): Implement PerformActions and ReleaseActions, for more
-// direct access to the W3C specification.
+// KeyPauseAction builds a KeyAction which pauses for the supplied duration.
+func KeyPauseAction(duration time.Duration) KeyAction {
+	return KeyAction{
+		"type":     "pause",
+		"duration": uint(duration / time.Millisecond),
+	}
+}
+
+// KeyUpAction builds a KeyAction press.
+func KeyUpAction(key string) KeyAction {
+	return KeyAction{
+		"type":  "keyUp",
+		"value": key,
+	}
+}
+
+// KeyDownAction builds a KeyAction which presses and holds
+// the specified key.
+func KeyDownAction(key string) KeyAction {
+	return KeyAction{
+		"type":  "keyDown",
+		"value": key,
+	}
+}
+
+// PointerPause builds a PointerAction which pauses for the supplied duration.
+func PointerPauseAction(duration time.Duration) PointerAction {
+	return PointerAction{
+		"type":     "pause",
+		"duration": uint(duration / time.Millisecond),
+	}
+}
+
+// PointerMove builds a PointerAction which moves the pointer.
+func PointerMoveAction(duration time.Duration, offset Point, origin PointerMoveOrigin) PointerAction {
+	return PointerAction{
+		"type":     "pointerMove",
+		"duration": uint(duration / time.Millisecond),
+		"origin":   origin,
+		"x":        offset.X,
+		"y":        offset.Y,
+	}
+}
+
+// PointerUp builds an action which releases the specified pointer key.
+func PointerUpAction(button MouseButton) PointerAction {
+	return PointerAction{
+		"type":   "pointerUp",
+		"button": button,
+	}
+}
+
+// PointerDown builds a PointerAction which presses
+// and holds the specified pointer key.
+func PointerDownAction(button MouseButton) PointerAction {
+	return PointerAction{
+		"type":   "pointerDown",
+		"button": button,
+	}
+}
+
+func (wd *remoteWD) StoreKeyActions(inputID string, actions ...KeyAction) {
+	rawActions := []map[string]interface{}{}
+	for _, action := range actions {
+		rawActions = append(rawActions, action)
+	}
+	wd.storedActions = append(wd.storedActions, map[string]interface{}{
+		"type":    "key",
+		"id":      inputID,
+		"actions": rawActions,
+	})
+}
+
+func (wd *remoteWD) StorePointerActions(inputID string, pointer PointerType, actions ...PointerAction) {
+	rawActions := []map[string]interface{}{}
+	for _, action := range actions {
+		rawActions = append(rawActions, action)
+	}
+	wd.storedActions = append(wd.storedActions, map[string]interface{}{
+		"type":       "pointer",
+		"id":         inputID,
+		"parameters": map[string]string{"pointerType": string(pointer)},
+		"actions":    rawActions,
+	})
+}
+
+func (wd *remoteWD) PerformActions() error {
+	err := wd.voidCommand("/session/%s/actions", map[string]interface{}{
+		"actions": wd.storedActions,
+	})
+	wd.storedActions = nil
+	return err
+}
+
+func (wd *remoteWD) ReleaseActions() error {
+	return voidCommand("DELETE", wd.requestURL("/session/%s/actions", wd.id), nil)
+}
+
 func (wd *remoteWD) DismissAlert() error {
 	return wd.voidCommand("/session/%s/alert/dismiss", nil)
 }

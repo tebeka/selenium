@@ -22,9 +22,11 @@ const (
 	ByCSSSelector     = "css selector"
 )
 
+type MouseButton int
+
 // Mouse buttons.
 const (
-	LeftButton = iota
+	LeftButton MouseButton = iota
 	MiddleButton
 	RightButton
 )
@@ -223,6 +225,36 @@ const (
 	SameSiteEmpty  SameSite = ""
 )
 
+// PointerType is the type of pointer used by StorePointerActions.
+// There are 3 different types according to the WC3 implementation.
+type PointerType string
+
+const (
+	MousePointer PointerType = "mouse"
+	PenPointer               = "pen"
+	TouchPointer             = "touch"
+)
+
+// PointerMoveOrigin controls how the offset for
+// the pointer move action is calculated.
+type PointerMoveOrigin string
+
+const (
+	// FromViewport calculates the offset from the viewport at 0,0.
+	FromViewport PointerMoveOrigin = "viewport"
+	// FromPointer calculates the offset from the current pointer position.
+	FromPointer = "pointer"
+)
+
+// KeyAction represents an activity involving a keyboard key.
+type KeyAction map[string]interface{}
+
+// PointerAction represents an activity involving a pointer.
+type PointerAction map[string]interface{}
+
+// Actions stores KeyActions and PointerActions for later execution.
+type Actions []map[string]interface{}
+
 // WebDriver defines methods supported by WebDriver drivers.
 type WebDriver interface {
 	// Status returns various pieces of information about the server environment.
@@ -329,6 +361,26 @@ type WebDriver interface {
 	ButtonDown() error
 	// ButtonUp causes the left mouse button to be released.
 	ButtonUp() error
+
+	// StoreKeyActions store provided actions until they are executed
+	// by PerformActions or released by ReleaseActions.
+	// inputID is a string used as a unique virtual device identifier for this
+	// and future actions, the value can be set to any valid string
+	// and used to refer to this specific device in future calls.
+	StoreKeyActions(inputID string, actions ...KeyAction)
+
+	// StorePointerActions store provided actions until they are executed
+	// by PerformActions or released by ReleaseActions.
+	// inputID is a string used as a unique virtual device identifier for this
+	// and future actions, the value can be set to any valid string
+	// and used to refer to this specific device in future calls.
+	StorePointerActions(inputID string, pointer PointerType, actions ...PointerAction)
+
+	// PerformActions executes actions previously stored by calls to StorePointerActions and StoreKeyActions.
+	PerformActions() error
+	// ReleaseActions releases keys and pointer buttons if they are pressed,
+	// triggering any events as if they were performed by a regular action.
+	ReleaseActions() error
 
 	// SendModifier sends the modifier key to the active element. The modifier
 	// can be one of ShiftKey, ControlKey, AltKey, MetaKey.

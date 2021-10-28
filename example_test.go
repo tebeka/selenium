@@ -104,9 +104,70 @@ func Example() {
 	}
 
 	fmt.Printf("%s", strings.Replace(output, "\n\n", "\n", -1))
-
 	// Example Output:
 	// Hello WebDriver!
 	//
 	// Program exited.
+
+	// The following shows an example of using the Actions API.
+	// Please refer to the WC3 Actions spec for more detailed information.
+	if err := wd.Get("http://play.golang.org/?simple=1"); err != nil {
+		panic(err)
+	}
+
+	// Create a point which will be used as an offset to click on the
+	// code editor text box element on the page.
+	offset := selenium.Point{X: 100, Y: 100}
+
+	// Call StorePointerActions to store a number of Pointer actions which
+	// will be executed sequentially.
+	// "mouse1" is used as a unique virtual device identifier for this
+	// and future actions.
+	// selenium.MousePointer is used to identify the type of the pointer.
+	// The stored action chain will move the pointer and click on the code
+	// editor text box on the page.
+	selenium.StorePointerActions("mouse1",
+		selenium.MousePointer,
+		// using selenium.FromViewport as the move origin
+		// which calculates the offset from 0,0.
+		// the other valid option is selenium.FromPointer.
+		selenium.PointerMoveAction(0, offset, selenium.FromViewport),
+		selenium.PointerPauseAction(250),
+		selenium.PointerDownAction(selenium.LeftButton),
+		selenium.PointerPauseAction(250),
+		selenium.PointerUpAction(selenium.LeftButton),
+	)
+
+	// Call StoreKeyActions to store a number of Key actions which
+	// will be executed sequentially.
+	// "keyboard1" is used as a unique virtual device identifier
+	// for this and future actions.
+	// The stored action chain will send keyboard inputs to the browser.
+	selenium.StoreKeyActions("keyboard1",
+		selenium.KeyDownAction(selenium.ControlKey),
+		selenium.KeyPauseAction(50),
+		selenium.KeyDownAction("a"),
+		selenium.KeyPauseAction(50),
+		selenium.KeyUpAction("a"),
+		selenium.KeyUpAction(selenium.ControlKey),
+		selenium.KeyDownAction("h"),
+		selenium.KeyDownAction("e"),
+		selenium.KeyDownAction("l"),
+		selenium.KeyDownAction("l"),
+		selenium.KeyDownAction("o"),
+	)
+
+	// Call PerformActions to execute stored action - based on
+	// the order of the previous calls, PointerActions will be
+	// executed first and then KeyActions.
+	if err := wd.PerformActions(); err != nil {
+		panic(err)
+	}
+
+	// Call ReleaseActions to release any PointerDown or
+	// KeyDown Actions that haven't been released through an Action.
+	if err := wd.ReleaseActions(); err != nil {
+		panic(err)
+	}
+
 }
