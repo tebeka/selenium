@@ -1010,6 +1010,7 @@ func (wd *remoteWD) GetCookies() ([]Cookie, error) {
 }
 
 func (wd *remoteWD) AddCookie(cookie *Cookie) error {
+	//if cookie.Expiry is zero, AddCookie is not effective, @see https://github.com/tebeka/selenium/issues/130
 	if cookie.Expiry == 0 {
 		cookie.Expiry = math.MaxUint32
 	}
