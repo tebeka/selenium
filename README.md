@@ -46,11 +46,7 @@ Re-run this periodically to get up-to-date versions of these binaries.
 
 ## Documentation
 
-The API documentation is at https://godoc.org/github.com/tebeka/selenium. See
-[the example](https://github.com/tebeka/selenium/blob/master/example_test.go)
-and
-[the unit tests](https://github.com/tebeka/selenium/blob/master/remote_test.go)
-for better usage information.
+The API documentation is at https://godoc.org/github.com/tebeka/selenium. See [the example](https://github.com/tebeka/selenium/blob/master/example_test.go) and unit tests(for [sauce](https://github.com/tebeka/selenium/blob/master/sauce_test.go), [selenium](https://github.com/tebeka/selenium/blob/master/selenium_test.go) and [service](https://github.com/tebeka/selenium/blob/master/service_test.go)) for better usage information.
 
 ## Known Issues
 
