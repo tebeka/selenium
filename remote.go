@@ -802,6 +802,18 @@ func (wd *remoteWD) MaximizeWindow(name string) error {
 }
 
 func (wd *remoteWD) MinimizeWindow(name string) error {
+	if !wd.w3cCompatible {
+		if name != "" {
+			var err error
+			name, err = wd.CurrentWindowHandle()
+			if err != nil {
+				return err
+			}
+		}
+		url := wd.requestURL("/session/%s/window/%s/minimize", wd.id, name)
+		_, err := wd.execute("POST", url, nil)
+		return err
+	}
 	return wd.modifyWindow(name, "POST", "minimize", map[string]string{})
 }
 
