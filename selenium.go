@@ -255,6 +255,22 @@ type PointerAction map[string]interface{}
 // Actions stores KeyActions and PointerActions for later execution.
 type Actions []map[string]interface{}
 
+// PrintArgs specify the arguments that can
+// be sent to the Print() command.
+type PrintArgs struct {
+	Scale      float64  `json:"scale,omitempty"`
+	PageRanges []string `json:"pageRanges,omitempty"`
+	Margin     *Margin  `json:"margin,omitempty"`
+}
+
+// Margin for the print command.
+type Margin struct {
+	Bottom int `json:"bottom"`
+	Left   int `json:"left"`
+	Right  int `json:"right"`
+	Top    int `json:"top"`
+}
+
 // WebDriver defines methods supported by WebDriver drivers.
 type WebDriver interface {
 	// Status returns various pieces of information about the server environment.
@@ -396,6 +412,8 @@ type WebDriver interface {
 	KeyUp(keys string) error
 	// Screenshot takes a screenshot of the browser window.
 	Screenshot() ([]byte, error)
+	// Print takes PrintArgs and returns a PDF representation of the browser window.
+	Print(args PrintArgs) ([]byte, error)
 	// Log fetches the logs. Log types must be previously configured in the
 	// capabilities.
 	//
