@@ -194,6 +194,37 @@ func NewSeleniumService(jarPath string, port int, opts ...ServiceOption) (*Servi
 	return s, nil
 }
 
+func NewSeleniumServiceV4(jarPath string, port int, opts ...ServiceOption) (*Service, error) {
+	s, err := newService(exec.Command("java"), "/wd/hub", port, opts...)
+	if err != nil {
+		return nil, err
+	}
+	s.cmd.Args = append(s.cmd.Args, "-jar", jarPath)
+	if s.javaPath != "" {
+		s.cmd.Path = s.javaPath
+	}
+
+	var classpath []string
+	if s.htmlUnitPath != "" {
+		classpath = append(classpath, s.htmlUnitPath)
+	}
+	if s.geckoDriverPath != "" {
+		classpath = append(classpath, s.geckoDriverPath)
+	}
+	if s.chromeDriverPath != "" {
+		classpath = append(classpath, s.chromeDriverPath)
+	}
+	if len(classpath) > 0 {
+		s.cmd.Args = append(s.cmd.Args, "--ext", strings.Join(classpath, ":"))
+	}
+	s.cmd.Args = append(s.cmd.Args, "standalone", "--port", strconv.Itoa(port))
+	if err := s.start(port); err != nil {
+		return nil, err
+	}
+
+	return s, nil
+}
+
 // NewChromeDriverService starts a ChromeDriver instance in the background.
 func NewChromeDriverService(path string, port int, opts ...ServiceOption) (*Service, error) {
 	cmd := exec.Command(path, "--port="+strconv.Itoa(port), "--url-base=wd/hub", "--verbose")
