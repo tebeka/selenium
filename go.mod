@@ -7,10 +7,12 @@ require (
 	github.com/BurntSushi/xgbutil v0.0.0-20160919175755-f7c97cef3b4e
 	github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5
 	github.com/blang/semver v3.5.1+incompatible
+	github.com/chromedp/cdproto v0.0.0-20220217222649-d8c14a5c6edf // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/protobuf v1.3.4
 	github.com/google/go-cmp v0.3.0
 	github.com/google/go-github/v27 v27.0.4
 	github.com/mediabuyerbot/go-crx3 v1.3.1
+	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	google.golang.org/api v0.7.0
 )

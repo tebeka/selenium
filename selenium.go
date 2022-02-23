@@ -422,6 +422,8 @@ type WebDriver interface {
 	// perform JSON decoding.
 	ExecuteScriptAsyncRaw(script string, args []interface{}) ([]byte, error)
 
+	ExecuteChromeDPCommand(cmd string, params interface{}) (interface{}, error)
+
 	// WaitWithTimeoutAndInterval waits for the condition to evaluate to true.
 	WaitWithTimeoutAndInterval(condition Condition, timeout, interval time.Duration) error
 
