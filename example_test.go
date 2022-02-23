@@ -1,12 +1,17 @@
 package selenium_test
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/chromedp/cdproto"
+	"github.com/chromedp/cdproto/network"
+	"github.com/mitchellh/mapstructure"
+	"github.com/tebeka/selenium"
+	"github.com/tebeka/selenium/chrome"
+	"github.com/tebeka/selenium/log"
 	"os"
 	"strings"
 	"time"
-
-	"github.com/tebeka/selenium"
 )
 
 // This example shows how to navigate to a http://play.golang.org page, input a
@@ -170,4 +175,74 @@ func Example() {
 		panic(err)
 	}
 
+}
+
+func ExampleChromeCDP() {
+	service, err := selenium.NewChromeDriverService("/usr/local/bin/chromedriver", 6789)
+	if err != nil {
+		panic(err)
+	}
+	defer service.Stop()
+
+	caps := selenium.Capabilities{"browserName": "chrome"}
+	caps.AddLogging(log.Capabilities{
+		log.Performance: log.All,
+	})
+	caps.AddChrome(chrome.Capabilities{
+		Args: []string{
+			"--user-data-dir=/tmp/chrome",
+			"--headless",
+		},
+	})
+	wd, err := selenium.NewRemote(caps, fmt.Sprintf("http://localhost:%d/wd/hub", 6789))
+	if err != nil {
+		panic(err)
+	}
+	defer wd.Quit()
+
+	if err := wd.Get("xxxxx"); err != nil {
+		panic(err)
+	}
+
+	// /resource/RelatedPinFeedResource/get
+
+	log_messages, err := wd.Log(log.Performance)
+	if err != nil {
+		panic(err)
+	}
+	for _, log_message := range log_messages {
+		message := make(map[string]interface{})
+		json.Unmarshal([]byte(log_message.Message), &message)
+		message = message["message"].(map[string]interface{})
+		method := message["method"]
+		if method != "Network.responseReceived" {
+			continue
+		}
+
+		params := message["params"].(map[string]interface{})
+		response := params["response"].(map[string]interface{})
+		if strings.Contains(response["url"].(string), "xxxxx") == false {
+			continue
+		}
+
+		// use cdp
+		request_id := network.RequestID(params["requestId"].(string))
+		response_body, err := wd.ExecuteChromeDPCommand(cdproto.CommandNetworkGetResponseBody, network.GetResponseBody(request_id))
+		if err != nil {
+			panic(err)
+		}
+
+		response_body_returns := network.GetResponseBodyReturns{}
+		mapstructure.Decode(response_body, &response_body_returns)
+		fmt.Printf("%v", response_body_returns.Body)
+
+		// or use
+		response_body, err = wd.ExecuteChromeDPCommand("Network.getResponseBody", map[string]interface{}{
+			"requestId": params["requestId"],
+		})
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("%v", response_body)
+	}
 }

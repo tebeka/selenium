@@ -1270,6 +1270,29 @@ func (wd *remoteWD) ExecuteScriptAsyncRaw(script string, args []interface{}) ([]
 	return wd.execScriptRaw(script, args, "/async")
 }
 
+func (wd *remoteWD) ExecuteChromeDPCommand(cmd string, params interface{}) (interface{}, error) {
+	data, err := json.Marshal(map[string]interface{}{
+		"cmd":    cmd,
+		"params": params,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := wd.execute("POST", wd.requestURL("/session/%s/goog/cdp/execute", wd.id), data)
+	if err != nil {
+		return nil, err
+	}
+
+	reply := new(struct{ Value interface{} })
+	if err = json.Unmarshal(response, reply); err != nil {
+		return nil, err
+	}
+
+	return reply.Value, nil
+}
+
 func (wd *remoteWD) Screenshot() ([]byte, error) {
 	data, err := wd.stringCommand("/session/%s/screenshot")
 	if err != nil {
