@@ -207,11 +207,11 @@ type Size struct {
 type Cookie struct {
 	Name     string   `json:"name"`
 	Value    string   `json:"value"`
-	Path     string   `json:"path"`
-	Domain   string   `json:"domain"`
-	Secure   bool     `json:"secure"`
-	Expiry   uint     `json:"expiry"`
-	HTTPOnly bool     `json:"httpOnly"`
+	Path     string   `json:"path,omitempty"`
+	Domain   string   `json:"domain,omitempty"`
+	Secure   bool     `json:"secure,omitempty"`
+	Expiry   uint     `json:"expiry,omitempty"`
+	HTTPOnly bool     `json:"httpOnly,omitempty"`
 	SameSite SameSite `json:"sameSite,omitempty"`
 }
 
