@@ -622,6 +622,10 @@ func (wd *remoteWD) CurrentURL() (string, error) {
 		return "", err
 	}
 
+	if reply.Value == nil {
+		return "", fmt.Errorf("nil return value")
+	}
+
 	return *reply.Value, nil
 }
 
