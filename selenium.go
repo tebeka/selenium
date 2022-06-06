@@ -263,7 +263,9 @@ type PrintArgs struct {
 	Margin     *Margin  `json:"margin,omitempty"`
 }
 
-// Margin for the print command.
+// Margin for the Print command.
+//
+// All units are in centimeters.
 type Margin struct {
 	Bottom int `json:"bottom"`
 	Left   int `json:"left"`
