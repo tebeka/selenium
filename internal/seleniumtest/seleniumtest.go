@@ -167,6 +167,7 @@ func RunCommonTests(t *testing.T, c Config) {
 	t.Run("ActiveElement", runTest(testActiveElement, c))
 	t.Run("AcceptAlert", runTest(testAcceptAlert, c))
 	t.Run("DismissAlert", runTest(testDismissAlert, c))
+	t.Run("Print", runTest(testPrint, c))
 }
 
 func testStatus(t *testing.T, c Config) {
@@ -1490,6 +1491,21 @@ func testDismissAlert(t *testing.T, c Config) {
 
 	if err := wd.DismissAlert(); err != nil {
 		t.Fatalf("wd.DismissAlert() returned error: %v", err)
+	}
+}
+
+func testPrint(t *testing.T, c Config) {
+	wd := newRemote(t, newTestCapabilities(t, c), c)
+	defer quitRemote(t, wd)
+
+	homePage := c.ServerURL + "/"
+
+	if err := wd.Get(homePage); err != nil {
+		t.Fatalf("wd.Get(%q) returned error: %v", homePage, err)
+	}
+
+	if _, err := wd.Print(selenium.PrintArgs{}); err != nil {
+		t.Fatalf("wd.Print() returned error: %v", err)
 	}
 }
 
