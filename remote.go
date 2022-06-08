@@ -1212,6 +1212,10 @@ func (wd *remoteWD) SetAlertText(text string) error {
 	return wd.voidCommand("/session/%s/alert/text", data)
 }
 
+func (wd *remoteWD) AddVirtualAuthenticator(params map[string]interface{}) error {
+	return wd.voidCommand("/session/%s/webauthn/authenticator", params)
+}
+
 func (wd *remoteWD) execScriptRaw(script string, args []interface{}, suffix string) ([]byte, error) {
 	if args == nil {
 		args = make([]interface{}, 0)

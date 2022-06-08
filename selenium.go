@@ -422,6 +422,9 @@ type WebDriver interface {
 	// perform JSON decoding.
 	ExecuteScriptAsyncRaw(script string, args []interface{}) ([]byte, error)
 
+	// AddVirtualAuthenticator creates a software Virtual Authenticator.
+	AddVirtualAuthenticator(params map[string]interface{}) error
+
 	// WaitWithTimeoutAndInterval waits for the condition to evaluate to true.
 	WaitWithTimeoutAndInterval(condition Condition, timeout, interval time.Duration) error
 
