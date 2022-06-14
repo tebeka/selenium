@@ -314,6 +314,15 @@ func (wd *remoteWD) boolCommand(urlTemplate string) (bool, error) {
 	return reply.Value, nil
 }
 
+func (wd *remoteWD) shadowRootCommand(urlTemplate string) (ShadowRoot, error) {
+	url := wd.requestURL(urlTemplate, wd.id)
+	response, err := wd.execute("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	return wd.DecodeShadowRoot(response)
+}
+
 func (wd *remoteWD) Status() (*Status, error) {
 	url := wd.requestURL("/status")
 	reply, err := wd.execute("GET", url, nil)
@@ -687,6 +696,39 @@ func (wd *remoteWD) find(by, value, suffix, url string) ([]byte, error) {
 	}
 
 	return wd.execute("POST", wd.requestURL(url+suffix, wd.id), data)
+}
+
+func (wd *remoteWD) DecodeShadowRoot(data []byte) (ShadowRoot, error) {
+	reply := new(struct{ Value map[string]string })
+	if err := json.Unmarshal(data, &reply); err != nil {
+		return nil, err
+	}
+
+	id := shadowRootIDFromValue(reply.Value)
+	if id == "" {
+		return nil, fmt.Errorf("invalid shadow root returned: %+v", reply)
+	}
+	return &remoteSR{
+		parent: wd,
+		id:     id,
+	}, nil
+}
+
+const (
+	// shadowIdentifier is the string constant defined by the W3C
+	// specification that is the key for the map that contains a unique shadow root identifier.
+	shadowRootIdentifier = "shadow-6066-11e4-a52e-4f735466cecf"
+)
+
+func shadowRootIDFromValue(v map[string]string) string {
+	for _, key := range []string{shadowRootIdentifier} {
+		v, ok := v[key]
+		if !ok || v == "" {
+			continue
+		}
+		return v
+	}
+	return ""
 }
 
 func (wd *remoteWD) DecodeElement(data []byte) (WebElement, error) {
@@ -1440,6 +1482,11 @@ func (elem *remoteWE) FindElements(by, value string) ([]WebElement, error) {
 	return elem.parent.DecodeElements(response)
 }
 
+func (elem *remoteWE) GetElementShadowRoot() (ShadowRoot, error) {
+	url := fmt.Sprintf("/session/%%s/element/%s/shadow", elem.id)
+	return elem.parent.shadowRootCommand(url)
+}
+
 func (elem *remoteWE) boolQuery(urlTemplate string) (bool, error) {
 	return elem.parent.boolCommand(fmt.Sprintf(urlTemplate, elem.id))
 }
@@ -1578,4 +1625,29 @@ func (elem *remoteWE) Screenshot(scroll bool) ([]byte, error) {
 	buf := []byte(data)
 	decoder := base64.NewDecoder(base64.StdEncoding, bytes.NewBuffer(buf))
 	return ioutil.ReadAll(decoder)
+}
+
+type remoteSR struct {
+	parent *remoteWD
+	id     string
+}
+
+func (elem *remoteSR) FindElement(by, value string) (WebElement, error) {
+	url := fmt.Sprintf("/session/%%s/shadow/%s/element", elem.id)
+	response, err := elem.parent.find(by, value, "", url)
+	if err != nil {
+		return nil, err
+	}
+
+	return elem.parent.DecodeElement(response)
+}
+
+func (elem *remoteSR) FindElements(by, value string) ([]WebElement, error) {
+	url := fmt.Sprintf("/session/%%s/shadow/%s/element", elem.id)
+	response, err := elem.parent.find(by, value, "s", url)
+	if err != nil {
+		return nil, err
+	}
+
+	return elem.parent.DecodeElements(response)
 }
