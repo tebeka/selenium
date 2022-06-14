@@ -450,6 +450,8 @@ type WebElement interface {
 	FindElement(by, value string) (WebElement, error)
 	// FindElement finds multiple children elements.
 	FindElements(by, value string) ([]WebElement, error)
+	// Gets the shadow root element of a shadow DOM whose host is this element
+	GetElementShadowRoot() (ShadowRoot, error)
 
 	// TagName returns the element's name.
 	TagName() (string, error)
@@ -478,4 +480,12 @@ type WebElement interface {
 	CSSProperty(name string) (string, error)
 	// Screenshot takes a screenshot of the attribute scroll'ing if necessary.
 	Screenshot(scroll bool) ([]byte, error)
+}
+
+// ShadowRoot defines methods supported by a shadow DOM root element
+type ShadowRoot interface {
+	// FindElement finds a child element into the shadow DOM
+	FindElement(by, value string) (WebElement, error)
+	// FindElement finds multiple children elements into the shadow DOM
+	FindElements(by, value string) ([]WebElement, error)
 }
