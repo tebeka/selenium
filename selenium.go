@@ -231,8 +231,8 @@ type PointerType string
 
 const (
 	MousePointer PointerType = "mouse"
-	PenPointer               = "pen"
-	TouchPointer             = "touch"
+	PenPointer   PointerType = "pen"
+	TouchPointer PointerType = "touch"
 )
 
 // PointerMoveOrigin controls how the offset for
@@ -254,6 +254,33 @@ type PointerAction map[string]interface{}
 
 // Actions stores KeyActions and PointerActions for later execution.
 type Actions []map[string]interface{}
+
+// PrintArgs specify the arguments that can
+// be sent to the Print() command.
+type PrintArgs struct {
+	Scale       float64          `json:"scale,omitempty"`
+	PageRanges  []string         `json:"pageRanges,omitempty"`
+	Orientation PrintOrientation `json:"orientation,omitempty"`
+}
+
+// PrintOrientation specifies the orientation for
+// the print command
+type PrintOrientation string
+
+const (
+	PrintOrientationPortrait  PrintOrientation = "portrait"
+	PrintOrientationLandscape PrintOrientation = "landscape"
+)
+
+// Margin for the Print command.
+//
+// All units are in centimeters.
+type Margin struct {
+	Bottom int `json:"bottom"`
+	Left   int `json:"left"`
+	Right  int `json:"right"`
+	Top    int `json:"top"`
+}
 
 // WebDriver defines methods supported by WebDriver drivers.
 type WebDriver interface {
@@ -396,6 +423,8 @@ type WebDriver interface {
 	KeyUp(keys string) error
 	// Screenshot takes a screenshot of the browser window.
 	Screenshot() ([]byte, error)
+	// Print takes PrintArgs and returns a PDF representation of the browser window.
+	Print(args PrintArgs) ([]byte, error)
 	// Log fetches the logs. Log types must be previously configured in the
 	// capabilities.
 	//

@@ -126,7 +126,7 @@ func Example() {
 	// selenium.MousePointer is used to identify the type of the pointer.
 	// The stored action chain will move the pointer and click on the code
 	// editor text box on the page.
-	selenium.StorePointerActions("mouse1",
+	wd.StorePointerActions("mouse1",
 		selenium.MousePointer,
 		// using selenium.FromViewport as the move origin
 		// which calculates the offset from 0,0.
@@ -143,7 +143,7 @@ func Example() {
 	// "keyboard1" is used as a unique virtual device identifier
 	// for this and future actions.
 	// The stored action chain will send keyboard inputs to the browser.
-	selenium.StoreKeyActions("keyboard1",
+	wd.StoreKeyActions("keyboard1",
 		selenium.KeyDownAction(selenium.ControlKey),
 		selenium.KeyPauseAction(50),
 		selenium.KeyDownAction("a"),

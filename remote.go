@@ -1282,6 +1282,41 @@ func (wd *remoteWD) Screenshot() ([]byte, error) {
 	return ioutil.ReadAll(decoder)
 }
 
+func (wd *remoteWD) Print(args PrintArgs) ([]byte, error) {
+	data, err := wd.stringPostCommand("/session/%s/print", args)
+	if err != nil {
+		return nil, err
+	}
+
+	// Selenium returns a base64 encoded image.
+	buf := []byte(data)
+	decoder := base64.NewDecoder(base64.StdEncoding, bytes.NewBuffer(buf))
+	return ioutil.ReadAll(decoder)
+}
+
+func (wd *remoteWD) stringPostCommand(urlTemplate string, params interface{}) (string, error) {
+	url := wd.requestURL(urlTemplate, wd.id)
+	bts, err := json.Marshal(params)
+	if err != nil {
+		return "", err
+	}
+	response, err := wd.execute("POST", url, bts)
+	if err != nil {
+		return "", err
+	}
+
+	reply := new(struct{ Value *string })
+	if err := json.Unmarshal(response, reply); err != nil {
+		return "", err
+	}
+
+	if reply.Value == nil {
+		return "", fmt.Errorf("nil return value")
+	}
+
+	return *reply.Value, nil
+}
+
 // Condition is an alias for a type that is passed as an argument
 // for selenium.Wait(cond Condition) (error) function.
 type Condition func(wd WebDriver) (bool, error)
