@@ -231,8 +231,8 @@ type PointerType string
 
 const (
 	MousePointer PointerType = "mouse"
-	PenPointer               = "pen"
-	TouchPointer             = "touch"
+	PenPointer   PointerType = "pen"
+	TouchPointer PointerType = "touch"
 )
 
 // PointerMoveOrigin controls how the offset for
@@ -258,10 +258,19 @@ type Actions []map[string]interface{}
 // PrintArgs specify the arguments that can
 // be sent to the Print() command.
 type PrintArgs struct {
-	Scale      float64  `json:"scale,omitempty"`
-	PageRanges []string `json:"pageRanges,omitempty"`
-	Margin     *Margin  `json:"margin,omitempty"`
+	Scale       float64          `json:"scale,omitempty"`
+	PageRanges  []string         `json:"pageRanges,omitempty"`
+	Orientation PrintOrientation `json:"orientation,omitempty"`
 }
+
+// PrintOrientation specifies the orientation for
+// the print command
+type PrintOrientation string
+
+const (
+	PrintOrientationPortrait  PrintOrientation = "portrait"
+	PrintOrientationLandscape PrintOrientation = "landscape"
+)
 
 // Margin for the Print command.
 //
