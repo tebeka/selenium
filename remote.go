@@ -537,6 +537,10 @@ func (wd *remoteWD) SwitchSession(sessionID string) error {
 	return nil
 }
 
+func (wd *remoteWD) SetW3CCompatibility(isCompatible bool) {
+	wd.w3cCompatible = isCompatible
+}
+
 func (wd *remoteWD) Capabilities() (Capabilities, error) {
 	url := wd.requestURL("/session/%s", wd.id)
 	response, err := wd.execute("GET", url, nil)

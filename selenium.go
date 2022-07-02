@@ -275,6 +275,9 @@ type WebDriver interface {
 	// SwitchSession switches to the given session ID.
 	SwitchSession(sessionID string) error
 
+	// Toggle W3C compliance.
+	SetW3CCompatibility(bool)
+
 	// Capabilities returns the current session's capabilities.
 	Capabilities() (Capabilities, error)
 
