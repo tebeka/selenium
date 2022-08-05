@@ -1,7 +1,7 @@
 # The most complete, best-tested WebDriver client for Go
 
 [![GoDoc](https://godoc.org/github.com/rmescandon/selenium?status.svg)](https://godoc.org/github.com/rmescandon/selenium)
-[![Travis](https://travis-ci.org/tebeka/selenium.svg?branch=master)](https://travis-ci.org/tebeka/selenium)
+[![Travis](https://travis-ci.org/github.com/selenium.svg?branch=master)](https://travis-ci.org/rmescandon/selenium)
 [![Go Report Card](https://goreportcard.com/badge/github.com/rmescandon/selenium)](https://goreportcard.com/report/github.com/rmescandon/selenium)
 
 ## About
@@ -196,4 +196,4 @@ Test results can be viewed through the
 
 This project is licensed under the [MIT][mit] license.
 
-[mit]: https://raw.githubusercontent.com/tebeka/selenium/master/LICENSE
+[mit]: https://raw.githubusercontent.com/rmescandon/selenium/master/LICENSE
