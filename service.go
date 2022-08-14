@@ -69,6 +69,8 @@ type FrameBufferOptions struct {
 	// ScreenSize is the option for the frame buffer screen size.
 	// This is of the form "{width}x{height}[x{depth}]".  For example: "1024x768x24"
 	ScreenSize string
+	// XvfbTimeout is the duratin of time that we'll allow for Xvfb to startup.
+	XvfbTimeout time.Duration
 }
 
 // StartFrameBufferWithOptions causes an X virtual frame buffer to start before
@@ -364,6 +366,12 @@ func NewFrameBufferWithOptions(options FrameBufferOptions) (*FrameBuffer, error)
 		ch <- resp{s, err}
 	}()
 
+	// Give a reasonable default timeout if not specified.
+	timeout := 3 * time.Second
+	if options.XvfbTimeout > 0 {
+		timeout = options.XvfbTimeout
+	}
+
 	var display string
 	select {
 	case resp := <-ch:
@@ -374,7 +382,7 @@ func NewFrameBufferWithOptions(options FrameBufferOptions) (*FrameBuffer, error)
 		if _, err := strconv.Atoi(display); err != nil {
 			return nil, errors.New("Xvfb did not print the display number")
 		}
-	case <-time.After(3 * time.Second):
+	case <-time.After(timeout):
 		return nil, errors.New("timeout waiting for Xvfb")
 	}
 
