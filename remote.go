@@ -1122,7 +1122,7 @@ func KeyDownAction(key string) KeyAction {
 	}
 }
 
-// PointerPause builds a PointerAction which pauses for the supplied duration.
+// PointerPauseAction builds a PointerAction which pauses for the supplied duration.
 func PointerPauseAction(duration time.Duration) PointerAction {
 	return PointerAction{
 		"type":     "pause",
@@ -1130,7 +1130,7 @@ func PointerPauseAction(duration time.Duration) PointerAction {
 	}
 }
 
-// PointerMove builds a PointerAction which moves the pointer.
+// PointerMoveAction builds a PointerAction which moves the pointer.
 func PointerMoveAction(duration time.Duration, offset Point, origin PointerMoveOrigin) PointerAction {
 	return PointerAction{
 		"type":     "pointerMove",
@@ -1141,7 +1141,7 @@ func PointerMoveAction(duration time.Duration, offset Point, origin PointerMoveO
 	}
 }
 
-// PointerUp builds an action which releases the specified pointer key.
+// PointerUpAction builds an action which releases the specified pointer key.
 func PointerUpAction(button MouseButton) PointerAction {
 	return PointerAction{
 		"type":   "pointerUp",
@@ -1149,7 +1149,7 @@ func PointerUpAction(button MouseButton) PointerAction {
 	}
 }
 
-// PointerDown builds a PointerAction which presses
+// PointerDownAction builds a PointerAction which presses
 // and holds the specified pointer key.
 func PointerDownAction(button MouseButton) PointerAction {
 	return PointerAction{
