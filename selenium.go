@@ -280,13 +280,13 @@ type WebDriver interface {
 
 	// SetAsyncScriptTimeout sets the amount of time that asynchronous scripts
 	// are permitted to run before they are aborted. The timeout will be rounded
-	// to nearest millisecond.
+	// to the nearest millisecond.
 	SetAsyncScriptTimeout(timeout time.Duration) error
 	// SetImplicitWaitTimeout sets the amount of time the driver should wait when
-	// searching for elements. The timeout will be rounded to nearest millisecond.
+	// searching for elements. The timeout will be rounded to the nearest millisecond.
 	SetImplicitWaitTimeout(timeout time.Duration) error
 	// SetPageLoadTimeout sets the amount of time the driver should wait when
-	// loading a page. The timeout will be rounded to nearest millisecond.
+	// loading a page. The timeout will be rounded to the nearest millisecond.
 	SetPageLoadTimeout(timeout time.Duration) error
 
 	// Quit ends the current session. The browser instance will be closed.
@@ -321,7 +321,7 @@ type WebDriver interface {
 
 	// Get navigates the browser to the provided URL.
 	Get(url string) error
-	// Forward moves forward in history.
+	// Forward moves in history.
 	Forward() error
 	// Back moves backward in history.
 	Back() error
@@ -330,7 +330,7 @@ type WebDriver interface {
 
 	// FindElement finds exactly one element in the current page's DOM.
 	FindElement(by, value string) (WebElement, error)
-	// FindElement finds potentially many elements in the current page's DOM.
+	// FindElements finds potentially many elements in the current page's DOM.
 	FindElements(by, value string) ([]WebElement, error)
 	// ActiveElement returns the currently active element on the page.
 	ActiveElement() (WebElement, error)
@@ -340,14 +340,14 @@ type WebDriver interface {
 	// DecodeElements decodes a multi-element response.
 	DecodeElements([]byte) ([]WebElement, error)
 
-	// GetCookies returns all of the cookies in the browser's jar.
+	// GetCookies returns all the cookies in the browser's jar.
 	GetCookies() ([]Cookie, error)
 	// GetCookie returns the named cookie in the jar, if present. This method is
 	// only implemented for Firefox.
 	GetCookie(name string) (Cookie, error)
 	// AddCookie adds a cookie to the browser's jar.
 	AddCookie(cookie *Cookie) error
-	// DeleteAllCookies deletes all of the cookies in the browser's jar.
+	// DeleteAllCookies deletes all the cookies in the browser's jar.
 	DeleteAllCookies() error
 	// DeleteCookie deletes a cookie to the browser's jar.
 	DeleteCookie(name string) error
@@ -428,7 +428,7 @@ type WebDriver interface {
 	// WaitWithTimeout works like WaitWithTimeoutAndInterval, but with default polling interval.
 	WaitWithTimeout(condition Condition, timeout time.Duration) error
 
-	//Wait works like WaitWithTimeoutAndInterval, but using the default timeout and polling interval.
+	// Wait works like WaitWithTimeoutAndInterval, but using the default timeout and polling interval.
 	Wait(condition Condition) error
 }
 
