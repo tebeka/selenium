@@ -18,7 +18,7 @@ Chrome and [ChromeDriver][chromedriver],
 [go]: http://golang.org/
 [server]: http://seleniumhq.org/download/
 [geckodriver]: https://github.com/mozilla/geckodriver
-[chromedriver]: https://sites.google.com/a/chromium.org/chromedriver/
+[chromedriver]: https://sites.google.com/chromium.org/driver
 [minusnine]: http://github.com/minusnine
 
 ## Installing
