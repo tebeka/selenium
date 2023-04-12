@@ -1,4 +1,4 @@
-package selenium_test
+package tests
 
 import (
 	"flag"
@@ -13,9 +13,9 @@ import (
 	"testing"
 
 	"github.com/blang/semver"
+	"github.com/go-auxiliaries/selenium"
+	"github.com/go-auxiliaries/selenium/internal/seleniumtest"
 	"github.com/golang/glog"
-	"github.com/tebeka/selenium"
-	"github.com/tebeka/selenium/internal/seleniumtest"
 )
 
 var (

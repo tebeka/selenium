@@ -18,8 +18,8 @@ import (
 	"time"
 
 	"github.com/blang/semver"
-	"github.com/tebeka/selenium/firefox"
-	"github.com/tebeka/selenium/log"
+	"github.com/go-auxiliaries/selenium/firefox"
+	"github.com/go-auxiliaries/selenium/log"
 )
 
 // Errors returned by Selenium server.

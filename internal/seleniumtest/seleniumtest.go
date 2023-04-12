@@ -23,12 +23,12 @@ import (
 
 	socks5 "github.com/armon/go-socks5"
 	"github.com/blang/semver"
+	"github.com/go-auxiliaries/selenium"
+	"github.com/go-auxiliaries/selenium/chrome"
+	"github.com/go-auxiliaries/selenium/firefox"
+	"github.com/go-auxiliaries/selenium/log"
+	"github.com/go-auxiliaries/selenium/sauce"
 	"github.com/google/go-cmp/cmp"
-	"github.com/tebeka/selenium"
-	"github.com/tebeka/selenium/chrome"
-	"github.com/tebeka/selenium/firefox"
-	"github.com/tebeka/selenium/log"
-	"github.com/tebeka/selenium/sauce"
 )
 
 type Config struct {

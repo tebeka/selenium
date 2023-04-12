@@ -1,0 +1,34 @@
+orbs:
+  golangci-lint: timakin/golangci-lint@0.1.1
+  go: circleci/go@1.7.1
+
+version: 2.1
+
+jobs:
+  build:
+    executor:
+      name: go/default
+      tag: '1.12'
+    steps:
+      - checkout
+      - go/load-cache
+      - go/mod-download
+      - run:
+          command: |
+            go install golang.org/x/tools/cmd/goimports@latest
+      - go/save-cache
+      - run:
+          command: |
+            goimports -d ./
+      - run:
+          command: |
+            gofmt -l -s ./
+      - go/test:
+          failfast: true
+
+
+workflows:
+  ci:
+    jobs:
+      - golangci-lint/lint
+      - build

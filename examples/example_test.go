@@ -1,4 +1,4 @@
-package selenium_test
+package examples
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tebeka/selenium"
+	"github.com/go-auxiliaries/selenium"
 )
 
 // This example shows how to navigate to a http://play.golang.org page, input a
@@ -14,11 +14,11 @@ import (
 //
 // If you want to actually run this example:
 //
-//   1. Ensure the file paths at the top of the function are correct.
-//   2. Remove the word "Example" from the comment at the bottom of the
-//      function.
-//   3. Run:
-//      go test -test.run=Example$ github.com/tebeka/selenium
+//  1. Ensure the file paths at the top of the function are correct.
+//  2. Remove the word "Example" from the comment at the bottom of the
+//     function.
+//  3. Run:
+//     go test -test.run=Example$ github.com/go-auxiliaries/selenium
 func Example() {
 	// Start a Selenium WebDriver server instance (if one is not already
 	// running).
@@ -126,7 +126,7 @@ func Example() {
 	// selenium.MousePointer is used to identify the type of the pointer.
 	// The stored action chain will move the pointer and click on the code
 	// editor text box on the page.
-	selenium.StorePointerActions("mouse1",
+	wd.StorePointerActions("mouse1",
 		selenium.MousePointer,
 		// using selenium.FromViewport as the move origin
 		// which calculates the offset from 0,0.
@@ -143,7 +143,7 @@ func Example() {
 	// "keyboard1" is used as a unique virtual device identifier
 	// for this and future actions.
 	// The stored action chain will send keyboard inputs to the browser.
-	selenium.StoreKeyActions("keyboard1",
+	wd.StoreKeyActions("keyboard1",
 		selenium.KeyDownAction(selenium.ControlKey),
 		selenium.KeyPauseAction(50),
 		selenium.KeyDownAction("a"),
