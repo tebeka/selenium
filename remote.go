@@ -293,9 +293,12 @@ func (wd *remoteWD) UploadFiles(filenames ...string) (string, error) {
 		wd.requestURL("/session/%s/file", wd.id),
 		payload,
 	)
+	if err != nil {
+		return "", err
+	}
 
 	responseData := map[string]interface{}{}
-	if err := json.Unmarshal(resp, responseData); err != nil {
+	if err := json.Unmarshal(resp, &responseData); err != nil {
 		return "", err
 	}
 
