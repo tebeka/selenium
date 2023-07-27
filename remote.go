@@ -4,15 +4,18 @@
 package selenium
 
 import (
+	"archive/zip"
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"mime"
 	"net/http"
 	"net/url"
+	"os"
 	"path"
 	"strings"
 	"time"
@@ -247,6 +250,64 @@ func DeleteSession(urlPrefix, id string) error {
 	}
 	u.Path = path.Join(u.Path, "session", id)
 	return voidCommand("DELETE", u.String(), nil)
+}
+
+// Upload a files to remote WebDriver
+// Returns directory which uploaded files
+func (wd *remoteWD) UploadFiles(filenames ...string) (string, error) {
+	var buf bytes.Buffer
+	zipped := zip.NewWriter(&buf)
+
+	for _, filename := range filenames {
+		w, err := zipped.Create(filename)
+		if err != nil {
+			return "", err
+		}
+
+		r, err := os.Open(filename)
+		if err != nil {
+			return "", err
+		}
+
+		fBuf, err := io.ReadAll(r)
+		if err != nil {
+			return "", err
+		}
+
+		if _, err := w.Write(fBuf); err != nil {
+			return "", err
+		}
+	}
+
+	zipped.Close()
+
+	payload, err := json.Marshal(map[string]interface{}{
+		"file": buf.Bytes(),
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	resp, err := wd.execute("POST",
+		wd.requestURL("/session/%s/file", wd.id),
+		payload,
+	)
+	if err != nil {
+		return "", err
+	}
+
+	responseData := map[string]interface{}{}
+	if err := json.Unmarshal(resp, &responseData); err != nil {
+		return "", err
+	}
+
+	directory, ok := responseData["value"].(string)
+	if !ok {
+		return "", fmt.Errorf("nil return value")
+	}
+
+	return directory, nil
 }
 
 func (wd *remoteWD) stringCommand(urlTemplate string) (string, error) {
