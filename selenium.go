@@ -292,6 +292,9 @@ type WebDriver interface {
 	// Quit ends the current session. The browser instance will be closed.
 	Quit() error
 
+	// Uploads files to remote WebDriver
+	UploadFiles(filenames ...string) (string, error)
+
 	// CurrentWindowHandle returns the ID of current window handle.
 	CurrentWindowHandle() (string, error)
 	// WindowHandles returns the IDs of current open windows.
